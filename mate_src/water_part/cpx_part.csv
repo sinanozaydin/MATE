@@ -1,0 +1,13 @@
+#ModelName,ModelType,Function1,Function2,PChange,Description
+OurFit,5,MATE.d_opx_ol * ((0.077 * self.p) + 1.137),0,0,Cpx-opx dependent cpx/ol values from P-dependent function
+OurFit,5,MATE.d_opx_ol * 1.88,0,0,Cpx-opx dependent cpx/ol values from mean value of them
+Aubaud2004,4,12.5,0,0,Aubaud2004 single value of cpx/ol at 1 GPa and 1503 K with aluminous-opx-cpx-ol assemblage
+Aubaud2004,5,1.4 * MATE.d_opx_ol,0,0,Aubaud2004 single value of cpx/opx at 1 Gpa and 1523 K with aluminous ol-opx-cpx-gt-melt assemblage
+Demouchy2016,5,2.39 * MATE.d_opx_ol,0,0,Demouchy2016 average value of cpx/opx from natural samples
+Demouchy2017,4,10.6,0,0,Demouchy2017 average single value of cpx/ol at 3 GPa and 1373 K with aluminous-opx-cpx-ol-gt assemblage
+Demouchy2017,5,1.9 * MATE.d_opx_ol,0,0,Demouchy2017 average value of cpx/opx at 3 GPa and 1373 K with aluminous opx-cpx-gt assemblage
+Hauri2006,4,14.92,0,0,Hauri2006 average single value of cpx/ol at 0.5-1.6 GPa and 1298-1643 K with aluminous-opx-cpx-ol-melt assemblage
+Kovacs2012,5,3.35 * MATE.d_opx_ol,0,0,Kovacs2012 average single value of cpx/opx at 2.5-4 GPa and 1273-1423 K with aluminous ol-opx-cpx-gt assemblage
+Novella2014,4,3.19,0,0,Novella2014 average single value of cpx/ol at 6 GPa and 1673 K with aluminous-opx-cpx-ol-gt assemblage
+Novella2014,5,1.65 * MATE.d_opx_ol,0,0,Novella2014 average value of cpx/opx at 6 GPa and 1673 K with aluminous opx-cpx-gt-melt assemblage
+Tenner2009,5,1.35 * MATE.d_opx_ol,0,0,Tenner2009 average value of cpx/opx at 4 GPa and 1678-1708 K with aluminous cpx-opx-melt assemblage

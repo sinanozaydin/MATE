@@ -1,0 +1,32 @@
+#GLOSSARY
+#Pre exponent values are set in log values.
+R - ideal gas constant = 8.3144621 j/(mol K)
+T - has to be in Kelvin
+P - has to be in GPa
+pat_fact - Correction factor for studies using calibration of Paterson (1982)
+
+------------model parameters------------------------------
+
+sigma_i - Ionic conduction log-pre-exponent (S/m)
+sigma_i_err - Ionic conduction log-pre-exponent error (S/m)
+h_i - Ionic conduction activation enthalpy (J/mol)
+h_i_err - Ionic conduction activation enthalpy error (J/mol)
+
+sigma_pol - Polaron conduction log-pre-exponent (S/m)
+sigma_pol - Polaron conduction log-pre-exponent error (S/m)
+h_pol - Polaron conduction activation enthalpy (J/mol)
+h_pol_err - Polaron conduction activation enthalpy error (J/mol)
+alpha_pol - Polaron conduction iron content coefficient (J/mol)
+alpha_pol_err - Polaron conduction iron content coefficient error (J/mol)
+
+sigma_p - Proton conduction log-pre-exponent (S/m)
+sigma_p_err - Proton conduction log-pre-exponent error (S/m)
+r - coefficient for controlling water species (unitless)
+r_err - coefficient for controlling water species error (unitless)
+h_p - Proton conduction activaiton enthalpy (J/mol)
+h_p_err - Proton conduction activaiton enthalpy error (J/mol) 
+alpha_p - Proton conduction water content coefficient (J/mol)
+alpha_p_err - Proton conduction water content coefficient error (J/mol)
+
+-----------------------------------------------------------
+
