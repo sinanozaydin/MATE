@@ -2,10 +2,11 @@
 
 #This path parameter (core_path_ext) is essential in installation and has to be set up according to the computer
 #that is being used on. Edit the code here to the correct path that is set on your computer.
+import os
 
-core_path_ext = '/home/sinan/bin/mate_src'
+core_path_ext = os.path.dirname(os.path.abspath(__file__)) + '/mate_src'
 
-import os, sys, csv, itertools, math
+import sys, csv, itertools, math
 import numpy as np
 import random
 from scipy.interpolate import interp1d
