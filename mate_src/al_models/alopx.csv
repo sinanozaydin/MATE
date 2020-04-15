@@ -1,0 +1,5 @@
+ModelName,Function,StartingPressure,DisplayStr
+NoModel,0,0,No Model
+Novella2014,0.11 + (19.62 * np.exp(-0.454*self.p[idx_al:])),3,Novella2014 - peridotite experiments
+Hirschmann2009,6.88 * np.exp(-0.407 * (self.p[idx_al:] - 2.8)) + (0.0566*self.p[idx_al:]),2.8,Hirschmann2009 - Near-solidus data
+SAFArchon,4.69 * np.exp(-1.24012*self.p[idx_al:]) + 0.92654,1.5,SAF Archon/Proton-Archon Xenoliths
