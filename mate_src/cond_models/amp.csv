@@ -1,0 +1,5 @@
+StudyName,Type,Tmin,Tmax,Pmin,Pmax,WCalib,Mg#,sigma_i,sigma_i_err,h_i,h_i_err,sigma_pol,sigma_pol_err,h_pol,h_pol_err,sigma_p,sigma_p_err,h_p,h_p_err,r,r_err,alpha_p,alpha_p_err,wtype,assemblage,sampletype,fugacity,avggrainsize(mm)
+Hu2018H,3,623,873,0.5,2,0,0.75,0,0,0,0,0,0,0,0,2.16,0,81000,0,0,0,0,0,0,amp(parg),Single Crystal,Ni-NiO,0
+Hu2018DH,3,623,1173,0.5,2,0,0.75,0,0,0,0,0,0,0,0,1.97,0,68000,0,0,0,0,0,0,amp(parg),Single Crystal,Ni-NiO,0
+Wang2012,3,373,873,0.5,2,0,0.75,0,0,0,0,0,0,0,0,1.97,0,68000,0,0,0,0,0,0,"pl,hb,act",Polycrystals,Unknown,0.5-3
+Wang2012_LE,3,373,873,0.5,2,0,0.75,0,0,0,0,0,0,0,0,1.97,0,68000,0,0,0,0,0,0,"pl,hb,act",Polycrystals,Unknown,0.5-3

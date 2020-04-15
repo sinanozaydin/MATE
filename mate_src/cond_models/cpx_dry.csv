@@ -1,0 +1,6 @@
+StudyName,Type,Tmin,Tmax,Pmin,Pmax,Mg#,sigma_i,sigma_i_err,h_i,h_i_err,sigma_pol,sigma_pol_err,h_pol,h_pol_err,dV,dV_err,assemblage,sampletype,fugacity,avggrainsize(mm)
+Fullea2011_cpx*,0,1000,1573,0,0,0.91,0,0,0,0,0,0,0,0,0,0,cpx,Statistical,NAN,NAN
+Xu1998,1,1273,1673,13,13,0.91,0,0,0,0,3.25,0.07,187000,2000,0,0,cpx,Polycrystal,Mo-MoO2,0.001-0.005
+Yang2011**,1,523,1273,0.6,1.2,0.72,0,0,0,0,2.16,0.27,102000,5000,0,0,cpx,Polycrystal,Ni-NiO,0.2-1
+Yang2012b**,1,723,1273,1.2,1.2,0.72,0,0,0,0,1.88,0.1,87000,2000,0,0,cpx,Polycrystal,Ni-NiO,Unknown
+Yang2012b2**,1,773,1273,1.2,1.2,0.72,0,0,0,0,2.02,0.13,90000,2000,0,0,cpx,Single Crystal,Ni-NiO,0
