@@ -1,2 +1,2 @@
 # MATE
-![alt text](https://raw.githubusercontent.com/sinanozaydin/MATE/master/mate_src/mate.png)
+![alt text](https://github.com/sinanozaydin/MATE/blob/master/mate_src/mate.png)
