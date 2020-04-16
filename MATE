@@ -8,15 +8,12 @@ core_path_ext = os.path.dirname(os.path.abspath(__file__)) + '/mate_src'
 
 import sys, csv, itertools, math
 import numpy as np
-import random
 from scipy.interpolate import interp1d
 from scipy import optimize
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 from matplotlib.collections import PatchCollection
 import matplotlib.colors as colors
-from matplotlib.pyplot import Figure
-import matplotlib.gridspec as gridspec
 import matplotlib.patheffects as pe
 from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt4agg import NavigationToolbar2QT as NavigationToolbar
