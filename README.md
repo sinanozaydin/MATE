@@ -18,12 +18,16 @@ Copying the files to a directory will do the job. However, the structure of the 
 
 Software requires very few libraries including: numpy, scipy, matplotlib, pyQt5
 
-These can be installed easşly via pip3 using terminal in Linux or macOS:
+These can be installed easily via **pip3** using the terminal on a Linux distribution or macOS:
 
 ```bash
 sudo pip3 install numpy, scipy, matplotlib, pyQt5
 ```
-On Windows, pip3 comes automatically with the python3 distribution package.
+On Windows, pip3 comes automatically with the python3 distribution package. Using command prompt:
+
+```bash
+pip3 install numpy, scipy, matplotlib, pyQt5
+```
 
 Adding new models to the program
 ==========
