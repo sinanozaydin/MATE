@@ -9,7 +9,7 @@ Who would be interested in using this program?
 
 **Installation**
 
-Copying the files to a directory will do the job. However, the structure of the source folder should not be changed.
+Copying the files to a directory will do the job. However, the structure of the source folder should not be changed. Exporting the source folder is recommended.
 
 **Required Libraries**
 
