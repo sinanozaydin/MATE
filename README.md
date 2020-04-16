@@ -23,12 +23,12 @@ These can be installed easşly via pip3 using terminal in Linux or macOS:
 ```bash
 sudo pip3 install numpy, scipy, matplotlib, pyQt5
 ```
-On Windows pip3 comes automatically with the python3 distribution package.
+On Windows, pip3 comes automatically with the python3 distribution package.
 
 Adding new models to the program
 ==========
 
-Please submit experimental models that can be added in the master branch and contact via email.
+Please submit experimental models that can be added in the master branch of the program.
 
 Contact
 ==========
