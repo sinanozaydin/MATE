@@ -38,10 +38,10 @@ pip3 install numpy, scipy, matplotlib, pyQt5
 
 **Creating Exe file**
 
-One could also create an exe file if they want to. This requires the installation of the python module pyinstaller first. This could be done by typing in the following command in terminal:
+One could also create an exe file if they want to. This requires the installation of the python module pyinstaller first. This could be done by typing the following command in terminal or command prompt:
 
 ```bash
-sudo pip3 install pyinstaller
+pip3 install pyinstaller
 ```
 
 Then through command prompt or linux terminal, typing the following command in the source directory will create the executable file:
