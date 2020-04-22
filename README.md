@@ -1,4 +1,5 @@
 <img src="https://github.com/sinanozaydin/MATE/blob/master/mate_src/mate_full.png">
+<a href="https://zenodo.org/badge/latestdoi/255912421"><img src="https://zenodo.org/badge/255912421.svg" alt="DOI"></a>
 
 MATE is an easy-to-use piece of software written in python3 for making interpretations of magnetotelluric models of the mantle. The software does this by combining the information of many high-pressure and temperature experimental studies (e.g., conductivity, hydrogen diffusion, hydration of minerals) for given compositional and thermal profile.
 
