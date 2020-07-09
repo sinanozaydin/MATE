@@ -4687,7 +4687,7 @@ class MATE(QMainWindow):
 					str('%4.2f' %  self.al_opx[i]) + ',' +\
 					str('%4.2f' %  self.ti_ol[i]) + ',' +\
 					str('%1.5E' %  self.flu[i]) + ',' +\
-					str('%1.5E' %  self.cond_t_k[i]) + ',' +\
+					str('%1.5E' %  self.t_k_cond[i]) + ',' +\
 					str('%1.5E' %  self.heat_prod_mantle[i]) + '\n')
 
 
