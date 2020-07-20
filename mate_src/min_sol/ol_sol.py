@@ -9,12 +9,6 @@ def Ferot2012(T,P,depth,h2o_fug,o2_fug,fe_ol,ti_ol):
 
 	return max_ol_h2o
 
-def Ferot2012opx(T,P,depth,h2o_fug,o2_fug,fe_ol,ti_ol):
-
-	max_ol_h2o = 68.113 * np.exp(0.0080613 * depth / 1000.0)  * 0.666 * 5.6
-
-	return max_ol_h2o
-
 def Gaetani2014(T,P,depth,h2o_fug,o2_fug,fe_ol,ti_ol):
 
 	o2_fug = o2_fug * 0.1 #converting to MPa from bar
@@ -59,17 +53,6 @@ def PadronNavarta2017(T,P,depth,h2o_fug,o2_fug,fe_ol,ti_ol):
 	X_ol_ti = (np.exp(XX_ti/((T)*R_const)) * ((ti_ol*14073.0) / ((1979.0*ti_ol)+798800.0))) / (np.exp(XX_ti/((T)*R_const)) + 1)
 	max_ol_h2o_ti = ((180200.0*X_ol_ti*2.0) / ((-249.0*X_ol_ti*2.0) + 28146))*10000.0
 	max_ol_h2o = max_ol_h2o_si + max_ol_h2o_ti
-
-	return max_ol_h2o
-
-def PadronNavarta2017opx(T,P,depth,h2o_fug,o2_fug,fe_ol,ti_ol):
-
-	X_ol_si = np.exp((-580000.0 + (14.0*T) + (44300.0*np.log(10000.0*(2.1+P)))) / (T * R_const))
-	max_ol_h2o_si = (360400.0 * 4.0 * X_ol_si * 1e4) / (56292.0 - (2405.0 * 4.0 * X_ol_si))
-	XX_ti = -124000.0 + (78.0*(T)) + (10600.0*P)
-	X_ol_ti = (np.exp(XX_ti/((T)*R_const)) * ((ti_ol*14073.0) / ((1979.0*ti_ol)+798800.0))) / (np.exp(XX_ti/((T)*R_const)) + 1)
-	max_ol_h2o_ti = ((180200.0*X_ol_ti*2.0) / ((-249.0*X_ol_ti*2.0) + 28146))*10000.0
-	max_ol_h2o = (max_ol_h2o_si + max_ol_h2o_ti)*5.6
 
 	return max_ol_h2o
 
