@@ -8,7 +8,7 @@ def Dai2014a(model_method,T,P,corr_factor,fo2,fo2_ref,wt_err,ol_h2o):
 
 	dv_dai2014 = -0.86 * 1e-6 # m^3 /mol Taken from Dai2014b-PEPI, Error is insignificant, since the effect itself is insignificant...
 	p_ref = 4.0
-	cw_ref = 460.0 * corr_factor / 1e4
+	cw_ref = 460.0 / 1e4
 	e1_dai = 74000.0
 	e1_dai_err = 3000
 	e2_dai = 115000
@@ -17,11 +17,11 @@ def Dai2014a(model_method,T,P,corr_factor,fo2,fo2_ref,wt_err,ol_h2o):
 	r_dai_err = 0.2
 	q_dai = -0.066 #Taken from Dai2014c-P"EPI, Error is insignificant.
 	wt_err = wt_err
-	h2o = ol_h2o / 1e4
+	h2o = ol_h2o / (1e4 * corr_factor)
 	#p*dv multiplied by 1e3 to get them all on the basis of the SI units J/mol, which activation energy is in.
-	dai_ref_max = (10.0**0.48 * np.exp(-((e1_dai - e1_dai_err) + (p_ref*dv_dai2014)) / (R_const * T))) + (10.0**2.84 * np.exp(-((e2_dai-e2_dai_err) + (p_ref*dv_dai2014)) / (R_const * T)))
-	dai_ref_min = (10.0**0.48 * np.exp(-((e1_dai + e1_dai_err) + (p_ref*dv_dai2014)) / (R_const * T))) + (10.0**2.84 * np.exp(-((e2_dai+e2_dai_err) + (p_ref*dv_dai2014)) / (R_const * T)))
-	dai_ref = (10.0**0.48 * np.exp(-((e1_dai) + (p_ref*dv_dai2014)) / (R_const * T))) + (10.0**2.84 * np.exp(-((e2_dai) + (p_ref*dv_dai2014)) / (R_const * T)))
+	dai_ref_max = ((10.0**0.48) * np.exp(-((e1_dai - e1_dai_err) + (p_ref*dv_dai2014)) / (R_const * T))) + (10.0**2.84 * np.exp(-((e2_dai-e2_dai_err) + (p_ref*dv_dai2014)) / (R_const * T)))
+	dai_ref_min = ((10.0**0.48) * np.exp(-((e1_dai + e1_dai_err) + (p_ref*dv_dai2014)) / (R_const * T))) + (10.0**2.84 * np.exp(-((e2_dai+e2_dai_err) + (p_ref*dv_dai2014)) / (R_const * T)))
+	dai_ref = ((10.0**0.48) * np.exp(-((e1_dai) + (p_ref*dv_dai2014)) / (R_const * T))) + (10.0**2.84 * np.exp(-((e2_dai) + (p_ref*dv_dai2014)) / (R_const * T)))
 
 	cond_max_wet = (dai_ref_max * (((h2o + (h2o * wt_err)) / (cw_ref))**(r_dai-r_dai_err)) * (fo2/fo2_ref)**(q_dai)) *  np.exp(- ((P - p_ref) * dv_dai2014) / (R_const*T))
 	cond_min_wet = (dai_ref_min * (((h2o - (h2o * wt_err)) / (cw_ref))**(r_dai+r_dai_err)) * (fo2/fo2_ref)**(q_dai)) *  np.exp(- ((P - p_ref) * dv_dai2014) / (R_const*T))

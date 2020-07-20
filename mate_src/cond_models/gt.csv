@@ -1,5 +1,4 @@
 StudyName,Type,Tmin,Tmax,Pmin,Pmax,WCalib,Mg#,sigma_i,sigma_i_err,h_i,h_i_err,sigma_pol,sigma_pol_err,h_pol,h_pol_err,sigma_p,sigma_p_err,h_p,h_p_err,r,r_err,alpha_p,alpha_p_err,wtype,assemblage,sampletype,fugacity,avggrainsize(mm)
 Dai2009a,3,873,1473,4,16,0,83,0,0,0,0,0,0,128000,6000,3.29,0.16,70000,5000,0.63,0.19,0,0,0,py73-alm14-grs13,Single Crystal,Mo-Mo2,0
-GB+Ingrin2006****,5,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,gt,Polycrystal,NAN,0
 Liu2019,1,350,800,1,1,1,30,0,0,0,0,0,0,0,0,4.37,0.24,90000,2000,1.07,0.09,0,0,0,cpx-gt,Polycrystalline,Ni-NiO,0.1-0.7
-Ingrin2006****,4,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,gt,Statistical Analysis,NAN,0
+Ingrin2006****,4,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,gt,Statistical Analysis,NAN,0

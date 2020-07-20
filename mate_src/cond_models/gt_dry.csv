@@ -1,5 +1,5 @@
 StudyName,Type,Tmin,Tmax,Pmin,Pmax,Mg#,sigma_i,sigma_i_err,h_i,h_i_err,sigma_pol,sigma_pol_err,h_pol,h_pol_err,dV,dV_err,assemblage,sampletype,fugacity,avggrainsize(mm)
-Dai2009a,0,873,1473,4,16,0.83,0,0,0,0,0,0,0,0,0,0,py73-alm14-grs13,Single Crystal,Mo-Mo2,0
+Dai2009a_dry,0,873,1473,4,16,0.83,0,0,0,0,0,0,0,0,0,0,py73-alm14-grs13,Single Crystal,Mo-Mo2,0
 Dai2012_1,1,873,1273,2,2,0.73,0,0,0,0,2.69,0,137000,0,0,0,py73-alm14-grs13,Single Crystal,IM,0
 Dai2012_2,1,873,1273,2,2,0.56,0,0,0,0,2.773,0,135000,0,0,0,py56-alm43-grs1,Single Crystal,IM,0
 Dai2012_3,1,873,1273,2,2,0.3,0,0,0,0,2.867,0,134000,0,0,0,py30-alm67-grs3,Single Crystal,IM,0
