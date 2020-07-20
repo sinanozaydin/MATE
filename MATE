@@ -4,7 +4,7 @@ import os
 
 core_path_ext = os.path.join(os.path.dirname(os.path.abspath(__file__)) , 'mate_src')
 
-import sys, csv, itertools, math, platform
+import sys, csv, itertools, math, platform, random
 import numpy as np
 from scipy.interpolate import interp1d
 from scipy import optimize
@@ -105,7 +105,7 @@ class MATE(QMainWindow):
 		fugMenu.setStyleSheet("QMenu{background-color: #9098a3;border: 1px solid black}")
 		drycondMenu = mainMenu.addMenu('Dry Conductivity')
 		drycondMenu.setStyleSheet("QMenu{background-color: #9098a3;border: 1px solid black}")
-		watercalibMenu = mainMenu.addMenu('Water Calibration')
+		watercalibMenu = mainMenu.addMenu('Water Calibration Correction')
 		watercalibMenu.setStyleSheet("QMenu{background-color: #9098a3;border: 1px solid black}")
 		waterdataMenu = mainMenu.addMenu('Water Data')
 		waterdataMenu.setStyleSheet("QMenu{background-color: #9098a3;border: 1px solid black}")
@@ -113,7 +113,7 @@ class MATE(QMainWindow):
 		stabilityMenu.setStyleSheet("QMenu{background-color: #9098a3;border: 1px solid black}")
 		grainbMenu = mainMenu.addMenu('Grain-Boundary Properties')
 		grainbMenu.setStyleSheet("QMenu{background-color: #9098a3;border: 1px solid black}")
-		modelMenu = mainMenu.addMenu('Upload Resistivity Profile')
+		modelMenu = mainMenu.addMenu('Import Resistivity Profile')
 		modelMenu.setStyleSheet("QMenu{background-color: #9098a3;border: 1px solid black}")
 		figureMenu = mainMenu.addMenu('Figures')
 		figureMenu.setStyleSheet("QMenu{background-color: #9098a3;border: 1px solid black}")
@@ -159,14 +159,18 @@ class MATE(QMainWindow):
 
 		#WATER CALIBRATIONS MENU
 
-		olcalibButton = QAction("&Olivine Water Calibration",self)
+		olcalibButton = QAction("&Olivine Water Calibration - Conductivity",self)
 		olcalibButton.triggered.connect(self.ol_calib_popup)
 		self.ol_calib_pop = None
-		pxcalibButton = QAction("&Px-Gt Water Calibration",self)
+		pxcalibButton = QAction("&Px-Gt Water Calibration - Conductivity",self)
 		pxcalibButton.triggered.connect(self.px_calib_popup)
 		self.px_calib_pop = None
+		olsolcalibButton = QAction("&Olivine Water Calibration - Solubility",self)
+		olsolcalibButton.triggered.connect(self.ol_sol_calib_popup)
+		self.ol_sol_calib_pop = None
 		watercalibMenu.addAction(olcalibButton)
 		watercalibMenu.addAction(pxcalibButton)
+		watercalibMenu.addAction(olsolcalibButton)
 
 		#ADDING WATER DATA MENU
 		addwaterButton = QAction("&Add Water Content Measurement",self)
@@ -293,8 +297,9 @@ class MATE(QMainWindow):
 
 		MATE.o2_buffer = 0
 
-		MATE.ol_calib = 0
-		MATE.px_calib = 0
+		MATE.ol_calib = 3
+		MATE.px_calib = 2
+		MATE.ol_sol_calib = 3
 
 		MATE.model_method_list = ['Proton+Polaron+Ionic', 'Proton Only']
 		MATE.model_method_ol = 0
@@ -959,12 +964,14 @@ class MATE(QMainWindow):
 		self.D_ol_GB = []
 		self.E_ol_GB = []
 		self.E_err_ol_GB = []
+		self.ol_calib_GB = []
 
 		for i in range(1,len(self.ol_gb_data)):
 			MATE.GB_ol_list.append(self.ol_gb_data[i][0])
 			self.D_ol_GB.append(float(self.ol_gb_data[i][1]))
 			self.E_ol_GB.append(float(self.ol_gb_data[i][2]))
 			self.E_err_ol_GB.append(float(self.ol_gb_data[i][3]))
+			self.ol_calib_GB.append(int(self.ol_gb_data[i][4]))
 
 		#Reading gt_gb.csv where grainboundary diffusion of garnet-spinel resides.
 		self.gt_gb_data = self.read_csv(os.path.join(self.core_path, 'cond_models', 'gt_gb.csv'),delim = ',')
@@ -994,6 +1001,19 @@ class MATE(QMainWindow):
 			self.ol_sol_wcalib.append(self.ol_sol_data[i][2])
 			#RETURNHERE - add the other lists once you decide
 
+		#Reading calibration correction factors from the file.
+
+		correction_factor_dat = self.read_csv(os.path.join(self.core_path, 'water_calib.csv'), delim = ',')
+
+		self.pat2with = float(correction_factor_dat[0][1])
+		self.bell2with = float(correction_factor_dat[1][1])
+		self.pat2bell = float(correction_factor_dat[2][1])
+		self.with2bell = 1.0/self.bell2with
+		self.bell2path = 1.0/self.pat2bell
+		self.with2pat = 1.0/self.pat2with
+		self.pat2bell95 = float(correction_factor_dat[3][1])
+		self.bell952pat = 1.0/self.pat2bell95
+
 	def read_xen_pt(self):
 
 		self.xen_data = self.read_csv(self.xen_pt_file_name[0],delim = ',')
@@ -1002,17 +1022,26 @@ class MATE(QMainWindow):
 		self.p_xen = []
 		self.T_xen = []
 
-		for i in range(1,len(self.xen_data)):
-			if MATE.z_xen_method == '0':
-				self.p_xen.append(float(self.xen_data[i][1]))
-			else:
-				self.depth_xen.append(float(self.xen_data[i][1]))
+		try:
+			for i in range(1,len(self.xen_data)):
+				try:
+					if MATE.z_xen_method == '0':
+						self.p_xen.append(float(self.xen_data[i][1]))
+					else:
+						self.depth_xen.append(float(self.xen_data[i][1]))
 
-			if MATE.z_xen_method_2 == '0':
-				self.T_xen.append(float(self.xen_data[i][0]))
-			else:
-				self.T_xen.append(float(self.xen_data[i][0]) + 273.0)
+					if MATE.z_xen_method_2 == '0':
+						self.T_xen.append(float(self.xen_data[i][0]))
+					else:
+						self.T_xen.append(float(self.xen_data[i][0]) + 273.0)
+				except ValueError:
+					QMessageBox.about(self,'Warning!','There is an element in the file that can not be transformed into floating number...')
+					return
+		except IndexError:
+			QMessageBox.about(self,'Warning!','Structure of the csv file seems to be wrong.')
+			return
 
+		QMessageBox.about(self,'Success',str(self.xen_pt_file_name[0]) + ' file was succesfully imported to the program!')
 		self.xenolith_existence = True
 
 	def geotherm_open(self):
@@ -1089,6 +1118,14 @@ class MATE(QMainWindow):
 			self.ol_calib_pop.setGeometry(QtCore.QRect(100, 100, 100, 100))
 		self.ol_calib_pop.show()
 
+
+	def ol_sol_calib_popup(self):
+
+		if self.ol_sol_calib_pop is None:
+			self.ol_sol_calib_pop = OL_CALIB_SOL_POP()
+			self.ol_sol_calib_pop.setGeometry(QtCore.QRect(100, 100, 100, 100))
+		self.ol_sol_calib_pop.show()
+
 	def add_water_measurement(self):
 
 		if self.add_water_pop is None:
@@ -1107,7 +1144,7 @@ class MATE(QMainWindow):
 
 		if self.dry_cond_popup is None:
 			self.dry_popup = DRY_POP()
-			self.dry_popup.setGeometry(QtCore.QRect(100, 100, 100, 100))
+			self.dry_popup.setGeometry(QtCore.QRect(100, 200, 300, 100))
 		self.dry_popup.show()
 
 	def phase_mixing_popup(self):
@@ -2059,7 +2096,13 @@ class MATE(QMainWindow):
 
 		self.ol_sol_calibration = self.ol_sol_wcalib[MATE.sol_method]
 
-		self.FTIR_correction(min_idx = 0,sol_calc = True)
+		if MATE.ol_calib != MATE.ol_sol_calib:
+			QMessageBox.about(self, "WARNING!","Chosen water calibration for conductivity and solubility models are not the same. Be cautious about your results!")
+
+		if MATE.ol_sol_calib == 3:
+			self.correction_factor_ol = 1.0
+		else:
+			self.FTIR_correction(min_idx = 0,sol_calc = 0)
 
 		self.max_ol_h2o = self.max_ol_h2o * self.correction_factor_ol
 
@@ -2166,53 +2209,85 @@ class MATE(QMainWindow):
 		#A function that corrects the water content to desired calibration. Numbers are taken from Demouchy and Bolfan-Casanova (2016, Lithos)
 
 		if min_idx == 0:
-			if sol_calc == True:
+			if sol_calc == 0:
 				calib_object = self.ol_sol_calibration
-			elif sol_calc == False:
+				calib_object_2 = MATE.ol_sol_calib
+			elif sol_calc == 1:
 				calib_object = self.w_calib[0][MATE.ol_cond_selection]
+				calib_object_2 = MATE.ol_calib
+			elif sol_calc == 2:
+				calib_object = self.ol_calib_GB[MATE.GB_ol_select]
+				calib_object_2 = MATE.ol_calib
 
-			if MATE.ol_calib == 0:
-
-				if calib_object == 0:
-
-					self.correction_factor_ol = 1.9 #Paterson to Withers
-
-				elif calib_object == 1:
-
-					self.correction_factor_ol = 0.633 #Bell to Withers from Demouchy and Bolfan Casanova
-
-				else:
-
-					self.correction_factor_ol = 1.0 #Withers to Withers
-
-			elif MATE.ol_calib == 1:
+			if calib_object_2 == 0:
 
 				if calib_object == 0:
 
-					self.correction_factor_ol = 3.0 #Paterson to Bell
+					if sol_calc == 2:
+						self.correction_factor_GB = self.pat2with
+					else:
+						self.correction_factor_ol = self.pat2with #Paterson to Withers
 
 				elif calib_object == 1:
 
-					self.correction_factor_ol = 1.0 #Bell to Bell
+					if sol_calc == 2:
+						self.correction_factor_GB = self.bell2with
+					else:
+						self.correction_factor_ol = self.bell2with #Bell to Withers from Demouchy and Bolfan Casanova
 
 				else:
 
-					self.correction_factor_ol = 1.5 #Withers to Bell
+					if sol_calc == 2:
+						self.correction_factor_GB = 1.0
+					else:
+						self.correction_factor_ol = 1.0 #Withers to Withers
 
-
-			elif MATE.ol_calib == 2:
+			elif calib_object_2 == 1:
 
 				if calib_object == 0:
 
-					self.correction_factor_ol = 1.0 #Paterson to paterson
+					if sol_calc == 2:
+						self.correction_factor_GB = self.pat2bell
+					else:
+						self.correction_factor_ol = self.pat2bell #Paterson to Bell
 
 				elif calib_object == 1:
 
-					self.correction_factor_ol = 0.33 #Bell to Paterson
+					if sol_calc == 2:
+						self.correction_factor_GB = 1.0
+					else:
+						self.correction_factor_ol = 1.0 #Bell to Bell
 
 				else:
 
-					self.correction_factor_ol = 0.5 #Withers to Paterson
+					if sol_calc == 2:
+						self.correction_factor_GB = self.with2bell
+					else:
+						self.correction_factor_ol = self.with2bell #Withers to Bell
+
+
+			elif calib_object_2 == 2:
+
+				if calib_object == 0:
+
+					if sol_calc == 2:
+						self.correction_factor_GB = 1.0
+					else:
+						self.correction_factor_ol = 1.0 #Paterson to paterson
+
+				elif calib_object == 1:
+
+					if sol_calc == 2:
+						self.correction_factor_GB = self.bell2path
+					else:
+						self.correction_factor_ol = self.bell2path #Bell to Paterson
+
+				else:
+
+					if sol_calc == 2:
+						self.correction_factor_GB = self.with2pat
+					else:
+						self.correction_factor_ol = self.with2pat #Withers to Paterson
 
 		if min_idx == 1:
 
@@ -2233,7 +2308,17 @@ class MATE(QMainWindow):
 
 				if (self.w_calib[idx_px][opx_prox] == 0):
 
-					self.correction_factor_pxgt = 3.0
+					self.correction_factor_pxgt = self.pat2bell95
+
+				else:
+
+					self.correction_factor_pxgt = 1.0
+
+			elif MATE.px_calib == 1:
+
+				if (self.w_calib[idx_px][opx_prox] == 1):
+
+					self.correction_factor_pxgt = self.bell952pat
 
 				else:
 
@@ -2258,7 +2343,17 @@ class MATE(QMainWindow):
 
 				if (self.w_calib[idx_px][cpx_prox] == 0):
 
-					self.correction_factor_pxgt = 3.0
+					self.correction_factor_pxgt = self.pat2bell95
+
+				else:
+
+					self.correction_factor_pxgt = 1.0
+
+			elif MATE.px_calib == 1:
+
+				if (self.w_calib[idx_px][cpx_prox] == 1):
+
+					self.correction_factor_pxgt = self.bell952pat
 
 				else:
 
@@ -2270,7 +2365,17 @@ class MATE(QMainWindow):
 
 				if (self.w_calib[3][MATE.gt_cond_selection] == 0):
 
-					self.correction_factor_pxgt = 3.0
+					self.correction_factor_pxgt = self.pat2bell95
+
+				else:
+
+					self.correction_factor_pxgt = 1.0
+
+			elif MATE.px_calib == 1:
+
+				if (self.w_calib[3][MATE.gt_cond_selection] == 1):
+
+					self.correction_factor_pxgt = self.bell952pat
 
 				else:
 
@@ -2496,7 +2601,10 @@ class MATE(QMainWindow):
 
 	def calculate_ol_conductivity(self):
 
-		self.FTIR_correction(min_idx = 0,sol_calc = False)
+		if MATE.ol_calib != 3:
+			self.FTIR_correction(min_idx = 0,sol_calc = 1)
+		else:
+			self.correction_factor_ol = 1.0
 
 		def oriented_cond_ol(idx):
 
@@ -2606,7 +2714,7 @@ class MATE(QMainWindow):
 
 		elif (MATE.type[0][MATE.ol_cond_selection] == '4') or (MATE.type[0][MATE.ol_cond_selection] == '5'):
 
-			h2o_h_ol = (self.avog * (self.rho_ol*1e3) * (self.ol_h2o/1e4)) / 153.3 #Conversion from Jones (2016)
+			h2o_h_ol = (self.avog * (self.rho_ol*1e3) * (self.ol_h2o/(1e4))) / 153.3 #Conversion from Jones (2016)
 
 			if (MATE.type[0][MATE.ol_cond_selection] == '5'):
 
@@ -2630,30 +2738,39 @@ class MATE(QMainWindow):
 				elif (MATE.type[0][MATE.ol_cond_selection] == '5'):
 					ol_wet_diff_function = MATE.name[0][MATE.ol_cond_selection][MATE.name[0][MATE.ol_cond_selection].rfind('+')+1:]
 
-			DH_max,DH_min,DH = eval(ol_wet_diff_function + '(T = self.T,ol_h2o = self.ol_h2o)')
-
+			if (MATE.type[0][MATE.ol_cond_selection] == '4'):
+				DH_max,DH_min,DH = eval(ol_wet_diff_function + '(T = self.T,ol_h2o = ((self.ol_h2o)/self.correction_factor_ol))')
+			elif (MATE.type[0][MATE.ol_cond_selection] == '5'):
+				DH_max,DH_min,DH = eval(ol_wet_diff_function + '(T = self.T,ol_h2o = ((self.ol_h2o*(1-MATE.D_gb))/self.correction_factor_ol))')
 			#Dry conductivity + Nernst-Einstein equation
 			if (MATE.type[0][MATE.ol_cond_selection] == '4'):
 
 				self.ol_cond_max = self.conductivity_dry(0,MATE.ol_dry_selection)[0] +\
-				((DH_max * h2o_h_ol * (self.el_q**2.0)) / (self.boltz*self.T))
+				((DH_max * (h2o_h_ol/self.correction_factor_ol) * (self.el_q**2.0)) / (self.boltz*self.T))
 				self.ol_cond_min = self.conductivity_dry(0,MATE.ol_dry_selection)[1] +\
-				((DH_min * h2o_h_ol * (self.el_q**2.0)) / (self.boltz*self.T))
+				((DH_min * (h2o_h_ol/self.correction_factor_ol)  * (self.el_q**2.0)) / (self.boltz*self.T))
 				self.ol_cond = self.conductivity_dry(0,MATE.ol_dry_selection)[2] +\
-				((DH * h2o_h_ol * (self.el_q**2.0)) / (self.boltz*self.T))
+				((DH * (h2o_h_ol/self.correction_factor_ol) * (self.el_q**2.0)) / (self.boltz*self.T))
 
 			elif (MATE.type[0][MATE.ol_cond_selection] == '5'):
-
+				if MATE.ol_calib != 3:
+					self.FTIR_correction(min_idx = 0,sol_calc = 2)
+				else:
+					self.correction_factor_GB = 1.0
+					self.correction_factor_ol = 1.0
 				self.ol_cond_max = self.conductivity_dry(0,MATE.ol_dry_selection)[0] +\
-				((DH_max + (MATE.D_gb * (3*self.delta/self.ol_gs) * D_GB_ol_max)) * h2o_h_ol * (self.el_q**2.0)) / (self.boltz*self.T)
+				(((DH_max/self.correction_factor_ol) + (MATE.D_gb * (1.0/self.correction_factor_GB) * (3*self.delta/self.ol_gs) * D_GB_ol_max)) * h2o_h_ol * (self.el_q**2.0)) / (self.boltz*self.T)
 				self.ol_cond_min = self.conductivity_dry(0,MATE.ol_dry_selection)[1] +\
-				 ((DH_min + (MATE.D_gb * (3*self.delta/self.ol_gs) * D_GB_ol_min)) * h2o_h_ol * (self.el_q**2.0)) / (self.boltz*self.T)
+				 (((DH_min/self.correction_factor_ol) + (MATE.D_gb * (1.0/self.correction_factor_GB) * (3*self.delta/self.ol_gs) * D_GB_ol_min)) * h2o_h_ol * (self.el_q**2.0)) / (self.boltz*self.T)
 				self.ol_cond = self.conductivity_dry(0,MATE.ol_dry_selection)[2] +\
-				((DH + (MATE.D_gb * (3*self.delta/self.ol_gs) * D_GB_ol)) * h2o_h_ol * (self.el_q**2.0)) / (self.boltz*self.T)
+				(((DH/self.correction_factor_ol) + (MATE.D_gb * (1.0/self.correction_factor_GB) * (3*self.delta/self.ol_gs) * D_GB_ol)) * h2o_h_ol * (self.el_q**2.0)) / (self.boltz*self.T)
 
 	def calculate_opx_conductivity(self):
 
-		self.FTIR_correction(min_idx = 1,sol_calc = False)
+		if MATE.px_calib != 2:
+			self.FTIR_correction(min_idx = 1,sol_calc = 1)
+		else:
+			self.correction_factor_pxgt = 1.0
 
 		if MATE.px_cond_method == 1:
 
@@ -2776,7 +2893,7 @@ class MATE(QMainWindow):
 
 			elif (MATE.type[0][MATE.opx_cond_selection] == '4'):
 
-				h2o_h_opx = (self.avog * (self.rho_opx*1e3) * (self.opx_h2o/1e4)) / 200.78 #Conversion from Jones (2016)
+				h2o_h_opx = (self.avog * (self.rho_opx*1e3) * (self.opx_h2o/(1e4*self.correction_factor_pxgt))) / 200.78 #Conversion from Jones (2016)
 
 				if ('*' in MATE.name[1][MATE.opx_cond_selection]) == True:
 
@@ -2804,7 +2921,10 @@ class MATE(QMainWindow):
 
 	def calculate_cpx_conductivity(self):
 
-		self.FTIR_correction(min_idx = 2,sol_calc = False)
+		if MATE.px_calib != 2:
+			self.FTIR_correction(min_idx = 2,sol_calc = 1)
+		else:
+			self.correction_factor_pxgt = 1.0
 
 		if MATE.px_cond_method == 1:
 
@@ -2928,7 +3048,7 @@ class MATE(QMainWindow):
 
 			elif MATE.type[2][MATE.cpx_cond_selection] == '4':
 
-				h2o_h_cpx = (self.avog * (self.rho_cpx*1e3) * (self.cpx_h2o/1e4)) / 216.55 #Conversion from Jones (2016)
+				h2o_h_cpx = (self.avog * (self.rho_cpx*1e3) * (self.cpx_h2o/(1e4*self.correction_factor_pxgt))) / 216.55 #Conversion from Jones (2016)
 
 				if ('*' in MATE.name[2][MATE.cpx_cond_selection]) == True:
 
@@ -2957,7 +3077,10 @@ class MATE(QMainWindow):
 
 	def calculate_gt_conductivity(self):
 
-		self.FTIR_correction(min_idx = 3,sol_calc = False)
+		if MATE.px_calib != 2:
+			self.FTIR_correction(min_idx = 3,sol_calc = 1)
+		else:
+			self.correction_factor_pxgt = 1.0
 
 		def oriented_cond_gt(idx = None):
 
@@ -3068,7 +3191,7 @@ class MATE(QMainWindow):
 
 		elif (MATE.type[3][MATE.gt_cond_selection] == '4'):
 
-			h2o_h_gt = (self.avog * (self.rho_gt*1e3) * (self.gt_h2o/1e4)) / 425.0 #Conversion from Jones (2016)
+			h2o_h_gt = (self.avog * (self.rho_gt*1e3) * (self.gt_h2o/(1e4*self.correction_factor_pxgt))) / 425.0 #Conversion from Jones (2016)
 
 			if ('*' in MATE.name[3][MATE.gt_cond_selection]) == True:
 
@@ -3516,27 +3639,30 @@ class MATE(QMainWindow):
 		MATE.station_name = []
 		MATE.station_posx = []
 		MATE.station_posy = []
+		try:
+			MATE.mc_lat = float(self.ModEM_dat_data[6][1])
+			MATE.mc_lon = float(self.ModEM_dat_data[6][2])
 
-		MATE.mc_lat = float(self.ModEM_dat_data[6][1])
-		MATE.mc_lon = float(self.ModEM_dat_data[6][2])
+			dash_found = False
 
-		dash_found = False
+			for row in range(8,len(self.ModEM_dat_data)):
+			    if self.ModEM_dat_data[row][0] == '#' :
+			        limitlines = row-1
+			        dash_found = True
 
-		for row in range(8,len(self.ModEM_dat_data)):
-		    if self.ModEM_dat_data[row][0] == '#' :
-		        limitlines = row-1
-		        dash_found = True
+			if dash_found == False:
+				limitlines = len(self.ModEM_dat_data)
 
-		if dash_found == False:
-			limitlines = len(self.ModEM_dat_data)
-
-		for row in range(8,limitlines):
-			if self.ModEM_dat_data[row][1] != self.ModEM_dat_data[row-1][1]:
-				MATE.station_name.append(self.ModEM_dat_data[row][1])
-				MATE.station_lat.append(float(self.ModEM_dat_data[row][2]))
-				MATE.station_lon.append(float(self.ModEM_dat_data[row][3]))
-				MATE.station_posx.append(float(self.ModEM_dat_data[row][4]))
-				MATE.station_posy.append(float(self.ModEM_dat_data[row][5]))
+			for row in range(8,limitlines):
+				if self.ModEM_dat_data[row][1] != self.ModEM_dat_data[row-1][1]:
+					MATE.station_name.append(self.ModEM_dat_data[row][1])
+					MATE.station_lat.append(float(self.ModEM_dat_data[row][2]))
+					MATE.station_lon.append(float(self.ModEM_dat_data[row][3]))
+					MATE.station_posx.append(float(self.ModEM_dat_data[row][4]))
+					MATE.station_posy.append(float(self.ModEM_dat_data[row][5]))
+		except IndexError:
+			QMessageBox.about(self,'Warning!','Structure of the csv file seems to be wrong.')
+			return
 
 		self.ModEM_dat_read = True
 		MATE.res_profile_plot_list = []
@@ -3548,6 +3674,8 @@ class MATE(QMainWindow):
 		for i in range(0,len(MATE.station_name)):
 
 			MATE.st_item_list.append(str(i) + ' - ' + MATE.station_name[i])
+
+		QMessageBox.about(self,'Success',str(self.ModEM_data_file_name[0]) + ' file was succesfully imported to the program!')
 
 	def read_ModEM_rho(self):
 
@@ -3646,6 +3774,8 @@ class MATE(QMainWindow):
 		self.ModEM_model_read = True
 		self.csv_MT_read = False
 
+		QMessageBox.about(self,'Success',str(self.ModEM_model_file_name[0]) + ' file was succesfully imported to the program!')
+
 	def read_csv_MT_file(self):
 
 		self.csv_mt_data = self.read_csv(str(self.csv_MT_file_name[0]),delim = ',')
@@ -3655,12 +3785,19 @@ class MATE(QMainWindow):
 		MATE.res_profile_max = []
 		MATE.res_profile_min = []
 
-		for i in range(1,len(self.csv_mt_data)):
-
-			MATE.z_depth.append(float(self.csv_mt_data[i][0]))
-			MATE.res_profile.append(float(self.csv_mt_data[i][1]))
-			MATE.res_profile_max.append(float(self.csv_mt_data[i][2]))
-			MATE.res_profile_min.append(float(self.csv_mt_data[i][3]))
+		try:
+			for i in range(1,len(self.csv_mt_data)):
+				try:
+					MATE.z_depth.append(float(self.csv_mt_data[i][0]))
+					MATE.res_profile.append(float(self.csv_mt_data[i][1]))
+					MATE.res_profile_max.append(float(self.csv_mt_data[i][2]))
+					MATE.res_profile_min.append(float(self.csv_mt_data[i][3]))
+				except ValueError:
+					QMessageBox.about(self,'Warning!','There is an element in the file that can not be transformed into floating number...')
+					return
+		except IndexError:
+			QMessageBox.about(self,'Warning!','Structure of the csv file seems to be wrong.')
+			return
 
 		if MATE.csv_file_selection == 0:
 
@@ -3699,6 +3836,9 @@ class MATE(QMainWindow):
 		self.csv_MT_read = True
 		self.ModEM_dat_read = False
 		self.ModEM_model_read = False
+
+		QMessageBox.about(self,'Success',str(self.csv_MT_file_name[0]) + ' file was succesfully imported to the program!')
+
 
 	def MT_model_rms(self):
 
@@ -4190,7 +4330,11 @@ class MATE(QMainWindow):
 			self.linestyle_list.append(MATE.condlinestyle_list[MATE.condlinestyle_select])
 			self.linewidth_list.append(MATE.condlinewidth)
 
-		color_list_cond = ['#179c9a','#CB3026','#27A411','#B926CB','#D09605','#05D0AE','#D005CA','#050ED0']
+		if len(self.bulk_cond_list) <= 8:
+			self.color_list_cond = ['#179c9a','#CB3026','#27A411','#B926CB','#D09605','#05D0AE','#D005CA','#050ED0']
+		else:
+			r_color = lambda: random.randint(0,255)
+			self.color_list_cond.append('#%02X%02X%02X' % (r_color(),r_color(),r_color()))
 
 		if method == 'draw':
 			self.ax5 = plt.subplot2grid((16,16),(0,11), rowspan = 16,colspan = 4, fig = self.fig)
@@ -4236,6 +4380,10 @@ class MATE(QMainWindow):
 			#r_color = lambda: random.randint(0,255)
 			#self.color_list_csv.append('#%02X%02X%02X' % (r_color(),r_color(),r_color()))
 			self.color_list_csv = ['#825F77','#D55672','k','#1B4079']
+			if len(MATE.z_depth_plot_list) > 4:
+				r_color = lambda: random.randint(0,255)
+				for i in range(0,len(MATE.z_depth_plot_list)):
+					self.color_list_csv.append('#%02X%02X%02X' % (r_color(),r_color(),r_color()))
 			for csvmt in range(0,len(MATE.res_profile_plot_list)):
 				self.ax5.fill_betweenx(MATE.z_depth_plot_list[csvmt],MATE.res_profile_min_plot_list[csvmt],MATE.res_profile_max_plot_list[csvmt],color = self.color_list_csv[csvmt],alpha = 0.3)
 				self.ax5.plot(MATE.res_profile_plot_list[csvmt],MATE.z_depth_plot_list[csvmt],'--',linewidth = 2.0,color = self.color_list_csv[csvmt])
@@ -4243,12 +4391,12 @@ class MATE(QMainWindow):
 		if boundaries == False:
 			for i in range(0,len(self.bulk_cond_min_list)):
 				if MATE.condrange_method == 0:
-					self.ax5.fill_betweenx(self.depth[self.idx_moho:]/1000.0,1.0/self.bulk_cond_min_list[i][self.idx_moho:],1.0/self.bulk_cond_max_list[i][self.idx_moho:], color = color_list_cond[i],alpha = 0.25)
-				self.ax5.plot(1.0/self.bulk_cond_list[i][self.idx_moho:],self.depth[self.idx_moho:]/1000.0,color = color_list_cond[i],linestyle = self.linestyle_list[i],alpha = 0.9,linewidth = self.linewidth_list[i])
+					self.ax5.fill_betweenx(self.depth[self.idx_moho:]/1000.0,1.0/self.bulk_cond_min_list[i][self.idx_moho:],1.0/self.bulk_cond_max_list[i][self.idx_moho:], color = self.color_list_cond[i],alpha = 0.25)
+				self.ax5.plot(1.0/self.bulk_cond_list[i][self.idx_moho:],self.depth[self.idx_moho:]/1000.0,color = self.color_list_cond[i],linestyle = self.linestyle_list[i],alpha = 0.9,linewidth = self.linewidth_list[i])
 		else:
 			if MATE.condrange_method == 0:
-				self.ax5.fill_betweenx(self.depth[self.idx_moho:]/1000.0, 1.0/self.upper_uncertainty_cond[self.idx_moho:],1.0/self.lower_uncertainty_cond[self.idx_moho:], color = color_list_cond[0],alpha = 0.25)
-			self.ax5.fill_betweenx(self.depth[self.idx_moho:]/1000.0, 1.0/self.upper_bound_cond[self.idx_moho:],1.0/self.lower_bound_cond[self.idx_moho:], color = color_list_cond[0],alpha = 0.25)
+				self.ax5.fill_betweenx(self.depth[self.idx_moho:]/1000.0, 1.0/self.upper_uncertainty_cond[self.idx_moho:],1.0/self.lower_uncertainty_cond[self.idx_moho:], color = self.color_list_cond[0],alpha = 0.25)
+			self.ax5.fill_betweenx(self.depth[self.idx_moho:]/1000.0, 1.0/self.upper_bound_cond[self.idx_moho:],1.0/self.lower_bound_cond[self.idx_moho:], color = self.color_list_cond[0],alpha = 0.25)
 
 		self.ax5.set_xlabel(r'$Resistivity \, (\Omega m)$', fontsize = 9)
 		self.ax5.set_ylim((MATE.lab / 1000.0) + 25.0, 0.0)
@@ -4422,11 +4570,20 @@ class MATE(QMainWindow):
 		else:
 
 			if self.drawn != 0:
-				self.ax0.remove()
+				try:
+					self.ax0.remove()
+				except KeyError:
+					pass
 			if self.drawn_1 !=0:
-				self.ax2.remove()
+				try:
+					self.ax2.remove()
+				except KeyError:
+					pass
 			if self.drawn_11 !=0:
-				self.ax1.remove()
+				try:
+					self.ax1.remove()
+				except KeyError:
+					pass
 
 			self.adjust_composition()
 			#Create error if the total mineralogy is indifferent to 1 at any layer.
@@ -4495,6 +4652,19 @@ class MATE(QMainWindow):
 
 		if (self.data_existence == True) and (self.geotherm_existence == True):
 
+			if MATE.al_method == '1':
+				if (MATE.d_opx_type[MATE.opx_part_select] == '1') or (MATE.d_opx_type[MATE.opx_part_select] == '2'):
+					QMessageBox.about(self,'WARNING!','You have to enter a new type of partitioning coefficient from before since the Al-method is disabled.')
+					self.drawn_4 = 0
+					return
+				if (MATE.d_cpx_type[MATE.opx_part_select] == '1') or (MATE.d_cpx_type[MATE.opx_part_select] == '2'):
+					QMessageBox.about(self,'WARNING!','You have to enter a new type of partitioning coefficient from before since the Al-method is disabled.')
+					self.drawn_4 = 0
+					return
+				if (MATE.d_px_type[MATE.opx_part_select] == '1') or (MATE.d_px_type[MATE.opx_part_select] == '2'):
+					QMessageBox.about(self,'WARNING!','You have to enter a new type of partitioning coefficient from before since the Al-method is disabled.')
+					self.drawn_4 = 0
+					return
 			self.calculate_water()
 			if MATE.sol_plot == True:
 				self.solubility_ol()
@@ -4948,7 +5118,7 @@ class G_POP(QWidget):
 					self.surf_hw_textbox.setText(str(text))
 					MATE.q_0 = float(text)
 				except ValueError:
-					QMessageBox.about(self,"Warning!","Please enter a value that can be conveted to floating number.")
+					QMessageBox.about(self,"Warning!","Please enter a value that can be converted to floating number.")
 		else:
 			QMessageBox.about(self,"Warning!",self.geoth_message)
 	def get_heat_prod_01(self):
@@ -4961,7 +5131,7 @@ class G_POP(QWidget):
 					self.surf_temp_textbox.setText(str(text))
 					MATE.T_0 = float(text) + 273.0
 				except ValueError:
-					QMessageBox.about(self,"Warning!","Please enter a value that can be conveted to floating number.")
+					QMessageBox.about(self,"Warning!","Please enter a value that can be converted to floating number.")
 		else:
 			QMessageBox.about(self,"Warning!",self.geoth_message)
 
@@ -4975,7 +5145,7 @@ class G_POP(QWidget):
 					self.heat_prod_textbox.setText(str(text))
 					MATE.A_upper_crust = float(text)
 				except ValueError:
-					QMessageBox.about(self,"Warning!","Please enter a value that can be conveted to floating number.")
+					QMessageBox.about(self,"Warning!","Please enter a value that can be converted to floating number.")
 		else:
 			QMessageBox.about(self,"Warning!",self.geoth_message)
 
@@ -4988,7 +5158,7 @@ class G_POP(QWidget):
 					self.upper_crst_depth.setText(str(text))
 					MATE.hr = float(text) * 1000.0
 				except ValueError:
-					QMessageBox.about(self,"Warning!","Please enter a value that can be conveted to floating number.")
+					QMessageBox.about(self,"Warning!","Please enter a value that can be converted to floating number.")
 		else:
 			QMessageBox.about(self,"Warning!",self.geoth_message)
 
@@ -5046,14 +5216,23 @@ class G_POP(QWidget):
 		MATE.depth_geotherm = []
 		MATE.T_geotherm = []
 
-		for i in range(1,len(self.geotherm_data)):
-			MATE.depth_geotherm.append(float(self.geotherm_data[i][1]))
+		try:
+			try:
+				for i in range(1,len(self.geotherm_data)):
+					MATE.depth_geotherm.append(float(self.geotherm_data[i][1]))
 
-			if MATE.geotherm_inp_temp_method == '0':
-				MATE.T_geotherm.append(float(self.geotherm_data[i][0]))
-			else:
-				MATE.T_geotherm.append(float(self.geotherm_data[i][0]) + 273.0)
+					if MATE.geotherm_inp_temp_method == '0':
+						MATE.T_geotherm.append(float(self.geotherm_data[i][0]))
+					else:
+						MATE.T_geotherm.append(float(self.geotherm_data[i][0]) + 273.0)
+			except ValueError:
+				QMessageBox.about(self,'Warning!','There is an element in the file that can not be transformed into floating number...')
+				return
+		except IndexError:
+			QMessageBox.about(self,'Warning!','Structure of the csv file seems to be wrong.')
+			return
 
+		QMessageBox.about(self,'Success',str(self.geotherm_file_name[0]) + ' file was succesfully imported to the program!')
 		self.geotherm_input_existence = True
 
 	def gpop_info_box(self):
@@ -5349,7 +5528,7 @@ class DEPTH_FIX(QWidget):
 				self.moho_depth_textbox.setText(str(text))
 				MATE.moho = float(text) * 1000.0
 			except ValueError:
-				QMessageBox.about(self,"Warning!","Please enter a value that can be conveted to floating number.")
+				QMessageBox.about(self,"Warning!","Please enter a value that can be converted to floating number.")
 
 
 	def get_heat_prod_6(self):
@@ -5364,7 +5543,7 @@ class DEPTH_FIX(QWidget):
 					self.lab_depth_textbox.setText(str(text))
 					MATE.lab = float(text) * 1000.0
 			except ValueError:
-				QMessageBox.about(self,"Warning!","Please enter a value that can be conveted to floating number.")
+				QMessageBox.about(self,"Warning!","Please enter a value that can be converted to floating number.")
 
 class PART_POP(QWidget):
 
@@ -5692,7 +5871,7 @@ class XEN_POP(QWidget):
 				self.xen_btn_3_txt.setText(str(text))
 				MATE.xen_temp_err = float(text)
 			except ValueError:
-				QMessageBox.about(self,"Warning!","Please enter a value that can be conveted to floating number.")
+				QMessageBox.about(self,"Warning!","Please enter a value that can be converted to floating number.")
 
 	def get_xen_pressure_uncert(self):
 
@@ -5703,7 +5882,7 @@ class XEN_POP(QWidget):
 				self.xen_btn_4_txt.setText(str(text))
 				MATE.xen_pressure_err = float(text)
 			except ValueError:
-				QMessageBox.about(self,"Warning!","Please enter a value that can be conveted to floating number.")
+				QMessageBox.about(self,"Warning!","Please enter a value that can be converted to floating number.")
 
 	def xen_info(self):
 
@@ -5826,8 +6005,6 @@ class FUG_POP(QWidget):
 			if b.isChecked() == True:
 				MATE.o2_buffer = 4
 
-
-
 class OL_CALIB_POP(QWidget):
 
 	def __init__(self):
@@ -5836,10 +6013,12 @@ class OL_CALIB_POP(QWidget):
 
 		calib_layout = QVBoxLayout(self)
 
+		self.calib_radio_0 = QRadioButton("Default")
 		self.calib_radio_1 = QRadioButton("Withers2012")
 		self.calib_radio_2 = QRadioButton("Bell2003")
 		self.calib_radio_3 = QRadioButton("Paterson1980")
 
+		self.calib_radio_0.toggled.connect(lambda:self.btnstate_calib(self.calib_radio_0))
 		self.calib_radio_1.toggled.connect(lambda:self.btnstate_calib(self.calib_radio_1))
 		self.calib_radio_2.toggled.connect(lambda:self.btnstate_calib(self.calib_radio_2))
 		self.calib_radio_3.toggled.connect(lambda:self.btnstate_calib(self.calib_radio_3))
@@ -5850,10 +6029,13 @@ class OL_CALIB_POP(QWidget):
 			self.calib_radio_2.setChecked(True)
 		elif MATE.ol_calib == 2:
 			self.calib_radio_3.setChecked(True)
+		elif MATE.ol_calib == 3:
+			self.calib_radio_0.setChecked(True)
 
-		calib_layout.addWidget(self.calib_radio_1)
+		calib_layout.addWidget(self.calib_radio_0)
 		calib_layout.addWidget(self.calib_radio_2)
 		calib_layout.addWidget(self.calib_radio_3)
+		calib_layout.addWidget(self.calib_radio_1)
 
 		self.ol_calib_info = QPushButton('Info')
 		self.ol_calib_info.clicked.connect(self.ol_info_box)
@@ -5871,6 +6053,66 @@ class OL_CALIB_POP(QWidget):
 		elif b.text() == "Paterson1980":
 			if b.isChecked() == True:
 				MATE.ol_calib = 2
+		elif b.text() == "Default":
+			if b.isChecked() == True:
+				MATE.ol_calib = 3
+
+	def ol_info_box(self):
+
+		QMessageBox.about(self, "Info on this", "This preferential settings relates to the selection of fixes related to water-calibrations."+
+		" Calibration method selected here affects the water-uptake of conductivity models and calculated solubility models.")
+
+class OL_CALIB_SOL_POP(QWidget):
+
+	def __init__(self):
+
+		QWidget.__init__(self)
+
+		calib_layout = QVBoxLayout(self)
+
+		self.calib_radio_0 = QRadioButton("Default")
+		self.calib_radio_1 = QRadioButton("Withers2012")
+		self.calib_radio_2 = QRadioButton("Bell2003")
+		self.calib_radio_3 = QRadioButton("Paterson1980")
+
+		self.calib_radio_0.toggled.connect(lambda:self.btnstate_calib(self.calib_radio_0))
+		self.calib_radio_1.toggled.connect(lambda:self.btnstate_calib(self.calib_radio_1))
+		self.calib_radio_2.toggled.connect(lambda:self.btnstate_calib(self.calib_radio_2))
+		self.calib_radio_3.toggled.connect(lambda:self.btnstate_calib(self.calib_radio_3))
+
+		if MATE.ol_sol_calib == 0:
+			self.calib_radio_1.setChecked(True)
+		elif MATE.ol_sol_calib == 1:
+			self.calib_radio_2.setChecked(True)
+		elif MATE.ol_sol_calib == 2:
+			self.calib_radio_3.setChecked(True)
+		elif MATE.ol_sol_calib == 3:
+			self.calib_radio_0.setChecked(True)
+
+		calib_layout.addWidget(self.calib_radio_0)
+		calib_layout.addWidget(self.calib_radio_2)
+		calib_layout.addWidget(self.calib_radio_3)
+		calib_layout.addWidget(self.calib_radio_1)
+
+		self.ol_calib_info = QPushButton('Info')
+		self.ol_calib_info.clicked.connect(self.ol_info_box)
+
+		calib_layout.addWidget(self.ol_calib_info)
+
+	def btnstate_calib(self,b):
+
+		if b.text() == "Withers2012":
+			if b.isChecked() == True:
+				MATE.ol_sol_calib = 0
+		elif b.text() == "Bell2003":
+			if b.isChecked() == True:
+				MATE.ol_sol_calib = 1
+		elif b.text() == "Paterson1980":
+			if b.isChecked() == True:
+				MATE.ol_sol_calib = 2
+		elif b.text() == "Default":
+			if b.isChecked() == True:
+				MATE.ol_sol_calib = 3
 
 	def ol_info_box(self):
 
@@ -5885,9 +6127,11 @@ class PX_CALIB_POP(QWidget):
 
 		px_calib_layout = QVBoxLayout(self)
 
+		self.px_calib_radio_0 = QRadioButton("Default")
 		self.px_calib_radio_1 = QRadioButton("Bell1995")
 		self.px_calib_radio_2 = QRadioButton("Paterson1980")
 
+		self.px_calib_radio_0.toggled.connect(lambda:self.btnstate_px_calib(self.px_calib_radio_0))
 		self.px_calib_radio_1.toggled.connect(lambda:self.btnstate_px_calib(self.px_calib_radio_1))
 		self.px_calib_radio_2.toggled.connect(lambda:self.btnstate_px_calib(self.px_calib_radio_2))
 
@@ -5895,7 +6139,10 @@ class PX_CALIB_POP(QWidget):
 			self.px_calib_radio_1.setChecked(True)
 		elif MATE.px_calib == 1:
 			self.px_calib_radio_2.setChecked(True)
+		elif MATE.px_calib == 2:
+			self.px_calib_radio_0.setChecked(True)
 
+		px_calib_layout.addWidget(self.px_calib_radio_0)
 		px_calib_layout.addWidget(self.px_calib_radio_1)
 		px_calib_layout.addWidget(self.px_calib_radio_2)
 
@@ -5903,7 +6150,6 @@ class PX_CALIB_POP(QWidget):
 		self.px_calib_info.clicked.connect(self.px_info_box)
 
 		px_calib_layout.addWidget(self.px_calib_info)
-
 
 	def btnstate_px_calib(self,b):
 
@@ -5913,6 +6159,9 @@ class PX_CALIB_POP(QWidget):
 		elif b.text() == "Paterson1980":
 			if b.isChecked() == True:
 				MATE.px_calib = 1
+		elif b.text() == "Default":
+			if b.isChecked() == True:
+				MATE.px_calib = 2
 
 	def px_info_box(self):
 
@@ -7026,7 +7275,7 @@ class GSIZE_POP(QWidget):
 				self.part_gb_btn_text.setText(str(text))
 				MATE.D_gb = float(text)
 			except ValueError:
-				QMessageBox.about(self,"Warning!","Please enter a value that can be conveted to floating number.")
+				QMessageBox.about(self,"Warning!","Please enter a value that can be converted to floating number.")
 
 	def get_ol_gb(self):
 
@@ -7091,18 +7340,29 @@ class ADD_WATER_POP(QWidget):
 			MATE.P_depth_water = []
 			MATE.H_water = []
 			MATE.H_water_err = []
-			for i in range(1,len(data_text)):
-				MATE.P_depth_water.append(float(data_text[i][0]))
-				MATE.H_water.append(float(data_text[i][1]))
-				if len(data_text[1]) != 2:
-					MATE.H_water_err.append(float(data_text[i][2]))
-				else:
-					MATE.H_water_err.append(0.0)
+			try:
+				for i in range(1,len(data_text)):
+					try:
+						MATE.P_depth_water.append(float(data_text[i][0]))
+						MATE.H_water.append(float(data_text[i][1]))
+						if len(data_text[1]) != 2:
+							MATE.H_water_err.append(float(data_text[i][2]))
+						else:
+							MATE.H_water_err.append(0.0)
+					except ValueError:
+						QMessageBox.about(self,'Warning!','There is an element in the file that can not be transformed into floating number...')
+						return
+			except IndexError:
+				QMessageBox.about(self,'Warning!','Structure of the csv file seems to be wrong.')
+				return
 
 			MATE.water_file_read = True
+			QMessageBox.about(self,'Success',str(self.water_file_name[0]) + ' file was succesfully imported to the program!')
 
 		else:
 			pass
+
+
 
 class FIGPROP_POP(QWidget):
 
@@ -7216,7 +7476,7 @@ class FIGPROP_POP(QWidget):
 				self.condlinewidth_btn_txt.setText(str(text))
 				MATE.condlinewidth = float(text)
 			except ValueError:
-				QMessageBox.about(self,"Warning!","Please enter a value that can be conveted to floating number.")
+				QMessageBox.about(self,"Warning!","Please enter a value that can be converted to floating number.")
 
 	def get_condplotlim_up(self):
 
@@ -7227,7 +7487,7 @@ class FIGPROP_POP(QWidget):
 				self.condplotlim_up_btn_txt.setText(str(text))
 				MATE.condplotlim_up = float(text)
 			except ValueError:
-				QMessageBox.about(self,"Warning!","Please enter a value that can be conveted to floating number.")
+				QMessageBox.about(self,"Warning!","Please enter a value that can be converted to floating number.")
 
 	def get_condplotlim_down(self):
 
@@ -7238,7 +7498,7 @@ class FIGPROP_POP(QWidget):
 				self.condplotlim_down_btn_txt.setText(str(text))
 				MATE.condplotlim_down = float(text)
 			except ValueError:
-				QMessageBox.about(self,"Warning!","Please enter a value that can be conveted to floating number.")
+				QMessageBox.about(self,"Warning!","Please enter a value that can be converted to floating number.")
 
 	def get_boundsbackgr(self):
 
