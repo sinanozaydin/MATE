@@ -19,7 +19,7 @@ The program could simply run by the command:
 
 
 ```bash
-python3(or python if python3 is the default) MATE
+python3 MATE
 ```
 
 **Required Libraries**
@@ -49,7 +49,7 @@ Then through command prompt (in Windows) or terminal (linux or macOS), typing th
 
 
 ```bash
-python3(or python if the default is python3>) setupexe.py
+python3 setupexe.py
 ```
  
  Executable file has to be run within the directory. It will not work if it is copied elsewhere.
