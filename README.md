@@ -29,12 +29,18 @@ Software requires very few libraries including: numpy, scipy, matplotlib, pyQt5
 These can be installed easily via **pip3** using the terminal on a Linux distribution or macOS:
 
 ```bash
-sudo pip3 install numpy, scipy, matplotlib, pyQt5
+sudo pip3 install numpy scipy matplotlib pyQt5
 ```
 On Windows, pip3 comes automatically with the python3 distribution package. Using command prompt:
 
 ```bash
-pip3 install numpy, scipy, matplotlib, pyQt5
+pip3 install numpy scipy matplotlib pyQt5
+```
+
+If the user uses Anaconda package management system, required libraries can be installed with:
+
+```bash
+conda install numpy scipy matplotlib pyQt5
 ```
 
 **Creating Exe file**
