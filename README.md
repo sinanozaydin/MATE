@@ -19,7 +19,7 @@ The program could simply run by the command:
 
 
 ```bash
-python3 MATE
+python3(or python if python3 is the default) MATE
 ```
 
 **Required Libraries**
@@ -45,13 +45,14 @@ One could also create an exe file if they want to. This requires the installatio
 pip3 install pyinstaller
 ```
 
-Then through command prompt or linux terminal, typing the following command in the source directory will create the executable file:
+Then through command prompt (in Windows) or terminal (linux or macOS), typing the following command in the source directory will create the executable file:
 
 
 ```bash
-python setupexe.py
+python3(or python if the default is python3>) setupexe.py
 ```
-
+ 
+ Executable file has to be run within the directory. It will not work if it is copied elsewhere.
 
 Adding new models to the program
 ==========
