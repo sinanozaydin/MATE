@@ -43,7 +43,7 @@ class bcolors:
 	RED = '\033[91m'
 	B = '\033[0m'
 
-#Version 1.0, April. 2020.
+#Version 1.1, July. 2020.
 #MATE - (M)antle (A)nalysis (T)ools for (E)lectromagnetics
 #Program written by Sinan Ozaydin (Macquarie University Dept. of Earth and Planetary
 #sciences, Australia).
@@ -62,7 +62,7 @@ print(bcolors.GREEN + '#############################################')
 print(' ')
 print(' ')
 print(' ')
-print(bcolors.GREEN + '                  MATE 1.0')
+print(bcolors.GREEN + '                  MATE 1.1')
 print(' ')
 print(bcolors.BLUE + '            Mantle Analysis Tools')
 print('                     for')
@@ -3333,8 +3333,6 @@ class MATE(QMainWindow):
 			self.connectedness_pl = self.pl_frac**self.pl_m
 			self.connectedness_cond = self.cond_frac**self.cond_m
 
-			#print(self.connectedness_ol,self.connectedness_opx,self.connectedness_cpx,self.connectedness_gt,self.connectedness_amp,self.connectedness_pl,self.connectedness_cond)
-
 			self.bulk_cond_max = (self.ol_cond_max*(self.ol_frac**self.ol_m)) +\
 			(self.opx_cond_max*(self.opx_frac**self.opx_m)) +\
 			(self.cpx_cond_max*(self.cpx_frac**self.cpx_m)) +\
@@ -4134,7 +4132,7 @@ class MATE(QMainWindow):
 			self.graphite_depth.append(self.depth[graphite_idx]/1000.0)
 
 		self.ax3.plot([649.890,1734.60],self.graphite_depth,color = '#2f9172',linewidth = 2.5,label = 'Graphite-Diamond')
-
+		
 		self.ax3.legend(fontsize = fontsize_labels, bbox_to_anchor=(0.8, 1.14), borderaxespad=0.1)
 
 		if method == 'draw':
@@ -4588,9 +4586,10 @@ class MATE(QMainWindow):
 			self.adjust_composition()
 			#Create error if the total mineralogy is indifferent to 1 at any layer.
 			ok_to_compute_comp = True
+
 			"""
 			for i in range(0,len(self.ol_frac_comp)):
-				print (self.ol_frac_comp[i] + self.opx_frac_comp[i] + self.cpx_frac_comp[i] + self.gt_frac_comp[i] + self.pl_frac_comp[i])
+
 				if (self.ol_frac_comp[i] + self.opx_frac_comp[i] + self.cpx_frac_comp[i] + self.gt_frac_comp[i] + self.pl_frac_comp[i]) != 1.0:
 					if i == 0:
 						layer_no = i+1
@@ -5762,8 +5761,6 @@ class PYROXENE_POP(QWidget):
 		self.btn1_part_textbox = QLineEdit(MATE.opx_display)
 		self.btn2_part_textbox = QLineEdit(MATE.cpx_display)
 
-		print(MATE.part_px_method)
-
 		if MATE.part_px_method == '0':
 			self.btn1_part.clicked.connect(self.get_pxol)
 			self.btn2_part.clicked.connect(self.get_pxol)
@@ -6807,15 +6804,15 @@ class MODEM_CURVE(QWidget):
 
 		if MATE.curve_method == 0:
 
-			idx_x = (np.abs(np.asarray(MATE.x_mesh_center) - MATE.station_posx[MATE.station_name_select])).argmin() - 1 #minus one bc resist. is defined by the previous node
-			idx_y = (np.abs(np.asarray(MATE.y_mesh_center) - MATE.station_posy[MATE.station_name_select])).argmin() - 1
+			idx_x = (np.abs(np.asarray(MATE.x_mesh_center) - MATE.station_posx[MATE.station_name_select])).argmin() #minus one bc resist. is defined by the previous node
+			idx_y = (np.abs(np.asarray(MATE.y_mesh_center) - MATE.station_posy[MATE.station_name_select])).argmin()
 			idx_x_list.append(idx_x)
 			idx_y_list.append(idx_y)
 
 		elif MATE.curve_method == 1:
 
-			idx_x = (np.abs(np.asarray(MATE.x_mesh_center) - MATE.posx_sel)).argmin() - 1 #minus one bc resist. is defined by the previous node
-			idx_y = (np.abs(np.asarray(MATE.y_mesh_center) - MATE.posy_sel)).argmin() - 1
+			idx_x = (np.abs(np.asarray(MATE.x_mesh_center) - MATE.posx_sel)).argmin() #minus one bc resist. is defined by the previous node
+			idx_y = (np.abs(np.asarray(MATE.y_mesh_center) - MATE.posy_sel)).argmin()
 			idx_x_list.append(idx_x)
 			idx_y_list.append(idx_y)
 
@@ -6838,8 +6835,8 @@ class MODEM_CURVE(QWidget):
 					station_no_list.append(int(text_curve_list[i]))
 
 			for i in range(0,len(station_no_list)):
-				idx_x = (np.abs(np.asarray(MATE.x_mesh_center) - MATE.station_posx[station_no_list[i]])).argmin() - 1 #minus one bc resist. is defined by the previous node
-				idx_y = (np.abs(np.asarray(MATE.y_mesh_center) - MATE.station_posy[station_no_list[i]])).argmin() - 1
+				idx_x = (np.abs(np.asarray(MATE.x_mesh_center) - MATE.station_posx[station_no_list[i]])).argmin() #minus one bc resist. is defined by the previous node
+				idx_y = (np.abs(np.asarray(MATE.y_mesh_center) - MATE.station_posy[station_no_list[i]])).argmin()
 				idx_x_list.append(idx_x)
 				idx_y_list.append(idx_y)
 
