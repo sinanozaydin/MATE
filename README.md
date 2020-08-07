@@ -63,7 +63,7 @@ python3 setupexe.py
 Adding new models to the program
 ==========
 
-Please submit experimental models that can be added in the master branch of the program.
+Please submit experimental models that can be added in the master branch of the program. I would also encourage users to inform me about additional features that could be added to the software.
 
 Contact
 ==========
