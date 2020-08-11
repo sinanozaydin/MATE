@@ -44,7 +44,17 @@ If the user uses Anaconda package management system, required libraries can be i
 
 ```bash
 conda install numpy scipy matplotlib pyQt5
+
 ```
+**Matplotlib3.3 is slower**
+
+For some reason the latest version of the matplotlib (3.3) works significantly slower, this problem may go away once the version is updated. You may download the previous version with the following command, either in the global install or in a virtual python environment.
+
+```bash
+pip3 install matplotlib==3.2.1
+
+```
+
 
 **Creating Exe file**
 
