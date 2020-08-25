@@ -62,7 +62,7 @@ print(bcolors.GREEN + '#############################################')
 print(' ')
 print(' ')
 print(' ')
-print(bcolors.GREEN + '                  MATE 1.1')
+print(bcolors.GREEN + '                  MATE 1.2')
 print(' ')
 print(bcolors.BLUE + '            Mantle Analysis Tools')
 print('                     for')
@@ -117,6 +117,8 @@ class MATE(QMainWindow):
 		modelMenu.setStyleSheet("QMenu{background-color: #9098a3;border: 1px solid black}")
 		figureMenu = mainMenu.addMenu('Figures')
 		figureMenu.setStyleSheet("QMenu{background-color: #9098a3;border: 1px solid black}")
+		solverMenu = mainMenu.addMenu('Solver')
+		solverMenu.setStyleSheet("QMenu{background-color: #9098a3;border: 1px solid black}")
 		writeMenu = mainMenu.addMenu('Write Data')
 		writeMenu.setStyleSheet("QMenu{background-color: #9098a3;border: 1px solid black}")
 
@@ -248,6 +250,11 @@ class MATE(QMainWindow):
 		csvMTButton = QAction('Open csv MT profile', self)
 		csvMTButton.triggered.connect(self.csvMt_open)
 		modelMenu.addAction(csvMTButton)
+
+		#Solver MENU
+		solverButton = QAction('Export solution to the input file.', self)
+		solverButton.triggered.connect(self.import_solution_to_comp)
+		solverMenu.addAction(solverButton)
 
 		#Write FILE BUTTON
 
@@ -404,6 +411,7 @@ class MATE(QMainWindow):
 		MATE.P_sp_manual = None
 
 		self.fo2_input = False
+		self.water_inverted = False
 
 		MATE.res_profile_plot_list = []
 		MATE.res_profile_max_plot_list = []
@@ -1336,9 +1344,10 @@ class MATE(QMainWindow):
 		self.h2o_fugacity_calculated = False
 
 		comp_text_data = str(MATE.text).splitlines()
-		layer_data = []
+		self.layer_data = []
 
 		self.depth_comp = []
+		self.h2o_comp = []
 		self.ol_frac_comp = []
 		self.opx_frac_comp = []
 		self.cpx_frac_comp = []
@@ -1353,7 +1362,6 @@ class MATE(QMainWindow):
 		self.fe_gt_comp = []
 		self.al_opx_comp = []
 		self.ti_ol_comp = []
-		self.h2o_comp = []
 		self.ol_m_comp = []
 		self.opx_m_comp = []
 		self.cpx_m_comp = []
@@ -1368,24 +1376,24 @@ class MATE(QMainWindow):
 
 		for i in range(1,len(comp_text_data)):
 
-			layer_data.append(comp_text_data[i].split(','))
+			self.layer_data.append(comp_text_data[i].split(','))
 
 		self.continue_adjusting = 1
 
-		for i in range(0,len(layer_data)):
-			for j in range(0,len(layer_data[i])):
+		for i in range(0,len(self.layer_data)):
+			for j in range(0,len(self.layer_data[i])):
 				try:
-					float(layer_data[i][j])
-					if float(layer_data[i][j]) < 0.0:
+					float(self.layer_data[i][j])
+					if float(self.layer_data[i][j]) < 0.0:
 						self.continue_adjusting = 0
 						QMessageBox.about(self,"Warning!","There is an entered value for a parameters that is smaller than zero, which can not be the case. Correct this value to continue.")
 						break
-					if float(layer_data[0][0])*1000.0 != MATE.moho:
+					if float(self.layer_data[0][0])*1000.0 != MATE.moho:
 						self.continue_adjusting = 0
 						QMessageBox.about(self,"Warning!","Entered Moho depth from the -Moho-LAB- section is not same as the depth of the first layer. Please fix this to continue.")
 						break
 					if i !=0:
-						if float(layer_data[i][0]) <= float(layer_data[i-1][0]):
+						if float(self.layer_data[i][0]) <= float(self.layer_data[i-1][0]):
 							self.continue_adjusting = 0
 							QMessageBox.about(self,"Warning!","Layers depths are not in right order. The value decreased on the next layer or the same within some layer.")
 							break
@@ -1400,44 +1408,45 @@ class MATE(QMainWindow):
 
 		if self.continue_adjusting == 1:
 
-			for i in range(0,len(layer_data)):
+			for i in range(0,len(self.layer_data)):
 
-				if i < len(layer_data)-1:
+				if i < len(self.layer_data)-1:
 
-					self.depth_comp.append(float(layer_data[i][0]) * 1000.0)
-					self.depth_comp.append((float(layer_data[i+1][0]) * 1000.0) - self.dz)
+					self.depth_comp.append(float(self.layer_data[i][0]) * 1000.0)
+					self.depth_comp.append((float(self.layer_data[i+1][0]) * 1000.0) - self.dz)
 
 				else:
-					self.depth_comp.append(float(layer_data[i][0]) * 1000.0)
+					self.depth_comp.append(float(self.layer_data[i][0]) * 1000.0)
 					self.depth_comp.append(MATE.lab)
 
 				for j in range(0,2):
-					self.h2o_comp.append(float(layer_data[i][1]))
-					self.ol_frac_comp.append(float(layer_data[i][2]) / 100.0) #converting to perc to fraction
-					self.opx_frac_comp.append(float(layer_data[i][3]) / 100.0)
-					self.cpx_frac_comp.append(float(layer_data[i][4]) / 100.0)
-					self.gt_frac_comp.append(float(layer_data[i][5]) / 100.0)
-					self.pl_frac_comp.append(float(layer_data[i][6]) / 100.0)
-					self.amp_frac_comp.append(float(layer_data[i][7]) / 100.0)
-					self.cond_frac_comp.append(float(layer_data[i][8]) / 100.0)
-					self.cond_cond_comp.append(1.0 / float(layer_data[i][9])) #converting to conductivity
-					self.fe_ol_comp.append(float(layer_data[i][10]))
-					self.fe_opx_comp.append(float(layer_data[i][11]))
-					self.fe_cpx_comp.append(float(layer_data[i][12]))
-					self.fe_gt_comp.append(float(layer_data[i][13]))
-					self.al_opx_comp.append(float(layer_data[i][14]))
-					self.ti_ol_comp.append(float(layer_data[i][15]))
-					self.ol_m_comp.append(float(layer_data[i][16]))
-					self.opx_m_comp.append(float(layer_data[i][17]))
-					self.cpx_m_comp.append(float(layer_data[i][18]))
-					self.gt_m_comp.append(float(layer_data[i][19]))
-					self.pl_m_comp.append(float(layer_data[i][20]))
-					self.amp_m_comp.append(float(layer_data[i][21]))
-					self.cond_m_comp.append(float(layer_data[i][22]))
-					self.cond_t_k_comp.append(float(layer_data[i][23]))
-					self.flu_comp.append(float(layer_data[i][24]))
-					self.ol_gs_comp.append(float(layer_data[i][25])*1e-3) #converting to mm to m
-					self.heat_prod_mantle.append(float(layer_data[i][26]))
+					#cansu
+					self.h2o_comp.append(float(self.layer_data[i][1]))
+					self.ol_frac_comp.append(float(self.layer_data[i][2]) / 100.0) #converting to perc to fraction
+					self.opx_frac_comp.append(float(self.layer_data[i][3]) / 100.0)
+					self.cpx_frac_comp.append(float(self.layer_data[i][4]) / 100.0)
+					self.gt_frac_comp.append(float(self.layer_data[i][5]) / 100.0)
+					self.pl_frac_comp.append(float(self.layer_data[i][6]) / 100.0)
+					self.amp_frac_comp.append(float(self.layer_data[i][7]) / 100.0)
+					self.cond_frac_comp.append(float(self.layer_data[i][8]) / 100.0)
+					self.cond_cond_comp.append(1.0 / float(self.layer_data[i][9])) #converting to conductivity
+					self.fe_ol_comp.append(float(self.layer_data[i][10]))
+					self.fe_opx_comp.append(float(self.layer_data[i][11]))
+					self.fe_cpx_comp.append(float(self.layer_data[i][12]))
+					self.fe_gt_comp.append(float(self.layer_data[i][13]))
+					self.al_opx_comp.append(float(self.layer_data[i][14]))
+					self.ti_ol_comp.append(float(self.layer_data[i][15]))
+					self.ol_m_comp.append(float(self.layer_data[i][16]))
+					self.opx_m_comp.append(float(self.layer_data[i][17]))
+					self.cpx_m_comp.append(float(self.layer_data[i][18]))
+					self.gt_m_comp.append(float(self.layer_data[i][19]))
+					self.pl_m_comp.append(float(self.layer_data[i][20]))
+					self.amp_m_comp.append(float(self.layer_data[i][21]))
+					self.cond_m_comp.append(float(self.layer_data[i][22]))
+					self.cond_t_k_comp.append(float(self.layer_data[i][23]))
+					self.flu_comp.append(float(self.layer_data[i][24]))
+					self.ol_gs_comp.append(float(self.layer_data[i][25])*1e-3) #converting to mm to m
+					self.heat_prod_mantle.append(float(self.layer_data[i][26]))
 
 			self.depth_comp_plot = self.depth_comp[::2]
 
@@ -4887,6 +4896,7 @@ class MATE(QMainWindow):
 		self.store_upper_bound_btn.setStyleSheet("QPushButton {min-width: 10em; font: bold; font-size: 9pt;background-color: #7daedb}")
 
 		self.write_out = False
+		self.water_inverted = False
 
 	def save_figures(self):
 
@@ -5042,6 +5052,8 @@ class MATE(QMainWindow):
 
 	def solve_for_water(self):
 
+		#Brute solver for peridotite water content.
+
 		if len(MATE.res_profile_plot_list) != 0:
 
 			if self.write_out == True:
@@ -5057,7 +5069,6 @@ class MATE(QMainWindow):
 				MATE.sol_model_pref_select = 0
 				self.solubility_partitioning()
 				MATE.sol_model_pref_select = 1
-				#self.water_search = np.arange(0,250,5)
 				QMessageBox.about(self, 'Info', "Solving for water content at each layer. This might take a while...")
 				for i in range(self.idx_moho,len(self.depth)):
 					residual_list = []
@@ -5083,8 +5094,9 @@ class MATE(QMainWindow):
 							for k in range(-1,-4,-1):
 								if res_check[k] < 0.0:
 									chek = chek + 1
-						if chek > 3:
-							break
+							if chek > 2:
+								break
+
 					min_idx = residual_list.index(min(residual_list))
 					self.h2o[i] = self.water_search[min_idx]
 
@@ -5099,6 +5111,8 @@ class MATE(QMainWindow):
 					self.calculate_amp_conductivity()
 				self.plot_water(method = 'draw')
 				self.plot_conductivity(method = 'draw', boundaries = False)
+
+				self.water_inverted = True
 			else:
 
 				QMessageBox.about(self, 'Warning!', "The user have to at least calculate through conductivities once to perform this action.")
@@ -5107,6 +5121,40 @@ class MATE(QMainWindow):
 
 			QMessageBox.about(self, 'Warning!', "An external resistivity profile has to be imported in order for ")
 
+	def import_solution_to_comp(self):
+
+		if self.water_inverted == True:
+
+			for i in range(0,len(self.h2o_comp)):
+				idx_water, = np.where(self.depth == self.find_nearest(self.depth,self.depth_comp[i]))
+				idx_water = int(idx_water)
+				self.h2o_comp[i] = self.h2o[idx_water]
+
+			MATE.text = "Depth(km),Cw_bulk(ppm),ol_frac,opx_frac,cpx_frac,gt-sp_frac,pl_frac,amp_frac,cond_frac,cond_cond(ohm_m),XFe-ol,XFe-opx,XFe-cpx,XFe-gt,Al-opx(wt%),Ti-ol(wt%),m_ol,m_opx,m_cpx,m_gt,m_pl,m_amp,m_cond,t_k_cond(W/mK),fl_pl(wt%),ol_gs(mm),heat_prod(mW/m^2)\n"
+
+			for i in range(0,len(self.depth_comp)-1):
+				line = ','.join(('%4.2f' % (self.depth_comp[i]/1e3),'%4.2f' % self.h2o_comp[i],
+				'%4.2f' % (self.ol_frac_comp[i]*100.0),'%4.2f' % (self.opx_frac_comp[i]*100.0),
+				'%4.2f' % (self.cpx_frac_comp[i]*100.0),'%4.2f' % (self.gt_frac_comp[i]*100.0),
+				'%4.2f' % (self.pl_frac_comp[i]*100.0),'%4.2f' % (self.amp_frac_comp[i]*100.0),
+				'%4.2f' % (self.cond_frac_comp[i]*100.0),'%1.3E' % self.cond_cond_comp[i],
+				'%4.2f' % self.fe_ol_comp[i],'%4.2f' % self.fe_opx_comp[i],
+				'%4.2f' % self.fe_cpx_comp[i],'%4.2f' % self.fe_gt_comp[i],
+				'%4.2f' % self.al_opx_comp[i],'%4.2f' % self.ti_ol_comp[i],
+				'%4.2f' % self.ol_m_comp[i],'%4.2f' % self.opx_m_comp[i],
+				'%4.2f' % self.cpx_m_comp[i],'%4.2f' % self.gt_m_comp[i],
+				'%4.2f' % self.pl_m_comp[i],'%4.2f' % self.amp_m_comp[i],
+				'%4.2f' % self.cond_m_comp[i],'%4.2f' % self.cond_t_k_comp[i],
+				'%4.2f' % self.flu_comp[i],'%4.2f' % self.ol_gs_comp[i],
+				(('%1.3E' % 4e-5)+'\n')))
+				MATE.text = MATE.text + line
+			self.editor_pop = None
+			QMessageBox.about(self, 'Warning!', "Calculated water contents exporetd to the input file. Click -Composition Entry- ")
+		else:
+
+			QMessageBox.about(self, 'Warning!', "First you have to invert the water contents from an MT model...")
+
+
 class COMP_EDITOR(QWidget):
 
 	def __init__(self):
@@ -5114,6 +5162,8 @@ class COMP_EDITOR(QWidget):
 		QWidget.__init__(self)
 
 		editor_layout = QVBoxLayout(self)
+
+		MATE.text = MATE.text
 
 		self.read_button = QPushButton('Read File')
 		self.read_button.clicked.connect(self.opentextfile)
