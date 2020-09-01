@@ -4091,7 +4091,7 @@ class MATE(QMainWindow):
 			fontsize_labels = 10
 
 		self.ax2.plot(self.al_opx[self.idx_moho:], self.depth[self.idx_moho:] / 1000.0, color = '#083fb5', linewidth = 1.5, label = r'$Al_2O_3$')
-		self.ax2.set_xlim((0.0,10.0))
+		self.ax2.set_xlim((0.0,6.5))
 		self.ax2.set_xlabel(r'$Al_2O_3 \, in \, opx$',fontsize = 9)
 		self.ax2.set_ylim((MATE.lab / 1000.0) + 25.0, 0.0)
 
@@ -4391,8 +4391,8 @@ class MATE(QMainWindow):
 				tick.label.set_fontsize(fontsize_labels)
 
 		self.ax4.set_xlabel(r'$C_w \, (ppm)$', fontsize = fontsize_labels)
-		self.ax4.set_xlim((0,self.maxwater + 50.0))
-		#self.ax4.set_xlim((0,550))
+		#self.ax4.set_xlim((0,self.maxwater + 50.0))
+		self.ax4.set_xlim((0,1000))
 		self.ax4.set_ylim((MATE.lab / 1000.0) + 25.0, 0.0)
 		crust_obj = patches.Rectangle((0,0) ,100000.0,MATE.moho / 1000.0, color = '#b76314', alpha = 0.6,hatch = 'xxxx')
 		ast_obj = patches.Rectangle((0,MATE.lab / 1000.0),100000.0,1e5, color = '#b73114', alpha = 0.6,hatch = 'xx')
@@ -5069,33 +5069,49 @@ class MATE(QMainWindow):
 				MATE.sol_model_pref_select = 0
 				self.solubility_partitioning()
 				MATE.sol_model_pref_select = 1
-				QMessageBox.about(self, 'Info', "Solving for water content at each layer. This might take a while...")
+				QMessageBox.about(self, 'Info', "Solving for water content at each layer. This might take a while (approx. 10-25 sec.) and the program may be unresponsive...")
 				for i in range(self.idx_moho,len(self.depth)):
-					residual_list = []
-					res_check = []
-					self.water_search = np.arange(0,self.h2o_from_sol[i],5)
-					for j in range(0,len(self.water_search)):
-						self.h2o[i] = self.water_search[j]
-						self.calculate_water()
-						self.calculate_ol_conductivity()
-						self.calculate_opx_conductivity()
-						self.calculate_cpx_conductivity()
-						self.calculate_gt_conductivity()
-						if MATE.pl_method == '0':
-							self.calculate_pl_conductivity()
-						if MATE.amp_method == '0':
-							self.calculate_amp_conductivity()
-						self.phase_mixing_function(method = MATE.phs_mix_method)
-						residual = (1.0/self.bulk_cond[i]) - res_to_invert[i]
-						residual_list.append(abs(residual))
-						res_check.append(residual)
-						chek = 0
-						if len(res_check) > 5:
-							for k in range(-1,-4,-1):
-								if res_check[k] < 0.0:
-									chek = chek + 1
-							if chek > 2:
-								break
+					water_search_start = 8
+					self.water_search = np.arange(0,self.h2o_from_sol[i],water_search_start)
+					restart = True
+					while restart:
+						residual_list = []
+						res_check = []
+						restart = False
+						for j in range(0,len(self.water_search)):
+							self.h2o[i] = self.water_search[j]
+							self.calculate_water()
+							self.calculate_ol_conductivity()
+							self.calculate_opx_conductivity()
+							self.calculate_cpx_conductivity()
+							self.calculate_gt_conductivity()
+							if MATE.pl_method == '0':
+								self.calculate_pl_conductivity()
+							if MATE.amp_method == '0':
+								self.calculate_amp_conductivity()
+							self.phase_mixing_function(method = MATE.phs_mix_method)
+							residual = (1.0/self.bulk_cond[i]) - res_to_invert[i]
+							residual_list.append(abs(residual))
+							res_check.append(residual)
+							chek = 0
+							if len(res_check) > 5:
+								for k in range(-1,-4,-1):
+									if res_check[k] < 0.0:
+										chek = chek + 1
+								if chek > 2:
+									water_search_start = water_search_start / 2.0
+									if self.water_search[j] >= water_search_start:
+										water_start = self.water_search[j-5]
+									else:
+										water_start = 0.0
+
+									self.water_search = np.arange(water_start,self.h2o_from_sol[i],water_search_start)
+									if water_search_start == 0.5:
+										restart = False
+										break
+									else:
+										restart = True
+										break
 
 					min_idx = residual_list.index(min(residual_list))
 					self.h2o[i] = self.water_search[min_idx]
@@ -5111,6 +5127,8 @@ class MATE(QMainWindow):
 					self.calculate_amp_conductivity()
 				self.plot_water(method = 'draw')
 				self.plot_conductivity(method = 'draw', boundaries = False)
+
+				QMessageBox.about(self, 'Info', "The calculation has finished.")
 
 				self.water_inverted = True
 			else:
