@@ -18,6 +18,7 @@ from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt4agg import NavigationToolbar2QT as NavigationToolbar
 from PyQt5 import QtGui, QtCore
 from PyQt5.QtWidgets import *
+import timeit
 
 #Importing external functions
 
@@ -43,7 +44,7 @@ class bcolors:
 	RED = '\033[91m'
 	B = '\033[0m'
 
-#Version 1.1, July. 2020.
+#Version 1.3, February. 2021.
 #MATE - (M)antle (A)nalysis (T)ools for (E)lectromagnetics
 #Program written by Sinan Ozaydin (Macquarie University Dept. of Earth and Planetary
 #sciences, Australia).
@@ -62,7 +63,7 @@ print(bcolors.GREEN + '#############################################')
 print(' ')
 print(' ')
 print(' ')
-print(bcolors.GREEN + '                  MATE 1.2')
+print(bcolors.GREEN + '                  MATE 1.3')
 print(' ')
 print(bcolors.BLUE + '            Mantle Analysis Tools')
 print('                     for')
@@ -144,7 +145,6 @@ class MATE(QMainWindow):
 		openGeothFile = QAction("&Import Xenolith P-T", self)
 		openGeothFile.triggered.connect(self.geotherm_open)
 		geotMenu.addAction(openGeothFile)
-		self.g_pop = None
 
 		#FUGACITY OPTIONS MENU
 
@@ -189,6 +189,7 @@ class MATE(QMainWindow):
 		addwaterButton.triggered.connect(self.add_water_measurement)
 		waterdataMenu.addAction(addwaterButton)
 		self.add_water_pop = None
+
 		#MINERAL STABILITIES MENU
 		amphiboleButton = QAction("&Amphibole Stability",self)
 		amphiboleButton.triggered.connect(self.amp_stab_popup)
@@ -252,9 +253,24 @@ class MATE(QMainWindow):
 		modelMenu.addAction(csvMTButton)
 
 		#Solver MENU
-		solverButton = QAction('Export solution to the input file.', self)
+		solverButton = QAction('Export water solution to the input file.', self)
 		solverButton.triggered.connect(self.import_solution_to_comp)
 		solverMenu.addAction(solverButton)
+
+		solverSelection = QAction('Conductivity forward model selection', self)
+		solverSelection.triggered.connect(self.forward_model_selection)
+		solverMenu.addAction(solverSelection)
+		self.fwd_model_pop= None
+
+		solverSelection_2 = QAction('Conductivity exported model selection', self)
+		solverSelection_2.triggered.connect(self.exported_model_selection)
+		solverMenu.addAction(solverSelection_2)
+		self.exported_model_pop = None
+
+		xenSolver = QAction('Geotherm solver properties', self)
+		xenSolver.triggered.connect(self.xen_solver_properties)
+		solverMenu.addAction(xenSolver)
+		self.xen_solver = None
 
 		#Write FILE BUTTON
 
@@ -288,7 +304,7 @@ class MATE(QMainWindow):
 		MATE.A_upper_crust = 1e-3
 		MATE.A_lower_crust = 0.4e-3 #mW/m^3
 		MATE.hr = 10.0 * 1000.0
-		MATE.moho = 36.0 * 1000.0
+		MATE.moho = 38.0 * 1000.0
 		MATE.lab = 200 * 1000.0
 
 		#Setting up initial logical parameters
@@ -310,7 +326,7 @@ class MATE(QMainWindow):
 		MATE.xen_temp_err = 50.0
 		MATE.xen_pressure_err = 0.3
 
-		MATE.geotherm_inp_temp_method = '0'
+		MATE.geotherm_inp_temp_method = '1'
 
 		MATE.o2_buffer = 0
 
@@ -349,6 +365,7 @@ class MATE(QMainWindow):
 		self.ModEM_model_read = False
 		MATE.ModEM_data_submit = False
 		self.csv_MT_read = False
+		self.water_end = False
 
 		MATE.plot_sel_modem = 120
 		MATE.curve_method = 0
@@ -407,11 +424,22 @@ class MATE(QMainWindow):
 
 		MATE.lodge_check = False
 
+		self.water_error_calculated = False
+
 		MATE.spinel_stab_select = 1
 		MATE.P_sp_manual = None
 
 		self.fo2_input = False
 		self.water_inverted = False
+
+		MATE.w_inp_method = '0'
+		MATE.cond_uncert_method = '0'
+
+		MATE.waterplotlim_up = 600.0
+
+		MATE.heat_flow_search_start = 35
+		MATE.heat_flow_search_end = 45
+		MATE.heat_flow_search_incr = 0.25
 
 		MATE.res_profile_plot_list = []
 		MATE.res_profile_max_plot_list = []
@@ -432,13 +460,29 @@ class MATE(QMainWindow):
 		self.linestyle_list = []
 		self.linewidth_list = []
 		self.h2o_list = []
+		self.h2o_max_list = []
+		self.h2o_min_list = []
 		self.ol_h2o_list = []
+		self.ol_h2o_max_list = []
+		self.ol_h2o_min_list = []
 		self.opx_h2o_list = []
+		self.opx_h2o_max_list = []
+		self.opx_h2o_min_list = []
 		self.cpx_h2o_list = []
+		self.cpx_h2o_max_list = []
+		self.cpx_h2o_min_list = []
 		self.px_h2o_list = []
+		self.px_h2o_max_list = []
+		self.px_h2o_min_list = []
 		self.gt_h2o_list = []
+		self.gt_h2o_max_list = []
+		self.gt_h2o_min_list = []
 		self.amp_h2o_list = []
+		self.amp_h2o_max_list = []
+		self.amp_h2o_min_list = []
 		self.pl_h2o_list = []
+		self.pl_h2o_max_list = []
+		self.pl_h2o_min_list = []
 
 		#Reading parameter files...
 
@@ -458,7 +502,7 @@ class MATE(QMainWindow):
 		comp_btn.clicked.connect(self.comp_popup)
 		self.d_pop = None
 
-		depth_btn = QPushButton('Moho-LAB',self)
+		depth_btn = QPushButton('Depth Range',self)
 		depth_btn.move(10,100)
 		depth_btn.setStyleSheet("QPushButton {min-width: 10em; font: bold; font-size: 9pt;background-color: #c8cccc}")
 		depth_btn.clicked.connect(self.depth_popup)
@@ -554,13 +598,18 @@ class MATE(QMainWindow):
 		plot_bounds_btn.setStyleSheet("QPushButton {min-width: 10em; font: bold; font-size: 9pt;background-color: #93db88}")
 		plot_bounds_btn.clicked.connect(self.plot_bounds)
 
+		solve_geotherm_butn = QPushButton('Solve Geotherm',self)
+		solve_geotherm_butn.move(10,730)
+		solve_geotherm_butn.setStyleSheet("QPushButton {min-width: 10em; font: bold; font-size: 9pt;background-color: #bf490f}")
+		solve_geotherm_butn.clicked.connect(self.solve_for_geotherm)
+
 		solve_butn = QPushButton('Solve Water',self)
-		solve_butn.move(10,730)
+		solve_butn.move(10,765)
 		solve_butn.setStyleSheet("QPushButton {min-width: 10em; font: bold; font-size: 9pt;background-color: #663794}")
 		solve_butn.clicked.connect(self.solve_for_water)
 
 		plt_reset_btn = QPushButton('Clear All',self)
-		plt_reset_btn.move(10,765)
+		plt_reset_btn.move(10,800)
 		plt_reset_btn.setStyleSheet("QPushButton {min-width: 10em; font: bold; font-size: 9pt;background-color: #de5d5d}")
 		plt_reset_btn.clicked.connect(self.reset_all_plot)
 
@@ -1056,9 +1105,9 @@ class MATE(QMainWindow):
 						self.depth_xen.append(float(self.xen_data[i][1]))
 
 					if MATE.z_xen_method_2 == '0':
-						self.T_xen.append(float(self.xen_data[i][0]))
+						self.T_xen.append(float(self.xen_data[i][0])) #Already Kelvin
 					else:
-						self.T_xen.append(float(self.xen_data[i][0]) + 273.0)
+						self.T_xen.append(float(self.xen_data[i][0]) + 273.0) #Now Kelvin
 				except ValueError:
 					QMessageBox.about(self,'Warning!','There is an element in the file that can not be transformed into floating number...')
 					return
@@ -1089,9 +1138,8 @@ class MATE(QMainWindow):
 
 	def geotherm_popup(self):
 
-		if self.g_pop is None:
-			self.g_pop = G_POP()
-			self.g_pop.setGeometry(QtCore.QRect(1000, 100, 100, 100))
+		self.g_pop = G_POP()
+		self.g_pop.setGeometry(QtCore.QRect(1000, 100, 100, 100))
 		self.g_pop.show()
 
 	def partition_popup(self):
@@ -1263,7 +1311,7 @@ class MATE(QMainWindow):
 		"present and how Al in opx is treated.\n"
 		"- Composition entry: Define compositional layers in the lithosphere by "
 		"direct entry or uploading a .csv file.\n"
-		"- Moho-LAB: Define the depth to the Moho and the lithosphere-asthenosphere boundary.\n"
+		"- Depth Range: Define the depth to the Moho and the maximum depth of calculation.\n"
 		"- Geotherm: Define parameters such as surface heat flow and heat production "
 		"used to calculate the geotherm.\n"
 		"- Water partitioning: Choose which models will be used to partition hydrogen between "
@@ -1390,7 +1438,7 @@ class MATE(QMainWindow):
 						break
 					if float(self.layer_data[0][0])*1000.0 != MATE.moho:
 						self.continue_adjusting = 0
-						QMessageBox.about(self,"Warning!","Entered Moho depth from the -Moho-LAB- section is not same as the depth of the first layer. Please fix this to continue.")
+						QMessageBox.about(self,"Warning!","Entered Moho depth from the -Depth Range- section is not same as the depth of the first layer. Please fix this to continue.")
 						break
 					if i !=0:
 						if float(self.layer_data[i][0]) <= float(self.layer_data[i-1][0]):
@@ -1420,7 +1468,7 @@ class MATE(QMainWindow):
 					self.depth_comp.append(MATE.lab)
 
 				for j in range(0,2):
-					#cansu
+
 					self.h2o_comp.append(float(self.layer_data[i][1]))
 					self.ol_frac_comp.append(float(self.layer_data[i][2]) / 100.0) #converting to perc to fraction
 					self.opx_frac_comp.append(float(self.layer_data[i][3]) / 100.0)
@@ -1601,7 +1649,9 @@ class MATE(QMainWindow):
 						 (self.opx_frac[i] * self.rho_opx[i]) + (self.cpx_frac[i] * self.rho_cpx[i]) +\
 						 (self.pl_frac[i] * self.rho_phlg) + (self.amp_frac[i] * self.rho_amph)+\
 						 (self.cond_frac[i] * 2200.0))
+
 						self.p[i] = self.d_z[i-1] * self.g * self.density_mantle[i]
+
 
 			self.p = np.cumsum(self.p) / 1e12 #Converting to GPA
 
@@ -1669,9 +1719,15 @@ class MATE(QMainWindow):
 		#going to be intercepted.
 		transition_sp_search = True
 
+		if MATE.thermal_cond_method == '3':
+			MATE.hr = 16 * 1e3
+			MATE.A_upper_crust = (MATE.q_0*0.26) / 16000.0
+
 		#Setting up for loop that will iterate for number of layers.
 		for i in range(0,len(self.depth)):
 			#If conditionals setting the heat production parameters based on given input.
+
+
 			if self.depth[i] <= MATE.hr:
 				self.A_list[i] = MATE.A_upper_crust
 			elif (self.depth[i] > MATE.hr) and (self.depth[i] <= MATE.moho):
@@ -1732,7 +1788,7 @@ class MATE(QMainWindow):
 							else:
 								self.k[i] = calculate_k_st(self.k0_mantle_gt,self.k1_mantle_gt,self.k2_mantle_gt,self.k3_mantle_gt,T_avg,self.p[i])
 
-				elif MATE.thermal_cond_method == '1':
+				elif MATE.thermal_cond_method == '1' or MATE.thermal_cond_method == '3':
 
 					if self.T[i] <= self.t_criterion:
 						#Crust is the same composition as before from the studies method denoted with '0'
@@ -1817,29 +1873,38 @@ class MATE(QMainWindow):
 	def load_input_geotherm(self):
 
 		#Interpolating the T for each depth in the mantle...
+
 		f_T_geotherm = interp1d(np.array(MATE.depth_geotherm)*1e3,np.array(MATE.T_geotherm))
-		self.T = f_T_geotherm(self.depth)
-		if self.spinel_stab_select == 1:
-			self.p_spinel = 1.4209 + np.exp((3.9073 * 1e-3 * self.T) - 6.8041)  #Spinel-Garnet transition line calculated with self.T
-			#Taken from Hasterok & Chapman (2011)
-			self.p_spinel = self.p_spinel[np.nonzero(self.T)] #Getting rid of zeros
-		elif self.spinel_stab_select == 2:
-			self.p_spinel = np.ones(len(self.T)) * MATE.P_sp_manual
-			self.p_spinel = self.p_spinel[np.nonzero(self.T)]
+		try:
+			self.T = f_T_geotherm(self.depth)
+			continue_T = True
+		except ValueError:
+			QMessageBox.about(self, "WARNING!","There is a value in the input geotherm file outside the limits of Depth Range")
+			continue_T = False
 
-		idx_sp = self.interception(self.p_spinel,self.p[:len(self.p_spinel)])
-		idx_sp = int(idx_sp[0][0])
-		if idx_sp != None:
-			#If producted geotherm intercepts P-T line of sp-gt transition
-			#change logical parameter to False for changing to gt.
-			transition_sp_search = False
-			self.depth_spinel = self.depth[idx_sp] #Depth of transition
-			self.p_spinel_trans = self.p[idx_sp]
-			self.index_spinel = idx_sp
+		if continue_T == True:
 
-		if MATE.al_method == '0':
-			if MATE.al_opx_model_select != 0:
-				self.recalculate_al()
+			if self.spinel_stab_select == 1:
+				self.p_spinel = 1.4209 + np.exp((3.9073 * 1e-3 * self.T) - 6.8041)  #Spinel-Garnet transition line calculated with self.T
+				#Taken from Hasterok & Chapman (2011)
+				self.p_spinel = self.p_spinel[np.nonzero(self.T)] #Getting rid of zeros
+			elif self.spinel_stab_select == 2:
+				self.p_spinel = np.ones(len(self.T)) * MATE.P_sp_manual
+				self.p_spinel = self.p_spinel[np.nonzero(self.T)]
+
+			idx_sp = self.interception(self.p_spinel,self.p[:len(self.p_spinel)])
+			idx_sp = int(idx_sp[0][0])
+			if idx_sp != None:
+				#If producted geotherm intercepts P-T line of sp-gt transition
+				#change logical parameter to False for changing to gt.
+				transition_sp_search = False
+				self.depth_spinel = self.depth[idx_sp] #Depth of transition
+				self.p_spinel_trans = self.p[idx_sp]
+				self.index_spinel = idx_sp
+
+			if MATE.al_method == '0':
+				if MATE.al_opx_model_select != 0:
+					self.recalculate_al()
 
 	def recalculate_al(self):
 
@@ -2001,6 +2066,36 @@ class MATE(QMainWindow):
 		all_h2o = np.asarray(list(itertools.chain(*all_h2o)))
 		self.maxwater = np.amax(all_h2o)
 
+		if self.water_end == True:
+			if MATE.w_inp_method == '0':
+				if self.coun == 0:
+					self.ol_h2o_min = self.ol_h2o
+					if MATE.part_px_method == '1':
+						self.opx_h2o_min = self.opx_h2o
+						self.cpx_h2o_min = self.cpx_h2o
+					else:
+						self.px_h2o_min = self.px_h2o
+					self.gt_h2o_min = self.gt_h2o
+					if self.amp_method == 0:
+						self.amp_h2o_min = self.amp_h2o
+					elif self.pl_method == 0:
+						self.pl_h2o_min = self.pl_h2o
+				elif self.coun == 1:
+					self.ol_h2o_max = self.ol_h2o
+					if MATE.part_px_method == '1':
+						self.opx_h2o_max = self.opx_h2o
+						self.cpx_h2o_max = self.cpx_h2o
+					else:
+						self.px_h2o_max = self.px_h2o
+					self.gt_h2o_max = self.gt_h2o
+					if self.amp_method == 0:
+						self.amp_h2o_max = self.amp_h2o
+					elif self.pl_method == 0:
+						self.pl_h2o_max = self.pl_h2o
+
+					self.water_inverted = True
+
+
 	def calculate_fugacity(self,mode):
 
 		#Function that calculates oxygen fugacity buffers from selection.
@@ -2106,7 +2201,7 @@ class MATE(QMainWindow):
 		self.idx_start_fo2, = np.where(self.depth == self.find_nearest(self.depth,self.depth_fo2[0]))
 		self.idx_start_fo2 = int(self.idx_start_fo2) + 1
 		self.idx_end_fo2, = np.where(self.depth == self.find_nearest(self.depth,self.depth_fo2[-1]))
-		self.idx_end_fo2 = int(self.idx_end_fo2) - 1
+		self.idx_end_fo2 = int(self.idx_end_fo2) + 1
 		f_fo2_read = interp1d(self.depth_fo2,self.fo2_fmq)
 		self.fo2_read = f_fo2_read(self.depth[self.idx_start_fo2:self.idx_end_fo2])
 
@@ -3958,7 +4053,7 @@ class MATE(QMainWindow):
 
 	def xenolith_RMS(self, T = None,P = None ,std_T = None,std_P = None,P_eq = None,T_eq = None):
 
-		xenolith_RMS = ((1.0 / float(len(T))) * np.sum(((np.abs(T-T_eq)**2.0) / (std_T**2.0)) + ((np.abs(P-P_eq)**2.0) / (std_P**2.0)))) ** (-0.5)
+		xenolith_RMS = ((1.0/float(len(T))) * np.sum((((T-T_eq)**2.0)) / (std_T**2.0))) ** 0.5
 
 		return xenolith_RMS
 
@@ -4173,12 +4268,15 @@ class MATE(QMainWindow):
 						self.depth_xen.append(self.depth[index_depth_xen[i]][0]) #Finding the nearest value of depth equivalents of P values.
 					else:
 						t_exclude.append(i)
+
 			t_exclude = t_exclude[::-1]
-			T_xen_plot = np.asarray(self.T_xen)
+			self.T_xen_plot = np.asarray(self.T_xen)
+			self.p_xen_plot = np.asarray(self.p_xen)
 			for i in t_exclude:
-				T_xen_plot = np.delete(T_xen_plot,i)
-			temp_err = np.ones(len(T_xen_plot)) * MATE.xen_temp_err
-			pres_err = np.ones(len(T_xen_plot)) * MATE.xen_pressure_err
+				self.T_xen_plot = np.delete(self.T_xen_plot,i)
+				self.p_xen_plot = np.delete(self.p_xen_plot,i)
+			temp_err = np.ones(len(self.T_xen_plot)) * MATE.xen_temp_err
+			pres_err = np.ones(len(self.p_xen_plot)) * MATE.xen_pressure_err
 
 			#Finding the data-equivalent T-P
 
@@ -4191,7 +4289,7 @@ class MATE(QMainWindow):
 			self.P_equivalent = np.asarray(self.P_equivalent)
 			self.T_equivalent = np.asarray(self.T_equivalent)
 
-			xenolith_rms = self.xenolith_RMS(T = T_xen_plot,P = self.p_xen,std_T = temp_err,std_P = pres_err,P_eq = self.P_equivalent,T_eq = self.T_equivalent)
+			xenolith_rms = self.xenolith_RMS(T = self.T_xen_plot,P = self.p_xen,std_T = temp_err,std_P = pres_err,P_eq = self.P_equivalent,T_eq = self.T_equivalent)
 			positive_pressure_diff_list = []
 			negative_pressure_diff_list = []
 			for i in range(0,len(pres_err)):
@@ -4203,7 +4301,7 @@ class MATE(QMainWindow):
 				negative_pressure_depth = self.depth[np.where(self.p == self.find_nearest(self.p,negative_pressure))][0]
 				negative_pressure_diff_list.append((self.depth_xen[i] - negative_pressure_depth) / 1e3)
 
-			self.ax3.errorbar(T_xen_plot,np.asarray(self.depth_xen) / 1000.0,yerr = [negative_pressure_diff_list,positive_pressure_diff_list],
+			self.ax3.errorbar(self.T_xen_plot-273.0,np.asarray(self.depth_xen) / 1000.0,yerr = [negative_pressure_diff_list,positive_pressure_diff_list],
 			xerr = [temp_err,temp_err],fmt = 'o',color = '#bd3b24',markersize = 5,label = 'Xenolith Data',ecolor = 'k',elinewidth = 0.5,alpha = 0.6,
 			markeredgecolor = 'k')
 
@@ -4249,15 +4347,54 @@ class MATE(QMainWindow):
 
 		if MATE.sol_model_pref_select == 0:
 			self.h2o_list.append(self.h2o_from_sol)
+			self.h2o_max_list.append(self.h2o_from_sol)
+			self.h2o_min_list.append(self.h2o_from_sol)
 		else:
 			self.h2o_list.append(self.h2o)
+			if MATE.w_inp_method == '0':
+				if self.water_error_calculated == True:
+					self.h2o_max_list.append(self.h2o_max)
+					self.h2o_min_list.append(self.h2o_min)
+			else:
+				self.h2o_max_list.append(self.h2o)
+				self.h2o_min_list.append(self.h2o)
 
 		self.ol_h2o_list.append(self.ol_h2o)
+		if MATE.w_inp_method == '0':
+			if self.water_error_calculated == True:
+				self.ol_h2o_max_list.append(self.ol_h2o_max)
+				self.ol_h2o_min_list.append(self.ol_h2o_min)
+		else:
+			self.ol_h2o_max_list.append(self.ol_h2o)
+			self.ol_h2o_min_list.append(self.ol_h2o)
 		self.gt_h2o_list.append(self.gt_h2o)
+		if MATE.w_inp_method == '0':
+			if self.water_error_calculated == True:
+				self.gt_h2o_max_list.append(self.gt_h2o_max)
+				self.gt_h2o_min_list.append(self.gt_h2o_min)
+		else:
+			self.gt_h2o_max_list.append(self.gt_h2o)
+			self.gt_h2o_min_list.append(self.gt_h2o)
+
 		if MATE.amp_method == '0':
 			self.amp_h2o_list.append(self.amp_h2o)
+			if MATE.w_inp_method == '0':
+				if self.water_error_calculated == True:
+					self.amp_h2o_max_list.append(self.amp_h2o_max)
+					self.amp_h2o_min_list.append(self.amp_h2o_min)
+			else:
+				self.amp_h2o_max_list.append(self.amp_h2o)
+				self.amp_h2o_min_list.append(self.amp_h2o)
+
 		if MATE.pl_method == '0':
 			self.pl_h2o_list.append(self.pl_h2o)
+			if MATE.w_inp_method == '0':
+				if self.water_error_calculated == True:
+					self.pl_h2o_max_list.append(self.pl_h2o_max)
+					self.pl_h2o_min_list.append(self.pl_h2o_min)
+			else:
+				self.pl_h2o_max_list.append(self.pl_h2o)
+				self.pl_h2o_min_list.append(self.pl_h2o)
 
 		if MATE.sol_plot == True:
 
@@ -4306,12 +4443,31 @@ class MATE(QMainWindow):
 
 			if MATE.bulk_water_method == 0:
 				water_plot_0, = self.ax4.plot(self.h2o_list[i][self.idx_moho:],self.depth[self.idx_moho:] / 1000.0, linestyle = '--', color = 'k', linewidth = 4, alpha = 0.85, label = r'$C_w^{Bulk}$')
+				if MATE.w_inp_method == '0':
+					if self.water_error_calculated == True:
+						self.ax4.fill_betweenx(self.depth[self.idx_moho:],self.h2o_min_list[i][self.idx_moho:],self.h2o_max_list[i][self.idx_moho:],color = 'k',alpha = 0.3)
+
 			water_plot_1, = self.ax4.plot(self.ol_h2o_list[i][self.idx_moho:],self.depth[self.idx_moho:] / 1000.0, color = '#0b820f', linewidth = 2.0, label = r'$C_w^{ol}$',path_effects=[pe.Stroke(linewidth=3.0, foreground='k'), pe.Normal()])
+			if MATE.w_inp_method == '0':
+				if self.water_error_calculated == True:
+					self.ax4.fill_betweenx(self.depth[self.idx_moho:],self.ol_h2o_min_list[i][self.idx_moho:],self.ol_h2o_max_list[i][self.idx_moho:],color = '#0b820f',alpha = 0.3)
 			water_plot_2, = self.ax4.plot(self.gt_h2o_list[i][self.idx_moho:],self.depth[self.idx_moho:] / 1000.0, color = '#ad0f1f', linewidth = 2.0, label = r'$C_w^{gt}$',path_effects=[pe.Stroke(linewidth=3.0, foreground='k'), pe.Normal()])
+			if MATE.w_inp_method == '0':
+				if self.water_error_calculated == True:
+					self.ax4.fill_betweenx(self.depth[self.idx_moho:],self.gt_h2o_min_list[i][self.idx_moho:],self.gt_h2o_max_list[i][self.idx_moho:],color = '#ad0f1f',alpha = 0.3)
+
 			if MATE.amp_method == '0':
 				water_plot_5, = self.ax4.plot(self.amp_h2o_list[i][self.idx_moho:],self.depth[self.idx_moho:] / 1000.0, color = '#853de3', linewidth = 2.0, label = r'$C_w^{amp}$',path_effects=[pe.Stroke(linewidth=3.0, foreground='k'), pe.Normal()])
+				if MATE.w_inp_method == '0':
+					if self.water_error_calculated == True:
+						self.ax4.fill_betweenx(self.depth[self.idx_moho:],self.amp_h2o_min_list[i][self.idx_moho:],self.amp_h2o_max_list[i][self.idx_moho:],color = '#853de3',alpha = 0.3)
+
 			if MATE.pl_method == '0':
 				water_plot_6, = self.ax4.plot(self.pl_h2o_list[i][self.idx_moho:],self.depth[self.idx_moho:] / 1000.0, color = '#c542f4', linewidth = 2.0, label = r'$C_w^{phlg}$',path_effects=[pe.Stroke(linewidth=3.0, foreground='k'), pe.Normal()])
+				if MATE.w_inp_method == '0':
+					if self.water_error_calculated == True:
+						self.ax4.fill_betweenx(self.depth[self.idx_moho:],self.pl_h2o_min_list[i][self.idx_moho:],self.pl_h2o_max_list[i][self.idx_moho:],color = '#c542f4',alpha = 0.3)
+
 
 		if MATE.sol_plot == True:
 			if self.sol_error == True:
@@ -4340,25 +4496,59 @@ class MATE(QMainWindow):
 		if MATE.part_px_method == '1':
 
 			self.opx_h2o_list.append(self.opx_h2o)
+			if MATE.w_inp_method == '0':
+				if self.water_error_calculated == True:
+					self.opx_h2o_max_list.append(self.opx_h2o_max)
+					self.opx_h2o_min_list.append(self.opx_h2o_min)
+			else:
+				self.opx_h2o_max_list.append(self.opx_h2o)
+				self.opx_h2o_min_list.append(self.opx_h2o)
+
 			self.cpx_h2o_list.append(self.cpx_h2o)
+			if MATE.w_inp_method == '0':
+				if self.water_error_calculated == True:
+					self.cpx_h2o_max_list.append(self.cpx_h2o_max)
+					self.cpx_h2o_min_list.append(self.cpx_h2o_min)
+			else:
+				self.cpx_h2o_max_list.append(self.cpx_h2o)
+				self.cpx_h2o_min_list.append(self.cpx_h2o)
+
 			for i in range(0,len(self.opx_h2o_list)):
 				water_plot_3, = self.ax4.plot(self.opx_h2o_list[i][self.idx_moho:],self.depth[self.idx_moho:] / 1000.0, color = '#0b3c82', linewidth = 2.0, label = r'$C_w^{opx}$',
 				path_effects=[pe.Stroke(linewidth=3.0, foreground='k'), pe.Normal()])
+				if MATE.w_inp_method == '0':
+					if self.water_error_calculated == True:
+						self.ax4.fill_betweenx(self.depth[self.idx_moho:],self.opx_h2o_min_list[i][self.idx_moho:],self.opx_h2o_max_list[i][self.idx_moho:],color = '#0b3c82',alpha = 0.3)
 				water_plot_4, = self.ax4.plot(self.cpx_h2o_list[i][self.idx_moho:],self.depth[self.idx_moho:] / 1000.0, color = '#dbc14e', linewidth = 2.0, label = r'$C_w^{cpx}$',
 				path_effects=[pe.Stroke(linewidth=3.0, foreground='k'), pe.Normal()])
+				if MATE.w_inp_method == '0':
+					if self.water_error_calculated == True:
+						self.ax4.fill_betweenx(self.depth[self.idx_moho:],self.cpx_h2o_min_list[i][self.idx_moho:],self.cpx_h2o_max_list[i][self.idx_moho:],color = '#dbc14e',alpha = 0.3)
 
 		else:
 			self.px_h2o_list.append(self.px_h2o)
+			if MATE.w_inp_method == '0':
+				if self.water_error_calculated == True:
+					self.px_h2o_max_list.append(self.px_h2o_max)
+					self.px_h2o_min_list.append(self.px_h2o_min)
+			else:
+				self.px_h2o_max_list.append(self.px_h2o)
+				self.px_h2o_min_list.append(self.px_h2o)
+
 			for i in range(0,len(self.px_h2o_list)):
 				water_plot_3, = self.ax4.plot(self.px_h2o_list[i][self.idx_moho:],self.depth[self.idx_moho:] / 1000.0, color = '#f49b42', linewidth = 2.0, label = r'$C_w^{px}$',
 				path_effects=[pe.Stroke(linewidth=2.5, foreground='k'), pe.Normal()])
+				if MATE.w_inp_method == '0':
+					if self.water_error_calculated == True:
+						self.ax4.fill_betweenx(self.depth[self.idx_moho:],self.px_h2o_min_list[i][self.idx_moho:],self.px_h2o_max_list[i][self.idx_moho:],color = '#f49b42',alpha = 0.3)
 
 		self.ax4.axhline(MATE.moho/1000.0, linestyle = '--',color = '#BA43C2', alpha = 0.85,linewidth = 2.5)
 		self.ax4.axhline(MATE.lab/1000.0, linestyle = '--', color = 'k', alpha = 0.85,linewidth = 2.5)
 		self.ax4.axhline(self.depth_spinel / 1000.0, linestyle = '--', color = '#7EB345', alpha = 0.85,linewidth = 2.5)
 
-
 		if MATE.water_file_read == True:
+			color_list_mineral = ['#0b820f','#0b3c82','#dbc14e','#ad0f1f']
+			marker_list_mineral = ['o','^','^','s']
 			water_depth = []
 			if MATE.add_water_method == 0:
 				for i in range(0,len(MATE.P_depth_water)):
@@ -4367,7 +4557,17 @@ class MATE(QMainWindow):
 					water_depth.append(self.depth[water_csv_idx]/1000.0)
 			else:
 				water_depth = MATE.P_depth_water
-			self.ax4.errorbar(MATE.H_water,water_depth,xerr = [MATE.H_water_err,MATE.H_water_err],fmt = '^',capthick = 2, ecolor = 'k',color = 'k')
+			for i in range(0,len(MATE.H_water)):
+				if MATE.water_mineral[i] == 'ol':
+					self.ax4.errorbar([MATE.H_water[i]],[water_depth[i]],xerr = [[MATE.H_water_err[i]],[MATE.H_water_err[i]]],fmt = marker_list_mineral[0],capthick = 2, ecolor = color_list_mineral[0],color = color_list_mineral[0])
+				elif MATE.water_mineral[i] == 'opx':
+					self.ax4.errorbar([MATE.H_water[i]],[water_depth[i]],xerr = [[MATE.H_water_err[i]],[MATE.H_water_err[i]]],fmt = marker_list_mineral[1],capthick = 2, ecolor = color_list_mineral[1],color = color_list_mineral[1])
+				elif MATE.water_mineral[i] == 'cpx':
+					self.ax4.errorbar([MATE.H_water[i]],[water_depth[i]],xerr = [[MATE.H_water_err[i]],[MATE.H_water_err[i]]],fmt = marker_list_mineral[2],capthick = 2, ecolor = color_list_mineral[2],color = color_list_mineral[2])
+				elif MATE.water_mineral[i] == 'gt':
+					self.ax4.errorbar([MATE.H_water[i]],[water_depth[i]],xerr = [[MATE.H_water_err[i]],[MATE.H_water_err[i]]],fmt = marker_list_mineral[3],capthick = 2, ecolor = color_list_mineral[3],color = color_list_mineral[3])
+				else:
+					self.ax4.errorbar([MATE.H_water[i]],[water_depth[i]],xerr = [MATE.H_water_err[i],MATE.H_water_err[i]],fmt = 'o',capthick = 2, ecolor = 'k',color = 'k')
 
 		handle_list = [water_plot_0,water_plot_1,water_plot_2]
 		if MATE.part_px_method == '1':
@@ -4392,7 +4592,7 @@ class MATE(QMainWindow):
 
 		self.ax4.set_xlabel(r'$C_w \, (ppm)$', fontsize = fontsize_labels)
 		#self.ax4.set_xlim((0,self.maxwater + 50.0))
-		self.ax4.set_xlim((0,1000))
+		self.ax4.set_xlim((0,600))
 		self.ax4.set_ylim((MATE.lab / 1000.0) + 25.0, 0.0)
 		crust_obj = patches.Rectangle((0,0) ,100000.0,MATE.moho / 1000.0, color = '#b76314', alpha = 0.6,hatch = 'xxxx')
 		ast_obj = patches.Rectangle((0,MATE.lab / 1000.0),100000.0,1e5, color = '#b73114', alpha = 0.6,hatch = 'xx')
@@ -4553,7 +4753,8 @@ class MATE(QMainWindow):
 
 		if self.fo2_input == True:
 
-			self.ax5.axhline(self.depth[self.idx_start_fo2]/1e3,linestyle = '--', color = '#934d2b',lw = 2,label = r'End of $f_{o_2} Data$')
+			#self.ax5.axhline(self.depth[self.idx_start_fo2]/1e3,linestyle = '--', color = '#934d2b',lw = 2,label = r'End of $f_{o_2} Data$')
+			pass
 
 		crust_obj = patches.Rectangle((1e-5,0) ,1e10,MATE.moho / 1000.0, color = '#b76314', alpha = 0.6,hatch = 'xxxx')
 		ast_obj = patches.Rectangle((1e-5,MATE.lab / 1000.0),1e10,1e5, color = '#b73114', alpha = 0.6,hatch = 'xx')
@@ -4777,14 +4978,32 @@ class MATE(QMainWindow):
 	def plot_water_reset(self):
 
 		self.h2o_list = []
+		self.h2o_max_list = []
+		self.h2o_min_list = []
 		self.ol_h2o_list = []
+		self.ol_h2o_max_list = []
+		self.ol_h2o_min_list = []
 		self.opx_h2o_list = []
+		self.opx_h2o_max_list = []
+		self.opx_h2o_min_list = []
 		self.cpx_h2o_list = []
+		self.cpx_h2o_max_list = []
+		self.cpx_h2o_min_list = []
 		self.px_h2o_list = []
+		self.px_h2o_max_list = []
+		self.px_h2o_min_list = []
 		self.gt_h2o_list = []
+		self.gt_h2o_max_list = []
+		self.gt_h2o_min_list = []
 		self.amp_h2o_list = []
+		self.amp_h2o_max_list = []
+		self.amp_h2o_min_list = []
 		self.pl_h2o_list = []
+		self.pl_h2o_max_list = []
+		self.pl_h2o_min_list = []
 		self.plt_water_btn.setStyleSheet("QPushButton {min-width: 10em; font: bold; font-size: 9pt;background-color: #93db88}")
+
+		self.water_inverted = False
 
 	def plot_conductivity_button(self):
 
@@ -4869,24 +5088,45 @@ class MATE(QMainWindow):
 		self.linestyle_list = []
 		self.linewidth_list = []
 		self.h2o_list = []
+		self.h2o_max_list = []
+		self.h2o_min_list = []
 		self.ol_h2o_list = []
+		self.ol_h2o_max_list = []
+		self.ol_h2o_min_list = []
 		self.opx_h2o_list = []
+		self.opx_h2o_max_list = []
+		self.opx_h2o_min_list = []
 		self.cpx_h2o_list = []
+		self.cpx_h2o_max_list = []
+		self.cpx_h2o_min_list = []
 		self.px_h2o_list = []
+		self.px_h2o_max_list = []
+		self.px_h2o_min_list = []
 		self.gt_h2o_list = []
+		self.gt_h2o_max_list = []
+		self.gt_h2o_min_list = []
 		self.amp_h2o_list = []
+		self.amp_h2o_max_list = []
+		self.amp_h2o_min_list = []
 		self.pl_h2o_list = []
+		self.pl_h2o_max_list = []
+		self.pl_h2o_min_list = []
 		MATE.z_depth_plot_list = []
 		MATE.res_profile_plot_list = []
 		MATE.res_profile_max_plot_list = []
 		MATE.res_profile_min_plot_list = []
 		self.color_list_csv = []
+		self.depth_xen = []
+		self.p_xen = []
+		self.T_xen = []
+
 
 		self.ModEM_dat_read = False
 		self.csv_MT_read = False
 
 		self.upper_bound_load = False
 		self.lower_bound_load = False
+		self.xenolith_existence = False
 
 		self.act_comp_btn.setStyleSheet("QPushButton {min-width: 10em; font: bold; font-size: 9pt;background-color: #93db88}")
 		self.geot_btn.setStyleSheet("QPushButton {min-width: 10em; font: bold; font-size: 9pt;background-color: #93db88}")
@@ -5058,7 +5298,24 @@ class MATE(QMainWindow):
 
 			if self.write_out == True:
 
-				res_profile = np.array(MATE.res_profile_plot_list[-1])
+				self.water_end = False
+
+				if MATE.w_inp_method == '0':
+					self.h2o_max = np.zeros(len(self.h2o))
+					self.h2o_min = np.zeros(len(self.h2o))
+					calc_count = 3
+				else:
+					calc_count = 1
+
+				QMessageBox.about(self, 'Info', "Solving for water content at each layer. This might take a while (approx. 10-25 sec.) and the program may be unresponsive...")
+
+				if MATE.cond_uncert_method == '0':
+					res_profile = (MATE.res_profile_plot_list[-1])
+				elif MATE.cond_uncert_method == '1':
+					res_profile = (MATE.res_profile_max_plot_list[-1])
+				elif MATE.cond_uncert_method == '2':
+					res_profile = (MATE.res_profile_min_plot_list[-1])
+
 				f_res_profile = interp1d(np.array(MATE.z_depth_plot_list[-1]),res_profile)
 				res_to_invert = f_res_profile(self.depth[self.idx_moho:]/1e3)
 
@@ -5069,8 +5326,10 @@ class MATE(QMainWindow):
 				MATE.sol_model_pref_select = 0
 				self.solubility_partitioning()
 				MATE.sol_model_pref_select = 1
-				QMessageBox.about(self, 'Info', "Solving for water content at each layer. This might take a while (approx. 10-25 sec.) and the program may be unresponsive...")
+				timelist = []
+
 				for i in range(self.idx_moho,len(self.depth)):
+					self.water_end = False
 					water_search_start = 8
 					self.water_search = np.arange(0,self.h2o_from_sol[i],water_search_start)
 					restart = True
@@ -5090,7 +5349,13 @@ class MATE(QMainWindow):
 							if MATE.amp_method == '0':
 								self.calculate_amp_conductivity()
 							self.phase_mixing_function(method = MATE.phs_mix_method)
-							residual = (1.0/self.bulk_cond[i]) - res_to_invert[i]
+							if MATE.w_inp_method == '0':
+								residual = (1.0/self.bulk_cond[i] - res_to_invert[i])
+							elif MATE.w_inp_method == '1':
+								residual = (1.0/self.bulk_cond_min[i] - res_to_invert[i])
+							elif MATE.w_inp_method == '2':
+								residual = (1.0/self.bulk_cond_max[i] - res_to_invert[i])
+
 							residual_list.append(abs(residual))
 							res_check.append(residual)
 							chek = 0
@@ -5116,6 +5381,7 @@ class MATE(QMainWindow):
 					min_idx = residual_list.index(min(residual_list))
 					self.h2o[i] = self.water_search[min_idx]
 
+				start_time = timeit.timeit()
 				self.calculate_water()
 				self.calculate_ol_conductivity()
 				self.calculate_opx_conductivity()
@@ -5125,19 +5391,119 @@ class MATE(QMainWindow):
 					self.calculate_pl_conductivity()
 				if MATE.amp_method == '0':
 					self.calculate_amp_conductivity()
+				endtime = timeit.timeit()
+				print(endtime-start_time)
+				self.phase_mixing_function(method = MATE.phs_mix_method)
 				self.plot_water(method = 'draw')
 				self.plot_conductivity(method = 'draw', boundaries = False)
 
 				QMessageBox.about(self, 'Info', "The calculation has finished.")
 
-				self.water_inverted = True
 			else:
 
 				QMessageBox.about(self, 'Warning!', "The user have to at least calculate through conductivities once to perform this action.")
 
 		else:
 
-			QMessageBox.about(self, 'Warning!', "An external resistivity profile has to be imported in order for ")
+			QMessageBox.about(self, 'Warning!', "An external resistivity profile has to be imported in order to solve the water contents...")
+
+	def solve_for_geotherm(self):
+
+		#Brute solver for Heat Flow with the given parameters.
+
+		if self.xenolith_existence == True:
+
+			if MATE.thermal_cond_method != '2':
+
+				self.depth_xen = []
+				index_depth_xen = []
+				t_exclude = []
+				if MATE.z_xen_method == '0':
+					for i in range(0,len(self.p_xen)):
+						if self.p_xen[i] < np.amax(self.p):
+							index_depth_xen.append(np.where(self.p == self.find_nearest(self.p,self.p_xen[i])))
+							self.depth_xen.append(self.depth[index_depth_xen[i]][0]) #Finding the nearest value of depth equivalents of P values.
+						else:
+							t_exclude.append(i)
+
+				t_exclude = t_exclude[::-1]
+				self.T_xen_plot = np.asarray(self.T_xen)
+				self.p_xen_plot = np.asarray(self.p_xen)
+				for i in t_exclude:
+					self.T_xen_plot = np.delete(self.T_xen_plot,i)
+					self.p_xen_plot = np.delete(self.p_xen_plot,i)
+				temp_err = np.ones(len(self.T_xen_plot)) * MATE.xen_temp_err
+				pres_err = np.ones(len(self.p_xen_plot)) * MATE.xen_pressure_err
+
+				#Finding the data-equivalent T-P
+
+				self.heat_flow_search = np.arange(MATE.heat_flow_search_start,MATE.heat_flow_search_end,MATE.heat_flow_search_incr)
+
+				misfit_list = []
+
+				for i in range(0,len(self.heat_flow_search)):
+
+					MATE.q_0 = self.heat_flow_search[i]
+
+					self.calculate_geotherm()
+
+					self.P_equivalent = []
+					self.T_equivalent = []
+
+					for i in index_depth_xen:
+
+						self.P_equivalent.append(self.p[i][0])
+						self.T_equivalent.append(self.T[i][0])
+
+					self.P_equivalent = np.asarray(self.P_equivalent)
+					self.T_equivalent = np.asarray(self.T_equivalent)
+					misfit_func = self.xenolith_RMS(T = self.T_xen_plot,P = self.p_xen_plot,std_T = MATE.xen_temp_err,std_P = MATE.xen_pressure_err,P_eq = self.P_equivalent,T_eq = self.T_equivalent)
+					misfit_list.append(misfit_func)
+
+				index_rms_misfit = misfit_list.index(min(misfit_list))
+				MATE.q_0 = self.heat_flow_search[index_rms_misfit]
+
+				fig_rms = plt.figure(figsize = (5,5))
+				ax_rms = plt.subplot(111)
+				ax_rms.plot(self.heat_flow_search,misfit_list,color = 'k')
+				ax_rms.plot(self.heat_flow_search[index_rms_misfit],misfit_list[index_rms_misfit],'o',color = '#bf170c',label = 'Solution = ' + str('%4.2f' % self.heat_flow_search[index_rms_misfit]) + r'$mW/m^2$')
+				ax_rms.set_xlabel(r'Heat Flow [$mW/m^2$]')
+				ax_rms.set_ylabel('RMS')
+				ax_rms.grid(which = 'major')
+				ax_rms.set_title('Misfit')
+				ax_rms.set_xlim((self.heat_flow_search_start-1,self.heat_flow_search_end+1))
+				plt.show()
+
+				self.plot_geotherm_button()
+
+			else:
+
+				QMessageBox.about(self, 'Warning!', "You can not fit a geotherm to thermobarometric data with -Input Geotherm- method.")
+
+		else:
+
+			QMessageBox.about(self, 'Warning!', "Thermobarometry data has to be imported for this function to work.")
+
+	def xen_solver_properties(self):
+
+		if self.xen_solver is None:
+			self.xen_solver_pop = XEN_SOLV_POP()
+			self.xen_solver_pop.setGeometry(QtCore.QRect(1000, 100, 100, 100))
+		self.xen_solver_pop.show()
+
+	def forward_model_selection(self):
+
+		if self.fwd_model_pop is None:
+			self.fwd_model_pop = W_POP()
+			self.fwd_model_pop.setGeometry(QtCore.QRect(1000, 100, 100, 100))
+		self.fwd_model_pop.show()
+
+	def exported_model_selection(self):
+
+		if self.exported_model_pop is None:
+			self.exported_model_pop = COND_UNCERT_POP()
+			self.exported_model_pop.setGeometry(QtCore.QRect(1000, 100, 100, 100))
+		self.exported_model_pop.show()
 
 	def import_solution_to_comp(self):
 
@@ -5313,15 +5679,13 @@ class G_POP(QWidget):
 		self.gpop_info.clicked.connect(self.gpop_info_box)
 		heat_layout.addWidget(self.gpop_info)
 
-		self.geoth_select = None
 		self.geoth_select_prop = None
 		self.geoth_message = "You selected the geotherm input method, you can not change these parameters if you chosen this method."
 
 	def get_geoth_select(self):
 
-		if self.geoth_select is None:
-			self.geoth_select = GEOTH_SELECT()
-			self.geoth_select.setGeometry(QtCore.QRect(1000, 100, 100, 100))
+		self.geoth_select = GEOTH_SELECT()
+		self.geoth_select.setGeometry(QtCore.QRect(1000, 100, 100, 100))
 		self.geoth_select.show()
 
 	def get_geothermp_input_prop(self):
@@ -5444,6 +5808,12 @@ class G_POP(QWidget):
 
 		try:
 			try:
+				if float(self.geotherm_data[1][1]) != 0.0:
+					MATE.depth_geotherm.append(0.0)
+					if MATE.geotherm_inp_temp_method == '0':
+						MATE.T_geotherm.append(MATE.T_0+273)
+					else:
+						MATE.T_geotherm.append(MATE.T_0)
 				for i in range(1,len(self.geotherm_data)):
 					MATE.depth_geotherm.append(float(self.geotherm_data[i][1]))
 
@@ -5473,7 +5843,10 @@ class G_POP(QWidget):
 		" or can be assumed to be an average cratonic composition (Hasterok and Chapman, 2011). Thermal conductivities of minerals and the general methodology are taken from Hasterok and Chapman (2011) and Hasterok (2010)."\
 		" Values of radial and lattice thermal conductivities can be changed in the parameter files.\n\n"\
 		"In the geotherm plot the colored fields on the left hand side represent"\
-		" the temperature ranges of the experimetal conductivity models."
+		" the temperature ranges of the experimetal conductivity models.\n\n"\
+		"Geotherm can be also given as an input file from a csv file. In this csv file,"\
+		"there has to be a header on first row while first column should be temperature "\
+		"and second being depth in kilometres."
 
 		QMessageBox.about(self,"Info on this",str_msg_3)
 
@@ -5535,15 +5908,14 @@ class GEOTH_SELECT(QWidget):
 
 		geoth_layout = QVBoxLayout(self)
 
-		self.b1 = QRadioButton("Generalized cratonic composition")
+		self.b1 = QRadioButton("Generalized Cratonic Composition")
 		self.b1.toggled.connect(lambda:self.btnstate(self.b1))
-		self.b2 = QRadioButton("Composition dependent")
+		self.b2 = QRadioButton("Composition Dependent")
 		self.b2.toggled.connect(lambda:self.btnstate(self.b2))
 		self.b3 = QRadioButton("Input Geotherm")
 		self.b3.toggled.connect(lambda:self.btnstate(self.b3))
-		geoth_layout.addWidget(self.b1)
-		geoth_layout.addWidget(self.b2)
-		geoth_layout.addWidget(self.b3)
+		self.b4 = QRadioButton("Hasterok-Chapman (2011) Cratonic")
+		self.b4.toggled.connect(lambda:self.btnstate(self.b4))
 
 		if MATE.thermal_cond_method == '0':
 			self.b1.setChecked(True)
@@ -5551,10 +5923,17 @@ class GEOTH_SELECT(QWidget):
 			self.b2.setChecked(True)
 		elif MATE.thermal_cond_method == '2':
 			self.b3.setChecked(True)
+		elif MATE.thermal_cond_method == '3':
+			self.b4.setChecked(True)
+
+		geoth_layout.addWidget(self.b1)
+		geoth_layout.addWidget(self.b2)
+		geoth_layout.addWidget(self.b3)
+		geoth_layout.addWidget(self.b4)
 
 	def btnstate(self,b):
 
-		if b.text() == "Generalized Composition":
+		if b.text() == "Generalized Cratonic Composition":
 			if b.isChecked() == True:
 				MATE.thermal_cond_method = '0'
 		elif b.text() == "Composition Dependent":
@@ -5563,6 +5942,9 @@ class GEOTH_SELECT(QWidget):
 		elif b.text() == "Input Geotherm":
 			if b.isChecked() == True:
 				MATE.thermal_cond_method = '2'
+		elif b.text() == "Hasterok-Chapman (2011) Cratonic":
+			if b.isChecked() == True:
+				MATE.thermal_cond_method = '3'
 
 class DES_COMP(QWidget):
 
@@ -5740,7 +6122,7 @@ class DEPTH_FIX(QWidget):
 		self.moho_depth_textbox = QLineEdit(str(MATE.moho / 1000.0))
 		depth_layout.addRow(self.btn4,self.moho_depth_textbox)
 
-		self.btn6 = QPushButton("Depth of the LAB (km)")
+		self.btn6 = QPushButton("Maximum Depth (km)")
 		self.btn6.clicked.connect(self.get_heat_prod_6)
 		self.lab_depth_textbox = QLineEdit(str(MATE.lab / 1000.0))
 		depth_layout.addRow(self.btn6,self.lab_depth_textbox)
@@ -7601,6 +7983,7 @@ class ADD_WATER_POP(QWidget):
 			MATE.P_depth_water = []
 			MATE.H_water = []
 			MATE.H_water_err = []
+			MATE.water_mineral = []
 			try:
 				for i in range(1,len(data_text)):
 					try:
@@ -7610,6 +7993,10 @@ class ADD_WATER_POP(QWidget):
 							MATE.H_water_err.append(float(data_text[i][2]))
 						else:
 							MATE.H_water_err.append(0.0)
+						if len(data_text[1]) !=3:
+							MATE.water_mineral.append(data_text[i][3])
+						else:
+							MATE.water_mineral.append('NotGiven')
 					except ValueError:
 						QMessageBox.about(self,'Warning!','There is an element in the file that can not be transformed into floating number...')
 						return
@@ -7645,6 +8032,10 @@ class FIGPROP_POP(QWidget):
 		self.bulk_water_plot_btn_txt = QLineEdit(str(MATE.bulk_water_method_list[MATE.bulk_water_method]))
 		self.bulk_water_plot_btn.clicked.connect(self.get_bulk_water_method)
 
+		self.water_x_lim_btn = QPushButton('Water Content Upper Limit')
+		self.water_x_lim_btn_txt = QLineEdit(str(MATE.waterplotlim_up))
+		self.water_x_lim_btn.clicked.connect(self.get_waterplotlim_up)
+
 		self.condrange_btn = QPushButton('Conductivity Range')
 		self.condrange_btn_txt = QLineEdit(str(MATE.condrange_list[MATE.condrange_method]))
 		self.condrange_btn.clicked.connect(self.get_condrange)
@@ -7671,6 +8062,7 @@ class FIGPROP_POP(QWidget):
 
 		figureprop_layout.addRow(self.trange_btn,self.trange_btn_txt)
 		figureprop_layout.addRow(self.sol_plot_type_btn,self.sol_plot_type_btn_txt)
+		figureprop_layout.addRow(self.water_x_lim_btn,self.water_x_lim_btn_txt)
 		figureprop_layout.addRow(self.condrange_btn,self.condrange_btn_txt)
 		figureprop_layout.addRow(self.condlinestyle_btn,self.condlinestyle_btn_txt)
 		figureprop_layout.addRow(self.condlinewidth_btn,self.condlinewidth_btn_txt)
@@ -7739,6 +8131,17 @@ class FIGPROP_POP(QWidget):
 			except ValueError:
 				QMessageBox.about(self,"Warning!","Please enter a value that can be converted to floating number.")
 
+	def get_waterplotlim_up(self):
+
+		text, ok = QInputDialog.getText(self, 'X-limit of the water plot', 'X-limit of the water plot from max in ppm')
+		if ok:
+			try:
+				float(text)
+				self.condplotlim_up_btn_txt.setText(str(text))
+				MATE.waterplotlim_up = float(text)
+			except ValueError:
+				QMessageBox.about(self,"Warning!","Please enter a value that can be converted to floating number.")
+
 	def get_condplotlim_up(self):
 
 		text, ok = QInputDialog.getText(self, 'X-limit of the resistivity plot from max (ohm m)', 'X-limit of the resistivity plot from max in log- (ohm m)')
@@ -7770,6 +8173,143 @@ class FIGPROP_POP(QWidget):
 			self.boundsbackgr_btn_txt.setText(item)
 
 		MATE.bounds_select = MATE.boundslist.index(item)
+
+class W_POP(QWidget):
+
+	def __init__(self):
+
+		QWidget.__init__(self)
+
+		w_layout = QVBoxLayout(self)
+
+		self.w_inp_temp_radio_1 = QRadioButton("Model")
+		self.w_inp_temp_radio_1.toggled.connect(lambda:self.btnstate_w_inp(self.w_inp_temp_radio_1))
+		self.w_inp_temp_radio_2 = QRadioButton("Maximum bound of the model")
+		self.w_inp_temp_radio_2.toggled.connect(lambda:self.btnstate_w_inp(self.w_inp_temp_radio_2))
+		self.w_inp_temp_radio_3 = QRadioButton("Minimum bound of the model")
+		self.w_inp_temp_radio_3.toggled.connect(lambda:self.btnstate_w_inp(self.w_inp_temp_radio_3))
+
+		if MATE.w_inp_method == '0':
+			self.w_inp_temp_radio_1.setChecked(True)
+		elif MATE.w_inp_method == '1':
+			self.w_inp_temp_radio_2.setChecked(True)
+		elif MATE.w_inp_method == '2':
+			self.w_inp_temp_radio_3.setChecked(True)
+
+		w_layout.addWidget(self.w_inp_temp_radio_1)
+		w_layout.addWidget(self.w_inp_temp_radio_2)
+		w_layout.addWidget(self.w_inp_temp_radio_3)
+
+	def btnstate_w_inp(self,b):
+
+		if b.text() == "Model":
+			if b.isChecked() == True:
+				MATE.w_inp_method = '0'
+		elif b.text() == "Maximum bound of the model":
+			if b.isChecked() == True:
+				MATE.w_inp_method = '1'
+		elif b.text() == "Minimum bound of the model":
+			if b.isChecked() == True:
+				MATE.w_inp_method = '2'
+
+class COND_UNCERT_POP(QWidget):
+
+	def __init__(self):
+
+		QWidget.__init__(self)
+
+		cond_uncert_layout = QVBoxLayout(self)
+
+		self.cond_uncert_radio_1 = QRadioButton("Model")
+		self.cond_uncert_radio_1.toggled.connect(lambda:self.btnstate_cond_inp(self.cond_uncert_radio_1))
+		self.cond_uncert_radio_2 = QRadioButton("Maximum bound of the model")
+		self.cond_uncert_radio_2.toggled.connect(lambda:self.btnstate_cond_inp(self.cond_uncert_radio_2))
+		self.cond_uncert_radio_3 = QRadioButton("Minimum bound of the model")
+		self.cond_uncert_radio_3.toggled.connect(lambda:self.btnstate_cond_inp(self.cond_uncert_radio_3))
+
+		if MATE.cond_uncert_method == '0':
+			self.cond_uncert_radio_1.setChecked(True)
+		elif MATE.cond_uncert_method == '1':
+			self.cond_uncert_radio_2.setChecked(True)
+		elif MATE.cond_uncert_method == '2':
+			self.cond_uncert_radio_3.setChecked(True)
+
+		cond_uncert_layout.addWidget(self.cond_uncert_radio_1)
+		cond_uncert_layout.addWidget(self.cond_uncert_radio_2)
+		cond_uncert_layout.addWidget(self.cond_uncert_radio_3)
+
+	def btnstate_cond_inp(self,b):
+
+		if b.text() == "Model":
+			if b.isChecked() == True:
+				MATE.cond_uncert_method = '0'
+		elif b.text() == "Maximum bound of the model":
+			if b.isChecked() == True:
+				MATE.cond_uncert_method = '1'
+		elif b.text() == "Minimum bound of the model":
+			if b.isChecked() == True:
+				MATE.cond_uncert_method = '2'
+
+class XEN_SOLV_POP(QWidget):
+
+	def __init__(self):
+
+		QWidget.__init__(self)
+
+		xen_solv_layout = QFormLayout(self)
+
+		self.xen_solution_down_lim_btn = QPushButton('Heat flow search start')
+		self.xen_solution_down_lim_btn_txt = QLineEdit(str(MATE.heat_flow_search_start))
+		self.xen_solution_down_lim_btn.clicked.connect(self.get_xen_solution_down)
+
+		self.xen_solution_up_lim_btn = QPushButton('Heat flow search end')
+		self.xen_solution_up_lim_btn_txt = QLineEdit(str(MATE.heat_flow_search_end))
+		self.xen_solution_up_lim_btn.clicked.connect(self.get_xen_solution_up)
+
+		self.xen_solution_increment_btn = QPushButton('Heat flow search increment')
+		self.xen_solution_increment_btn_txt = QLineEdit(str(MATE.heat_flow_search_incr))
+		self.xen_solution_increment_btn.clicked.connect(self.get_xen_solution_incr)
+
+		xen_solv_layout.addRow(self.xen_solution_down_lim_btn,self.xen_solution_down_lim_btn_txt)
+		xen_solv_layout.addRow(self.xen_solution_up_lim_btn,self.xen_solution_up_lim_btn_txt)
+		xen_solv_layout.addRow(self.xen_solution_increment_btn,self.xen_solution_increment_btn_txt)
+
+	def get_xen_solution_down(self):
+
+		text, ok = QInputDialog.getText(self, 'Enter the Heat Flow search starting point in mW/m^3', 'Enter the Heat Flow search starting point in mW/m^3')
+		if ok:
+			try:
+				float(text)
+				self.xen_solution_down_lim_btn_txt.setText(str(text))
+				MATE.heat_flow_search_start = float(text)
+			except ValueError:
+				QMessageBox.about(self,"Warning!","Please enter a value that can be converted to floating number.")
+
+
+	def get_xen_solution_up(self):
+
+		text, ok = QInputDialog.getText(self, 'Enter the Heat Flow search ending point in mW/m^3', 'Enter the Heat Flow search ending point in mW/m^3')
+		if ok:
+			try:
+				float(text)
+				self.xen_solution_up_lim_btn_txt.setText(str(text))
+				MATE.heat_flow_search_end = float(text)
+			except ValueError:
+				QMessageBox.about(self,"Warning!","Please enter a value that can be converted to floating number.")
+
+	def get_xen_solution_incr(self):
+
+		text, ok = QInputDialog.getText(self, 'Enter the Heat Flow search increment in mW/m^3', 'Enter the Heat Flow search increment in mW/m^3')
+		if ok:
+			try:
+				float(text)
+				self.xen_solution_increment_btn_txt.setText(str(text))
+				MATE.heat_flow_search_incr = float(text)
+			except ValueError:
+				QMessageBox.about(self,"Warning!","Please enter a value that can be converted to floating number.")
+
+
+
 
 def main():
 
