@@ -84,5 +84,3 @@ Contact
 **Sinan Özaydın**
 
 sinan.ozaydin@protonmail.com
-
-sinan.ozaydin@hdr.mq.edu.au
