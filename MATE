@@ -6049,7 +6049,7 @@ class GEOTH_SELECT(QWidget):
 
 	def btnstate(self,b):
 
-		if b.text() == "Generalized Cratonic Composition":
+		if b.text() == "Generalized Cratonic Mantle Composition (Hasterok-Chapman 2011)":
 			if b.isChecked() == True:
 				MATE.thermal_cond_method = '0'
 		elif b.text() == "Composition Dependent":
@@ -6058,7 +6058,7 @@ class GEOTH_SELECT(QWidget):
 		elif b.text() == "Input Geotherm":
 			if b.isChecked() == True:
 				MATE.thermal_cond_method = '2'
-		elif b.text() == "Hasterok-Chapman (2011) Cratonic":
+		elif b.text() == "Generalized Cratonic Mantle Composition + 26 % Upper Crustal Radiogenic Heat Production (Hasterok-Chapman 2011)":
 			if b.isChecked() == True:
 				MATE.thermal_cond_method = '3'
 
