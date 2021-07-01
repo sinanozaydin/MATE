@@ -13,6 +13,13 @@ How to cite
 ========== 
 - Özaydın, S., & Selway, K. (2020). MATE: An analysis tool for the interpretation of magnetotelluric models of the mantle. Geochemistry, Geophysics, Geosystems, 21, e2020GC009126. https://doi.org/10.1029/2020GC009126 
 
+Webinar content
+==========
+
+There is now a presentation (EMinar Series) on how to use MATE, uploaded into YouTube via the following link.
+
+https://www.youtube.com/watch?v=UirVvO7k0Ls
+
 Installation
 ==========
 
