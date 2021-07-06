@@ -79,6 +79,10 @@ python3 setupexe.py
 ```
  
  Executable file has to be run within the directory. It will not work if it is copied elsewhere.
+ 
+Citable content
+==========
+The bibliographies of studies used in this software is collected in .bib files located at "mate_src/citations" folder. The names of the references are selected as how they appear on the software.
 
 Adding new models to the program
 ==========
