@@ -27,7 +27,6 @@ Copying the files to a directory will do the job. However, the structure of the 
 
 The program could simply run by the command:
 
-
 ```bash
 python3 MATE
 ```
@@ -77,6 +76,12 @@ Then through command prompt (in Windows) or terminal (linux or macOS), typing th
 ```bash
 python3 setupexe.py
 ```
+or (sometimes python can be the default python3, especially on Windows)
+
+```bash
+python setupexe.py
+```
+
  
  Executable file has to be run within the directory. It will not work if it is copied elsewhere.
  
