@@ -16,7 +16,7 @@ How to cite
 Webinar content
 ==========
 
-There is now a presentation (EMinar Series) on how to use MATE, which can be watch on YouTube via the following link.
+There is now a presentation (EMinar Series) on how to use MATE, which can be watched on YouTube via the following link.
 
 https://www.youtube.com/watch?v=UirVvO7k0Ls
 
