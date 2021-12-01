@@ -5730,17 +5730,17 @@ class COMP_EDITOR(QWidget):
 		"Parameters Used:\n"\
 		"- Depth(km): Top of the layer in km. The first layer has to match with the MOHO depth.\n\n"\
 		"- Cw_bulk(ppm): Bulk water content of the layer in ppm (parts per million).\n\n"\
-		"- ol_frac, opx_frac, cpx_frac, gt_frac, pl_frac, amp_frac, cond_frac : Fractions of constituent minerals in percentage (olivine, orthopyroxene, clinopyroxene, garnet, phlogopite, amphibole and temperature independent conductive phase respectively).\n\n"\
+		"- ol_frac, opx_frac, cpx_frac, gt_frac, sp_chr_frac, pl_frac, amp_frac, cond_frac : Fractions of constituent minerals in percentage (olivine, orthopyroxene, clinopyroxene, garnet, spinel/chromite, phlogopite, amphibole and temperature independent conductive phase respectively).\n\n"\
 		"- cond_cond : Resistivity value of temperature independent conductive phase (cond_frac) in ohm meters.\n\n"\
-		"- X_fe-ol, X_fe-opx, X_fe-cpx, X_fe-gt: Iron content of constituent minerals. These values have to be between 0 and 1 and are equivalent to the reciprocal of the Mg number over 100.\n\n"\
+		"- X_fe-ol, X_fe-opx, X_fe-cpx, X_fe-gt: Iron content of constituent minerals. These values have to be between 0 and 1 and are equivalent to (1-Mg#/100).\n\n"\
 		"- Al-opx(wt%): Al content of opx in weight percent. If an Al model is entered, this value will be replaced over the active P-region of the selected model.\n\n"\
 		"- Ti-ol(wt%): Ti content of ol in weight percent. It is only used in calculating olivine water solubility model of Padron-Navarta2017.\n\n"\
-		"- m_ol, m_opx, m_cpx, m_gt, m_pl, m_amp, m_cond : Modified Archie's Law phase exponents for the respective minerals, which represent the connectivity of the minerals."\
+		"- m_ol, m_opx, m_cpx, m_gt, m_sp_chr, m_pl, m_amp, m_cond : Modified Archie's Law phase exponents for the respective minerals, which represent the connectivity of the minerals."\
 		" If Archie's Law is not used to define the geometric model, the value entered here is not used.\n\n"\
 		"- t_k_cond thermal conductivity rate of the temperature independent conductive phase in W/mK.\n\n"\
 		"- fl_pl(wt%): Fluorine content of phlogopite, which is only relevant if certain models are used for phlogopite conductivity. Otherwise, any value(numbers) can be entered instead.\n\n" \
 		"- ol_gs: Olivine grain size in mm. This value only will be used if olivine conductivity is calculated from grain boundary and lattice diffusion models.\n\n"\
-		"- heat prod: Heat production rate of the layer (mW/m^2).\n\n"\
+		"- heat prod: Heat production rate of the layer (mW/m^3).\n\n"\
 		"After entering or uploading parameters, press the Submit button to make them functional."
 
 		QMessageBox.about(self,"Info on this",str_msg)
