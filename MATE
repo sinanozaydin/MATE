@@ -14,8 +14,8 @@ from matplotlib.collections import PatchCollection
 import matplotlib.colors as colors
 from matplotlib.pyplot import Figure
 import matplotlib.patheffects as pe
-from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
-from matplotlib.backends.backend_qt4agg import NavigationToolbar2QT as NavigationToolbar
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 from PyQt5 import QtGui, QtCore
 from PyQt5.QtWidgets import *
 import timeit
