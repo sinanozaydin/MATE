@@ -100,3 +100,4 @@ Contact
 **Sinan Özaydın**
 
 sinan.ozaydin@protonmail.com
+sinan.ozaydin@mq.edu.au
