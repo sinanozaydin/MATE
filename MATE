@@ -64,7 +64,7 @@ print(bcolors.GREEN + '#############################################')
 print(' ')
 print(' ')
 print(' ')
-print(bcolors.GREEN + '                  MATE 1.3')
+print(bcolors.GREEN + '                  MATE 1.3.1')
 print(' ')
 print(bcolors.BLUE + '            Mantle Analysis Tools')
 print('                     for')
@@ -5760,26 +5760,31 @@ class G_POP(QWidget):
 		self.btn0 = QPushButton("Surface heat flow (mW/m^2)")
 		self.btn0.clicked.connect(self.get_heat_prod_0)
 		self.surf_hw_textbox = QLineEdit(str(MATE.q_0))
+		self.surf_hw_textbox.setEnabled(False)
 		heat_layout.addRow(self.btn0,self.surf_hw_textbox)
 
 		self.btn01 = QPushButton("Surface temperature (C)")
 		self.btn01.clicked.connect(self.get_heat_prod_01)
 		self.surf_temp_textbox = QLineEdit(str(MATE.T_0 - 273.0))
+		self.surf_temp_textbox.setEnabled(False)
 		heat_layout.addRow(self.btn01,self.surf_temp_textbox)
 
 		self.btn1 = QPushButton("Upper-crustal heat production (mW/m^3)")
 		self.btn1.clicked.connect(self.get_heat_prod_1)
 		self.heat_prod_textbox = QLineEdit(str(MATE.A_upper_crust))
+		self.heat_prod_textbox.setEnabled(False)
 		heat_layout.addRow(self.btn1,self.heat_prod_textbox)
 
 		self.btn2 = QPushButton("Depth of the heat-producing upper crust (km)")
 		self.btn2.clicked.connect(self.get_heat_prod_2)
 		self.upper_crst_depth = QLineEdit(str(MATE.hr / 1000.0) )
+		self.upper_crst_depth.setEnabled(False)
 		heat_layout.addRow(self.btn2,self.upper_crst_depth)
 
 		self.btn3 = QPushButton("Lower-crustal heat production (mW/m^3)")
 		self.btn3.clicked.connect(self.get_heat_prod_3)
 		self.heat_prod_textbox_2 = QLineEdit(str(MATE.A_lower_crust))
+		self.heat_prod_textbox_2.setEnabled(False)
 		heat_layout.addRow(self.btn3,self.heat_prod_textbox_2)
 
 		self.btn35 = QPushButton("Input Geotherm Properties")
@@ -6145,6 +6150,7 @@ class SUBCLASS_AL(QWidget):
 
 		self.al_opx_model_button = QPushButton("Al-opx model")
 		self.al_opx_model_textbox = QLineEdit(MATE.al_opx_model_display[MATE.al_opx_model_select])
+		self.al_opx_model_textbox.setEnabled(False)
 		self.al_opx_model_button.clicked.connect(self.get_al_opx_model)
 		part_layout.addRow(self.al_opx_model_button,self.al_opx_model_textbox)
 
@@ -6236,11 +6242,13 @@ class DEPTH_FIX(QWidget):
 		self.btn4 = QPushButton("Depth of the Moho (km)")
 		self.btn4.clicked.connect(self.get_heat_prod_4)
 		self.moho_depth_textbox = QLineEdit(str(MATE.moho / 1000.0))
+		self.moho_depth_textbox.setEnabled(False)
 		depth_layout.addRow(self.btn4,self.moho_depth_textbox)
 
 		self.btn6 = QPushButton("Maximum Depth (km)")
 		self.btn6.clicked.connect(self.get_heat_prod_6)
 		self.lab_depth_textbox = QLineEdit(str(MATE.lab / 1000.0))
+		self.lab_depth_textbox.setEnabled(False)
 		depth_layout.addRow(self.btn6,self.lab_depth_textbox)
 
 	def get_heat_prod_4(self):
@@ -6298,6 +6306,7 @@ class PART_POP(QWidget):
 
 		self.gt_button = QPushButton("gt/ol")
 		self.gt_part_textbox = QLineEdit(MATE.gt_display)
+		self.gt_part_textbox.setEnabled(False)
 		part_layout.addRow(self.gt_button,self.gt_part_textbox)
 		self.gt_button.clicked.connect(self.get_gtol)
 
@@ -6308,11 +6317,13 @@ class PART_POP(QWidget):
 
 		self.amp_button = QPushButton("amp/ol")
 		self.amp_part_textbox = QLineEdit(MATE.amp_display)
+		self.amp_part_textbox.setEnabled(False)
 		self.amp_button.clicked.connect(self.get_ampol)
 		part_layout.addRow(self.amp_button,self.amp_part_textbox)
 
 		self.pl_button = QPushButton("phlg/ol")
 		self.pl_part_textbox = QLineEdit(MATE.pl_display)
+		self.pl_part_textbox.setEnabled(False)
 		self.pl_button.clicked.connect(self.get_plol)
 		part_layout.addRow(self.pl_button,self.pl_part_textbox)
 
@@ -6484,7 +6495,9 @@ class PYROXENE_POP(QWidget):
 		self.btn2_part = QPushButton("Cpx/Ol")
 
 		self.btn1_part_textbox = QLineEdit(MATE.opx_display)
+		self.btn1_part_textbox.setEnabled(False)
 		self.btn2_part_textbox = QLineEdit(MATE.cpx_display)
+		self.btn2_part_textbox.setEnabled(False)
 
 		if MATE.part_px_method == '0':
 			self.btn1_part.clicked.connect(self.get_pxol)
@@ -6552,10 +6565,12 @@ class XEN_POP(QWidget):
 
 		self.xen_btn_3 = QPushButton("Temperature Uncertainty")
 		self.xen_btn_3_txt = QLineEdit(str(MATE.xen_temp_err))
+		self.xen_btn_3_txt.setEnabled(False)
 		self.xen_btn_3.clicked.connect(self.get_xen_temp_uncert)
 
 		self.xen_btn_4 = QPushButton("Pressure-Depth Uncertainty")
 		self.xen_btn_4_txt = QLineEdit(str(MATE.xen_pressure_err))
+		self.xen_btn_4_txt.setEnabled(False)
 		self.xen_btn_4.clicked.connect(self.get_xen_pressure_uncert)
 
 		xen_layout.addRow(self.xen_btn_1)
@@ -6911,15 +6926,20 @@ class COND_POP(QWidget):
 
 		self.ol_cond_btn = QPushButton('Ol Model')
 		self.ol_cond_text_box = QLineEdit(MATE.name[0][MATE.ol_cond_selection])
+		self.ol_cond_text_box.setEnabled(False)
 		self.px_cond_btn = QPushButton('Px Models')
 		self.gt_cond_btn = QPushButton('Gt Model')
 		self.gt_cond_text_box = QLineEdit(MATE.name[3][MATE.gt_cond_selection])
+		self.gt_cond_text_box.setEnabled(False)
 		self.amp_cond_btn = QPushButton('Amp Model')
 		self.amp_cond_text_box = QLineEdit(MATE.name[4][MATE.amp_cond_selection])
+		self.amp_cond_text_box.setEnabled(False)
 		self.pl_cond_btn = QPushButton('Phlg Model')
 		self.pl_cond_text_box = QLineEdit(MATE.name[5][MATE.pl_cond_selection])
+		self.pl_cond_text_box.setEnabled(False)
 		self.sp_chr_cond_btn = QPushButton('Sp-Chr Model')
 		self.sp_chr_cond_text_box = QLineEdit(MATE.name[6][MATE.sp_chr_cond_selection])
+		self.sp_chr_cond_text_box.setEnabled(False)
 
 		self.ol_cond_btn.clicked.connect(self.ol_cond_get)
 
@@ -7071,21 +7091,25 @@ class MODEL_GET(QWidget):
 
 		self.ol_model_method_btn = QPushButton('Ol Method')
 		self.ol_model_method_btn_text_box = QLineEdit(MATE.model_method_list[MATE.model_method_ol])
+		self.ol_model_method_btn_text_box.setEnabled(False)
 		self.ol_model_method_btn.clicked.connect(self.ol_model_method_get)
 		self.modelget_layout.addRow(self.ol_model_method_btn,self.ol_model_method_btn_text_box)
 
 		self.opx_model_method_btn = QPushButton('Opx Method')
 		self.opx_model_method_btn_text_box = QLineEdit(MATE.model_method_list[MATE.model_method_opx])
+		self.opx_model_method_btn_text_box.setEnabled(False)
 		self.opx_model_method_btn.clicked.connect(self.opx_model_method_get)
 		self.modelget_layout.addRow(self.opx_model_method_btn,self.opx_model_method_btn_text_box)
 
 		self.cpx_model_method_btn = QPushButton('Cpx Method')
 		self.cpx_model_method_btn_text_box = QLineEdit(MATE.model_method_list[MATE.model_method_cpx])
+		self.cpx_model_method_btn_text_box.setEnabled(False)
 		self.cpx_model_method_btn.clicked.connect(self.cpx_model_method_get)
 		self.modelget_layout.addRow(self.cpx_model_method_btn,self.cpx_model_method_btn_text_box)
 
 		self.gt_model_method_btn = QPushButton('Gt Method')
 		self.gt_model_method_btn_text_box = QLineEdit(MATE.model_method_list[MATE.model_method_gt])
+		self.gt_model_method_btn_text_box.setEnabled(False)
 		self.gt_model_method_btn.clicked.connect(self.gt_model_method_get)
 		self.modelget_layout.addRow(self.gt_model_method_btn,self.gt_model_method_btn_text_box)
 
@@ -7154,11 +7178,14 @@ class PX_COND_POP(QWidget):
 
 		self.opx_cond_btn = QPushButton('Opx Model')
 		self.opx_cond_text_box = QLineEdit(MATE.name[1][MATE.opx_cond_selection])
+		self.opx_cond_text_box.setEnabled(False)
 		self.cpx_cond_btn = QPushButton('Cpx Model')
 		if MATE.px_cond_method == 0:
 			self.cpx_cond_text_box = QLineEdit(MATE.name[2][MATE.cpx_cond_selection])
+			self.cpx_cond_text_box.setEnabled(False)
 		else:
 			self.cpx_cond_text_box = QLineEdit(self.px_cond_display_list[MATE.px_display_item])
+			self.cpx_cond_text_box.setEnabled(False)
 
 		self.opx_cond_btn.clicked.connect(self.opx_cond_get)
 
@@ -7247,15 +7274,19 @@ class DRY_POP(QWidget):
 		self.dry_cond_btn1 = QPushButton('Olivine Model')
 		self.dry_cond_btn1.clicked.connect(self.get_ol_dry)
 		self.dry_cond_textbox = QLineEdit(MATE.name_dry[0][MATE.ol_dry_selection])
+		self.dry_cond_textbox.setEnabled(False)
 		self.dry_cond_btn2 = QPushButton('Opx Model')
 		self.dry_cond_btn2.clicked.connect(self.get_opx_dry)
 		self.dry_cond_textbox_2 = QLineEdit(MATE.name_dry[1][MATE.opx_dry_selection])
+		self.dry_cond_textbox_2.setEnabled(False)
 		self.dry_cond_btn3 = QPushButton('Cpx Model')
 		self.dry_cond_btn3.clicked.connect(self.get_cpx_dry)
 		self.dry_cond_textbox_3 = QLineEdit(MATE.name_dry[2][MATE.cpx_dry_selection])
+		self.dry_cond_textbox_3.setEnabled(False)
 		self.dry_cond_btn4 = QPushButton('Gt Model')
 		self.dry_cond_btn4.clicked.connect(self.get_gt_dry)
 		self.dry_cond_textbox_4 = QLineEdit(MATE.name_dry[3][MATE.gt_dry_selection])
+		self.dry_cond_textbox_4.setEnabled(False)
 		self.dry_cond_infobtn = QPushButton('Info')
 		self.dry_cond_infobtn.clicked.connect(self.dry_cond_info)
 
@@ -7409,10 +7440,12 @@ class MT_INPUT(QWidget):
 
 		self.mt_input_btn = QPushButton('MT Model Type')
 		self.mt_input_textbox = QLineEdit(MATE.mt_input[MATE.mt_input_selection])
+		self.mt_input_textbox.setEnabled(False)
 		self.mt_input_btn.clicked.connect(self.mt_input_func)
 
 		self.csv_file_type_btn = QPushButton('CSV File Type')
 		self.csv_file_type_btn_txt = QLineEdit(MATE.csv_file_type[MATE.csv_file_selection])
+		self.csv_file_type_btn_txt.setEnabled(False)
 		self.csv_file_type_btn.clicked.connect(self.csv_file_func)
 
 		mt_layout.addRow(self.mt_input_btn,self.mt_input_textbox)
@@ -7463,6 +7496,7 @@ class MODEM_CURVE(QWidget):
 
 		self.mt_plot_sel = QPushButton('Depth of section')
 		self.mt_plot_sel_textbox = QLineEdit(str(MATE.plot_sel_modem))
+		self.mt_plot_sel_textbox.setEnabled(False)
 		self.mt_plot_sel.clicked.connect(self.get_plot_sel)
 		model_curve_layout.addRow(self.mt_plot_sel,self.mt_plot_sel_textbox)
 
@@ -7723,6 +7757,7 @@ class MT_HAND(QWidget):
 
 			self.station_select_button = QPushButton('Select Station')
 			self.station_select_button_text = QLineEdit(MATE.station_name[MATE.station_name_select])
+			self.station_select_button_text.setEnabled(False)
 			self.station_select_button.clicked.connect(self.mt_station_select)
 			mt_hand_layout.addRow(self.station_select_button,self.station_select_button_text)
 
@@ -7731,7 +7766,9 @@ class MT_HAND(QWidget):
 			self.lat_select_button = QPushButton('Enter Y')
 			self.lon_select_button = QPushButton('Enter X')
 			self.lat_select_button_text = QLineEdit(str(0.0))
+			self.lat_select_button_text.setEnabled(False)
 			self.lon_select_button_text = QLineEdit(str(0.0))
+			self.station_select_button_text.setEnabled(False)
 			self.lat_select_button.clicked.connect(self.mt_posx_select)
 			self.lon_select_button.clicked.connect(self.mt_posy_select)
 			mt_hand_layout.addRow(self.lat_select_button,self.lat_select_button_text)
@@ -7806,6 +7843,7 @@ class MT_ERR(QWidget):
 
 		self.mterr_submit_button = QPushButton('Submit Method')
 		self.mterr_submit_button_txt = QLineEdit(MATE.mt_err_val_str)
+		self.mterr_submit_button_txt.setEnabled(False)
 
 		self.mterr_submit_button.clicked.connect(self.mterr_submit_value)
 		mt_err_layout.addRow(self.mterr_submit_button,self.mterr_submit_button_txt)
@@ -7875,11 +7913,13 @@ class SOL_POP(QWidget):
 
 		self.sol_model_select_button = QPushButton('Select Model')
 		self.sol_model_select_button_text = QLineEdit(MATE.name_ol_sol[MATE.sol_method])
+		self.sol_model_select_button_text.setEnabled(False)
 		self.sol_model_select_button.clicked.connect(self.get_sol_model)
 		sol_pop_layout.addRow(self.sol_model_select_button,self.sol_model_select_button_text)
 
 		self.sol_model_use_button = QPushButton('Use as the Water Distr.')
 		self.sol_model_use_button_txt = QLineEdit(MATE.sol_model_pref[MATE.sol_model_pref_select])
+		self.sol_model_use_button_txt.setEnabled(False)
 		self.sol_model_use_button.clicked.connect(self.get_sol_model_use)
 		sol_pop_layout.addRow(self.sol_model_use_button,self.sol_model_use_button_txt)
 
@@ -7945,6 +7985,7 @@ class AMP_POP(QWidget):
 		self.amp_stab_btn = QPushButton('Amphibole Stability')
 		self.amp_stab_btn.clicked.connect(self.get_amp_stab)
 		self.amp_stab_btn_textbox = QLineEdit(MATE.amph_stab_list[MATE.amph_stab_select])
+		self.amp_stab_btn_textbox.setEnabled(False)
 		amp_pop_layout.addRow(self.amp_stab_btn,self.amp_stab_btn_textbox)
 
 	def get_amp_stab(self):
@@ -7981,6 +8022,7 @@ class SP_POP(QWidget):
 		self.sp_stab_btn = QPushButton('Manual Entry')
 		self.sp_stab_btn.clicked.connect(self.get_sp_stab)
 		self.sp_stab_btn_textbox = QLineEdit(str(MATE.P_sp_manual))
+		self.sp_stab_btn_textbox.setEnabled(False)
 		sp_pop_layout.addRow(self.sp_stab_btn,self.sp_stab_btn_textbox)
 
 		self.sp_infobtn = QPushButton('Info')
@@ -8031,10 +8073,12 @@ class GSIZE_POP(QWidget):
 
 		self.part_gb_btn = QPushButton('Grain Boundary Partition')
 		self.part_gb_btn_text = QLineEdit(str(MATE.D_gb))
+		self.part_gb_btn_text.setEnabled(False)
 		self.part_gb_btn.clicked.connect(self.get_d_part)
 
 		self.ol_gb_btn = QPushButton('Ol GB Model')
 		self.ol_gb_btn_text = QLineEdit(str(MATE.GB_ol_list[MATE.GB_ol_select]))
+		self.ol_gb_btn_text.setEnabled(False)
 		self.ol_gb_btn.clicked.connect(self.get_ol_gb)
 
 		gsize_pop_layout.addRow(self.part_gb_btn,self.part_gb_btn_text)
@@ -8153,46 +8197,57 @@ class FIGPROP_POP(QWidget):
 
 		self.trange_btn = QPushButton('T-Ranges')
 		self.trange_btn_txt = QLineEdit(str(MATE.trange_list[MATE.trange_method]))
+		self.trange_btn_txt.setEnabled(False)
 		self.trange_btn.clicked.connect(self.get_trange)
 
 		self.sol_plot_type_btn = QPushButton('Solubility Plot Style')
 		self.sol_plot_type_btn_txt = QLineEdit(str(MATE.sol_plot_type_list[MATE.sol_plot_method]))
+		self.sol_plot_type_btn_txt.setEnabled(False)
 		self.sol_plot_type_btn.clicked.connect(self.get_sol_plot_type)
 
 		self.sol_plot_scale_type_btn = QPushButton('Solubility Plot Scale')
 		self.sol_plot_scale_type_btn_txt = QLineEdit(str(MATE.sol_plot_scale_list[MATE.sol_plot_scale_method]))
+		self.sol_plot_scale_type_btn_txt.setEnabled(False)
 		self.sol_plot_scale_type_btn.clicked.connect(self.get_sol_plot_scale_type)
 
 		self.bulk_water_plot_btn = QPushButton('Plot Bulk Water Content')
 		self.bulk_water_plot_btn_txt = QLineEdit(str(MATE.bulk_water_method_list[MATE.bulk_water_method]))
+		self.bulk_water_plot_btn_txt.setEnabled(False)
 		self.bulk_water_plot_btn.clicked.connect(self.get_bulk_water_method)
 
 		self.water_x_lim_btn = QPushButton('Water Content Upper Limit')
 		self.water_x_lim_btn_txt = QLineEdit(str(MATE.waterplotlim_up))
+		self.water_x_lim_btn_txt.setEnabled(False)
 		self.water_x_lim_btn.clicked.connect(self.get_waterplotlim_up)
 
 		self.condrange_btn = QPushButton('Conductivity Range')
 		self.condrange_btn_txt = QLineEdit(str(MATE.condrange_list[MATE.condrange_method]))
+		self.condrange_btn_txt.setEnabled(False)
 		self.condrange_btn.clicked.connect(self.get_condrange)
 
 		self.condlinestyle_btn = QPushButton('Conductivity Linestyle')
 		self.condlinestyle_btn_txt = QLineEdit(str(MATE.condlinestyle_list[MATE.condlinestyle_select]))
+		self.condlinestyle_btn_txt.setEnabled(False)
 		self.condlinestyle_btn.clicked.connect(self.get_condlinestyle)
 
 		self.condlinewidth_btn = QPushButton('Conductivity Linewidth')
 		self.condlinewidth_btn_txt = QLineEdit(str(MATE.condlinewidth))
+		self.condlinewidth_btn_txt.setEnabled(False)
 		self.condlinewidth_btn.clicked.connect(self.get_condlinewidth)
 
 		self.condplotlim_up_btn = QPushButton('Conductivity Upper Plot Limiit')
 		self.condplotlim_up_btn_txt = QLineEdit(str(MATE.condplotlim_up))
+		self.condplotlim_up_btn_txt.setEnabled(False)
 		self.condplotlim_up_btn.clicked.connect(self.get_condplotlim_up)
 
 		self.condplotlim_down_btn = QPushButton('Conductivity Lower Plot Limiit')
 		self.condplotlim_down_btn_txt = QLineEdit(str(MATE.condplotlim_down))
+		self.condplotlim_down_btn_txt.setEnabled(False)
 		self.condplotlim_down_btn.clicked.connect(self.get_condplotlim_down)
 
 		self.boundsbackgr_btn = QPushButton('Plot Bounds Background')
 		self.boundsbackgr_btn_txt = QLineEdit(MATE.boundslist[MATE.bounds_select])
+		self.boundsbackgr_btn_txt.setEnabled(False)
 		self.boundsbackgr_btn.clicked.connect(self.get_boundsbackgr)
 
 		figureprop_layout.addRow(self.trange_btn,self.trange_btn_txt)
@@ -8406,14 +8461,17 @@ class XEN_SOLV_POP(QWidget):
 
 		self.xen_solution_down_lim_btn = QPushButton('Heat flow search start')
 		self.xen_solution_down_lim_btn_txt = QLineEdit(str(MATE.heat_flow_search_start))
+		self.xen_solution_down_lim_btn_txt.setEnabled(False)
 		self.xen_solution_down_lim_btn.clicked.connect(self.get_xen_solution_down)
 
 		self.xen_solution_up_lim_btn = QPushButton('Heat flow search end')
 		self.xen_solution_up_lim_btn_txt = QLineEdit(str(MATE.heat_flow_search_end))
+		self.xen_solution_up_lim_btn_txt.setEnabled(False)
 		self.xen_solution_up_lim_btn.clicked.connect(self.get_xen_solution_up)
 
 		self.xen_solution_increment_btn = QPushButton('Heat flow search increment')
 		self.xen_solution_increment_btn_txt = QLineEdit(str(MATE.heat_flow_search_incr))
+		self.xen_solution_increment_btn_txt.setEnabled(False)
 		self.xen_solution_increment_btn.clicked.connect(self.get_xen_solution_incr)
 
 		xen_solv_layout.addRow(self.xen_solution_down_lim_btn,self.xen_solution_down_lim_btn_txt)
