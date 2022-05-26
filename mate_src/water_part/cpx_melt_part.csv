@@ -1,0 +1,15 @@
+#ModelName,ModelType,Function1,Function2,PChange,Description
+OurFitting-Type1,1,(1.393 * self.al_opx) + 1.947,0,0,All opx function continous P-range
+OurFitting-Type2,2,(1.393 * self.al_opx[i]) + 1.947,(0.088 * self.al_opx[i]) + 0.881,3,All opx function derived from all data with two distinct P-ranges
+Aubaud2004,4,8.92,0,0,Aubaud2004 average single value of opx/ol at 1.5-2 GPa and 1543-1653 K with highly aluminous-opx-cpx-ol-melt assemblage
+Demouchy2017,4,5.6,0,0,Demouchy2017 average single value of opx/ol at 3 GPa and 1373 K with aluminous-opx-cpx-ol-gt assemblage
+Ferot2012,3,(0.0127 * (self.p**2)) - (0.2942 * self.p) + 2.9146,0,0,Ferot2012 - opx P-dependent function
+Grant2006,4,2.52,0,0,Grant2006 average single value of opx/ol at 1-2 GPa and 1373-1693 K with non-aluminous-opx-ol-melt assemblage
+Hauri2006,4,6.93,0,0,Hauri2006 average single value of opx/ol at 1.2-1.6 GPa and 1503-1543 K with highly aluminous-opx-cpx-ol-melt assemblage
+Koga2003,4,12,0,0,Koga2003 single value of opx/ol at 1.8 GPa 1653 K with opx-ol-melt assemblage
+Kovacs2012a,4,5.34,0,0,Kovacs2012 average single value of opx/ol at 2.5-4 GPa and 1273-1448 K with aluminous-opx-cpx-ol-gt-phl-amp assemblage
+Kovacs2012b,3,(-1.343 * self.p) + 10.048,0,0,Kovacs2012 P-dependent opx/ol function with data from 2.5-4 GPa and 1273-1448 K with aluminous-opx-cpx-ol-gt-phl-amp assemblage
+Novella2014,4,1.91,0,0,Novella2014 average single value of opx/ol at 6 GPa and 1673 K with aluminous-opx-cpx-ol-gt-melt assemblage
+Sakurai2014,1,(3.438 * self.al_opx) + 0.743,0,0,Sakurai2014 Al-dependent function opx/ol with data from 1.5-6 GPa and 1573 K with opx-ol-melt assemblage
+Withers2008,4,1.505,0,0,Withers2008 average single value of opx/ol at 8 GPa and 1673 K with non-aluminous-opx-ol-melt assemblage
+Withers2011,3,(-0.151 * self.p) + 1.542,0,0,Withers2011 P-dependent function opx/ol with data from 3-6 GPa and 1473 K with non-aluminous-opx-ol-melt assemblage

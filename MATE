@@ -324,6 +324,7 @@ class MATE(QMainWindow):
 		MATE.fe_method = '1' #1 default: Fe is valid
 		MATE.pl_method = '1' #1 default: entering Phlg invalid
 		MATE.amp_method = '1' #1 default: entering amph invalid
+		MATE.melt_method = '1' #1 default: entring melt invalid.
 		MATE.part_px_method = '1' #1 defualt:
 
 		MATE.comp_handling = '0'
@@ -1032,6 +1033,82 @@ class MATE(QMainWindow):
 		MATE.pl_part_select = 0
 		MATE.pl_display = MATE.d_pl_items[MATE.pl_part_select]
 
+		#WATER PARTITIONING PARAMETERS OF OLIVINE AND MELT
+
+		self.ol_melt_data = self.read_csv(os.path.join(self.core_path, 'water_part', 'ol_melt_part.csv'), delim = ',')
+
+		MATE.d_melt_ol_items = []
+		MATE.d_melt_ol_type = []
+		self.d_melt_ol_function = []
+		self.d_melt_ol_function_2 = []
+
+		for i in range(1,len(self.pl_data)):
+
+			MATE.d_melt_ol_items.append("Type " + self.ol_melt_data[i][1] + ' - ' +self.ol_melt_data[i][-1])
+			MATE.d_melt_ol_type.append(self.ol_melt_data[i][1])
+			self.d_melt_ol_function.append(self.ol_melt_data[i][2])
+			self.d_melt_ol_function_2.append(self.ol_melt_data[i][3])
+
+		MATE.ol_melt_part_select = 0
+		MATE.ol_melt_display = MATE.d_melt_ol_items[MATE.ol_melt_part_select]
+
+		#WATER PARTITIONING PARAMETERS OF ORTHOPYROXENE AND MELT
+
+		self.opx_melt_data = self.read_csv(os.path.join(self.core_path, 'water_part', 'opx_melt_part.csv'), delim = ',')
+
+		MATE.d_melt_opx_items = []
+		MATE.d_melt_opx_type = []
+		self.d_melt_opx_function = []
+		self.d_melt_opx_function_2 = []
+
+		for i in range(1,len(self.pl_data)):
+
+			MATE.d_melt_opx_items.append("Type " + self.opx_melt_data[i][1] + ' - ' +self.opx_melt_data[i][-1])
+			MATE.d_melt_opx_type.append(self.opx_melt_data[i][1])
+			self.d_melt_opx_function.append(self.opx_melt_data[i][2])
+			self.d_melt_opx_function_2.append(self.opx_melt_data[i][3])
+
+		MATE.opx_melt_part_select = 0
+		MATE.opx_melt_display = MATE.d_melt_opx_items[MATE.opx_melt_part_select]
+
+		#WATER PARTITIONING PARAMETERS OF CLINOPYROXENE AND MELT
+
+		self.cpx_melt_data = self.read_csv(os.path.join(self.core_path, 'water_part', 'cpx_melt_part.csv'), delim = ',')
+
+		MATE.d_melt_cpx_items = []
+		MATE.d_melt_cpx_type = []
+		self.d_melt_cpx_function = []
+		self.d_melt_cpx_function_2 = []
+
+		for i in range(1,len(self.pl_data)):
+
+			MATE.d_melt_cpx_items.append("Type " + self.cpx_melt_data[i][1] + ' - ' +self.cpx_melt_data[i][-1])
+			MATE.d_melt_cpx_type.append(self.cpx_melt_data[i][1])
+			self.d_melt_cpx_function.append(self.cpx_melt_data[i][2])
+			self.d_melt_cpx_function_2.append(self.cpx_melt_data[i][3])
+
+		MATE.cpx_melt_part_select = 0
+		MATE.cpx_melt_display = MATE.d_melt_cpx_items[MATE.cpx_melt_part_select]
+
+		#WATER PARTITIONING PARAMETERS OF GARNET AND MELT
+
+		self.gt_melt_data = self.read_csv(os.path.join(self.core_path, 'water_part', 'gt_melt_part.csv'), delim = ',')
+
+		MATE.d_melt_gt_items = []
+		MATE.d_melt_gt_type = []
+		self.d_melt_gt_function = []
+		self.d_melt_gt_function_2 = []
+
+		for i in range(1,len(self.pl_data)):
+
+			MATE.d_melt_gt_items.append("Type " + self.gt_melt_data[i][1] + ' - ' +self.gt_melt_data[i][-1])
+			MATE.d_melt_gt_type.append(self.gt_melt_data[i][1])
+			self.d_melt_gt_function.append(self.gt_melt_data[i][2])
+			self.d_melt_gt_function_2.append(self.gt_melt_data[i][3])
+
+		MATE.gt_melt_part_select = 0
+		MATE.gt_melt_display = MATE.d_melt_gt_items[MATE.gt_melt_part_select]
+
 		#AL-opx solubility models from alopx.csv
 
 		self.al_model_data = self.read_csv(os.path.join(self.core_path, 'al_models', 'alopx.csv'),delim = ',')
@@ -1174,7 +1251,7 @@ class MATE(QMainWindow):
 
 		if self.p_pop is None:
 			self.p_pop = PART_POP()
-			self.p_pop.setGeometry(QtCore.QRect(1000, 450, 100, 100))
+			self.p_pop.setGeometry(QtCore.QRect(1000, 450, 1000, 100))
 		self.p_pop.show()
 
 	def conductivity_popup(self):
@@ -1595,10 +1672,26 @@ class MATE(QMainWindow):
 			self.fe_cpx = f_fe_cpx(self.depth_mantle)
 			self.fe_gt = f_fe_gt(self.depth_mantle)
 
+			if np.mean(self.pl_frac[self.idx_moho:]) > 0.0:
+				MATE.pl_method = '0'
+			else:
+				MATE.pl_method = '1'
+
+			if np.mean(self.amp_frac[self.idx_moho:]) > 0.0:
+				MATE.amp_method = '0'
+			else:
+				MATE.amp_method = '1'
+
+			if np.mean(self.melt_frac[self.idx_moho:]) > 0.0:
+				MATE.melt_method = '0'
+			else:
+				MATE.melt_method = '1'
+
 			if MATE.al_method == '0':
 				self.al_opx = f_al_opx(self.depth_mantle)
 			else:
 				self.al_opx = None
+
 			self.ti_ol = f_ti_ol(self.depth_mantle)
 
 			self.ol_m = f_ol_m(self.depth_mantle)
@@ -1638,8 +1731,10 @@ class MATE(QMainWindow):
 				self.fe_opx = np.insert(self.fe_opx,0,-999)
 				self.fe_cpx = np.insert(self.fe_cpx,0,-999)
 				self.fe_gt = np.insert(self.fe_gt,0,-999)
+
 				if MATE.al_method == '0':
 					self.al_opx = np.insert(self.al_opx,0,-999)
+
 				self.ti_ol = np.insert(self.ti_ol,0,-999)
 
 				self.ol_m = np.insert(self.ol_m,0,-999)
@@ -1660,9 +1755,6 @@ class MATE(QMainWindow):
 
 			self.idx_moho, = np.where(self.depth == MATE.moho)
 			self.idx_moho = int(self.idx_moho)
-
-			if MATE.pl_method == '1':
-				self.pl_frac = np.zeros(len(self.depth))
 
 			self.data_existence = True
 
@@ -1984,6 +2076,23 @@ class MATE(QMainWindow):
 		self.px_h2o = np.zeros(len(self.h2o))
 		self.amp_h2o = np.zeros(len(self.h2o))
 		self.pl_h2o = np.zeros(len(self.h2o))
+		self.melt_h2o = np.zeros(len(self.h2o))
+
+		if MATE.melt_method == '0':
+
+			#Converting fractions to water holding species.
+			self.ol_frac_wt = self.ol_frac / (self.ol_frac + self.opx_frac + self.cpx_frac + self.gt_frac + self.melt_frac)
+			self.opx_frac_wt = self.opx_frac / (self.ol_frac + self.opx_frac + self.cpx_frac + self.gt_frac + self.melt_frac)
+			self.cpx_frac_wt = self.cpx_frac / (self.ol_frac + self.opx_frac + self.cpx_frac + self.gt_frac + self.melt_frac)
+			self.gt_frac_wt = self.gt_frac / (self.ol_frac + self.opx_frac + self.cpx_frac + self.gt_frac + self.melt_frac)
+
+			self.d_per_melt = (self.ol_frac_wt * self.d_melt_ol_function[MATE.ol_melt_part_select]) +\
+				(self.opx_frac_wt * self.d_melt_opx_function[MATE.opx_melt_part_select]) +\
+				(self.cpx_frac_wt * self.d_melt_cpx_function[MATE.cpx_melt_part_select]) +\
+				(self.gt_frac_wt * self.d_melt_gt_function[MATE.gt_melt_part_select])
+
+			self.melt_h2o = self.h2o / self.d_per_melt
+			self.h2o = self.h2o * self.d_per_melt
 
 		#CALCULATING AL-DEPENDENT PARTITION COEFF
 		if MATE.part_px_method == '1':
@@ -6189,21 +6298,11 @@ class DES_COMP(QWidget):
 		self.al_button.clicked.connect(self.al_popup)
 		compdes_layout.addWidget(self.al_button)
 
-		self.pl_button = QPushButton('Phlogopite Entry')
-		self.pl_button.clicked.connect(self.pl_popup)
-		compdes_layout.addWidget(self.pl_button)
-
-		self.amp_button = QPushButton('Amphibole Entry')
-		self.amp_button.clicked.connect(self.amp_entry_popup)
-		compdes_layout.addWidget(self.amp_button)
-
 		self.descomp_editor_info = QPushButton('Info')
 		self.descomp_editor_info.clicked.connect(self.descomp_editor_info_box)
 		compdes_layout.addWidget(self.descomp_editor_info)
 
 		self.al_pop = None
-		self.pl_pop = None
-		self.amp_entry_pop = None
 
 	def al_popup(self):
 
@@ -6212,30 +6311,12 @@ class DES_COMP(QWidget):
 			self.al_pop.setGeometry(QtCore.QRect(100, 100, 100, 100))
 		self.al_pop.show()
 
-	def pl_popup(self):
-
-		if self.pl_pop is None:
-			self.pl_pop = SUBCLASS_PL()
-			self.pl_pop.setGeometry(QtCore.QRect(100, 100, 100, 100))
-		self.pl_pop.show()
-
-	def amp_entry_popup(self):
-
-		if self.amp_entry_pop is None:
-			self.amp_entry_pop = SUBCLASS_AMP()
-			self.amp_entry_pop.setGeometry(QtCore.QRect(100, 100, 100, 100))
-		self.amp_entry_pop.show()
-
 	def descomp_editor_info_box(self):
 
 		str_msg_2 = "This button defines some of the parameters required for the main 'Composition Entry' button.\n\n"\
 		"- Al-dependency: Al content in opx could change the partitioning of water between pyroxenes and olivine "\
 		"significantly. Here, the user can choose whether to consider Al-dependency or not. Also a model for Al-incorporation "\
 		"in opx can be entered from the box below.\n\n"\
-		"- Phlogopite Entry: This is an option where user defines whether phlogopite can be enetered in compositional layers. Even if "\
-		"phlogopite entry is not permitted, the fraction and fluorine content will have to be entered as some value.\n\n"\
-		"- Amphibole Entry: This is an option where user defines whether phlogopite can be enetered in compositional layers. Even if "\
-		"amphibole entry is not permitted, the fraction will have to be entered as some value."
 
 		QMessageBox.about(self,"Composition Setup Info",str_msg_2)
 
@@ -6284,62 +6365,6 @@ class SUBCLASS_AL(QWidget):
 			MATE.al_opx_model_select = int(MATE.al_opx_model_display.index(item))
 		else:
 			QMessageBox.about(self,"Warning!","You can only open this dialogue box, if the Al-dependency is activated.")
-
-class SUBCLASS_PL(QWidget):
-
-	def __init__(self):
-
-		QWidget.__init__(self)
-
-		pl_layout = QFormLayout(self)
-
-		self.pl_radio_1 = QRadioButton("Phlogopite can be entered")
-		self.pl_radio_1.toggled.connect(lambda:self.btnstate_pl(self.pl_radio_1))
-		self.pl_radio_2 = QRadioButton("Phlogopite can not be entered")
-		self.pl_radio_2.toggled.connect(lambda:self.btnstate_pl(self.pl_radio_2))
-		pl_layout.addRow(self.pl_radio_1,self.pl_radio_2)
-
-		if MATE.pl_method == '0':
-			self.pl_radio_1.setChecked(True)
-		elif MATE.pl_method == '1':
-			self.pl_radio_2.setChecked(True)
-
-	def btnstate_pl(self,b):
-
-		if b.text() == "Phlogopite can be entered":
-			if b.isChecked() == True:
-				MATE.pl_method = '0'
-		elif b.text() == "Phlogopite can not be entered":
-			if b.isChecked() == True:
-				MATE.pl_method = '1'
-
-class SUBCLASS_AMP(QWidget):
-
-	def __init__(self):
-
-		QWidget.__init__(self)
-
-		amp_layout = QFormLayout(self)
-
-		self.amp_radio_1 = QRadioButton("Amphibole can be entered")
-		self.amp_radio_1.toggled.connect(lambda:self.btnstate_amp(self.amp_radio_1))
-		self.amp_radio_2 = QRadioButton("Amphibole can not be entered")
-		self.amp_radio_2.toggled.connect(lambda:self.btnstate_amp(self.amp_radio_2))
-		amp_layout.addRow(self.amp_radio_1,self.amp_radio_2)
-
-		if MATE.amp_method == '0':
-			self.amp_radio_1.setChecked(True)
-		elif MATE.amp_method == '1':
-			self.amp_radio_2.setChecked(True)
-
-	def btnstate_amp(self,b):
-
-		if b.text() == "Amphibole can be entered":
-			if b.isChecked() == True:
-				MATE.amp_method = '0'
-		elif b.text() == "Amphibole can not be entered":
-			if b.isChecked() == True:
-				MATE.amp_method = '1'
 
 class DEPTH_FIX(QWidget):
 
@@ -6397,6 +6422,10 @@ class PART_POP(QWidget):
 
 		part_layout = QFormLayout(self)
 
+		self.peridotite_label = QLabel(self)
+		self.peridotite_label.setText('---Solid-state Water Partitioning---')
+		part_layout.addRow(self.peridotite_label)
+
 		self.px_radio_1 = QRadioButton("Px Handled Together")
 		self.px_radio_1.toggled.connect(lambda:self.btnstate_px(self.px_radio_1))
 		self.px_radio_2 = QRadioButton("Px Handled Independently")
@@ -6436,6 +6465,38 @@ class PART_POP(QWidget):
 		self.pl_part_textbox.setEnabled(False)
 		self.pl_button.clicked.connect(self.get_plol)
 		part_layout.addRow(self.pl_button,self.pl_part_textbox)
+
+		empty_label = QLabel(self)
+		empty_label.setText('')
+		part_layout.addRow(empty_label)
+		self.melt_per_label = QLabel(self)
+		self.melt_per_label.setText('---Melt/Peridotite Water Partitioning---')
+		part_layout.addRow(self.melt_per_label)
+
+
+		self.ol_melt_button = QPushButton("ol/melt")
+		self.ol_melt_textbox = QLineEdit(MATE.ol_melt_display)
+		self.ol_melt_textbox.setEnabled(False)
+		self.ol_melt_button.clicked.connect(self.get_ol_melt)
+		part_layout.addRow(self.ol_melt_button,self.ol_melt_textbox)
+
+		self.opx_melt_button = QPushButton("opx/melt")
+		self.opx_melt_textbox = QLineEdit(MATE.opx_melt_display)
+		self.opx_melt_textbox.setEnabled(False)
+		self.opx_melt_button.clicked.connect(self.get_opx_melt)
+		part_layout.addRow(self.opx_melt_button,self.opx_melt_textbox)
+
+		self.cpx_melt_button = QPushButton("cpx/melt")
+		self.cpx_melt_textbox = QLineEdit(MATE.cpx_melt_display)
+		self.cpx_melt_textbox.setEnabled(False)
+		self.cpx_melt_button.clicked.connect(self.get_cpx_melt)
+		part_layout.addRow(self.cpx_melt_button,self.cpx_melt_textbox)
+
+		self.gt_melt_button = QPushButton("gt/melt")
+		self.gt_melt_textbox = QLineEdit(MATE.gt_melt_display)
+		self.gt_melt_textbox.setEnabled(False)
+		self.gt_melt_button.clicked.connect(self.get_gt_melt)
+		part_layout.addRow(self.gt_melt_button,self.gt_melt_textbox)
 
 		self.w_part_info = QPushButton('Info')
 		self.w_part_info.clicked.connect(self.w_part_info_box)
@@ -6522,7 +6583,71 @@ class PART_POP(QWidget):
 
 			MATE.pl_part_select = int(MATE.d_pl_items.index(item))
 		else:
-			QMessageBox.about(self, "Info on this","In order to select phlogopite conductivity model you first have to activate its entry from Composition Setup section")
+			QMessageBox.about(self, "Info on this","In order to select phlogopite water partitoning model you first have to enter some phlogopites!")
+
+	def get_ol_melt(self):
+
+		if MATE.melt_method == '0':
+
+			item, ok = QInputDialog.getItem(self, "select input dialog",
+				"Partitioning method", MATE.d_melt_ol_items, 0, False)
+
+			if ok and item:
+				self.ol_melt_textbox.setText(item)
+
+			MATE.ol_melt_display = item
+
+			MATE.ol_melt_part_select = int(MATE.d_melt_ol_items.index(item))
+		else:
+			QMessageBox.about(self, "Info on this","In order to select melt water partitoning models you first have to enter some melt!")
+
+	def get_opx_melt(self):
+
+		if MATE.melt_method == '0':
+
+			item, ok = QInputDialog.getItem(self, "select input dialog",
+				"Partitioning method", MATE.d_melt_opx_items, 0, False)
+
+			if ok and item:
+				self.opx_melt_textbox.setText(item)
+
+			MATE.opx_melt_display = item
+
+			MATE.opx_melt_part_select = int(MATE.d_melt_opx_items.index(item))
+		else:
+			QMessageBox.about(self, "Info on this","In order to select melt water partitoning models you first have to enter some melt!")
+
+	def get_cpx_melt(self):
+
+		if MATE.melt_method == '0':
+
+			item, ok = QInputDialog.getItem(self, "select input dialog",
+				"Partitioning method", MATE.d_melt_cpx_items, 0, False)
+
+			if ok and item:
+				self.cpx_melt_textbox.setText(item)
+
+			MATE.cpx_melt_display = item
+
+			MATE.cpx_melt_part_select = int(MATE.d_melt_cpx_items.index(item))
+		else:
+			QMessageBox.about(self, "Info on this","In order to select melt water partitoning models you first have to enter some melt!")
+
+	def get_gt_melt(self):
+
+		if MATE.melt_method == '0':
+
+			item, ok = QInputDialog.getItem(self, "select input dialog",
+				"Partitioning method", MATE.d_melt_gt_items, 0, False)
+
+			if ok and item:
+				self.gt_melt_textbox.setText(item)
+
+			MATE.gt_melt_display = item
+
+			MATE.gt_melt_part_select = int(MATE.d_melt_gt_items.index(item))
+		else:
+			QMessageBox.about(self, "Info on this","In order to select melt water partitoning models you first have to enter some melt!")
 
 	def open_px_window(self):
 
