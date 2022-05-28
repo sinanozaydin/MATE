@@ -4,7 +4,8 @@ import os
 
 core_path_ext = os.path.join(os.path.dirname(os.path.abspath(__file__)) , 'mate_src')
 
-import sys, csv, itertools, math, platform, random
+import sys, csv, itertools, math, platform, random, warnings
+from joblib import Parallel, delayed
 import numpy as np
 from scipy.interpolate import interp1d
 from scipy import optimize
@@ -38,6 +39,8 @@ from cond_models.amp_odd import * #Conductivity functions of amphiboles
 from cond_models.melt_odd import * #Conductivity functions of melts
 from cond_models.sp_chr_odd import * #Conductivity functions of spinel-chromites
 from min_sol.ol_sol import * #Olivine solubility models
+
+warnings.filterwarnings("ignore", category=RuntimeWarning) #ignoring many RuntimeWarning printouts that are useless
 
 #Color coding class for fancy-colored print-outs.
 class bcolors:
@@ -626,6 +629,14 @@ class MATE(QMainWindow):
 		plt_reset_btn.move(10,800)
 		plt_reset_btn.setStyleSheet("QPushButton {min-width: 10em; font: bold; font-size: 9pt;background-color: #de5d5d}")
 		plt_reset_btn.clicked.connect(self.reset_all_plot)
+
+		progress_label = QLabel(self)
+		progress_label.setText('Calc. Progress')
+		progress_label.setStyleSheet("QLabel {font:bold};fontsize: 10pt;color: red")
+		progress_label.move(10,835)
+
+		self.progressBar = QProgressBar(self)
+		self.progressBar.setGeometry(10, 865, 150, 30)
 
 		#Setting up the blank canvas on the main page.
 
@@ -1672,21 +1683,6 @@ class MATE(QMainWindow):
 			self.fe_cpx = f_fe_cpx(self.depth_mantle)
 			self.fe_gt = f_fe_gt(self.depth_mantle)
 
-			if np.mean(self.pl_frac[self.idx_moho:]) > 0.0:
-				MATE.pl_method = '0'
-			else:
-				MATE.pl_method = '1'
-
-			if np.mean(self.amp_frac[self.idx_moho:]) > 0.0:
-				MATE.amp_method = '0'
-			else:
-				MATE.amp_method = '1'
-
-			if np.mean(self.melt_frac[self.idx_moho:]) > 0.0:
-				MATE.melt_method = '0'
-			else:
-				MATE.melt_method = '1'
-
 			if MATE.al_method == '0':
 				self.al_opx = f_al_opx(self.depth_mantle)
 			else:
@@ -1755,6 +1751,23 @@ class MATE(QMainWindow):
 
 			self.idx_moho, = np.where(self.depth == MATE.moho)
 			self.idx_moho = int(self.idx_moho)
+
+			#Deciding on phlogopite, amphibole and melt methods
+			#depending on the entered composition...
+			if np.mean(self.pl_frac[self.idx_moho:]) > 0.0:
+				MATE.pl_method = '0'
+			else:
+				MATE.pl_method = '1'
+
+			if np.mean(self.amp_frac[self.idx_moho:]) > 0.0:
+				MATE.amp_method = '0'
+			else:
+				MATE.amp_method = '1'
+
+			if np.mean(self.melt_frac[self.idx_moho:]) > 0.0:
+				MATE.melt_method = '0'
+			else:
+				MATE.melt_method = '1'
 
 			self.data_existence = True
 
@@ -1908,7 +1921,7 @@ class MATE(QMainWindow):
 							#In the mantle searching for sp-gt transition
 							if transition_sp_search == True:
 								idx_sp = self.interception(self.p_spinel,self.p[:len(self.p_spinel)])
-								if idx_sp != None:
+								if len(idx_sp) > 0:
 									#If producted geotherm intercepts P-T line of sp-gt transition
 									#change logical parameter to False for changing to gt.
 									transition_sp_search = False
@@ -1927,7 +1940,7 @@ class MATE(QMainWindow):
 						else:
 							if transition_sp_search == True:
 								idx_sp = self.interception(self.p_spinel,self.p[:len(self.p_spinel)])
-								if idx_sp != None:
+								if len(idx_sp) > 0:
 									transition_sp_search = False
 									self.depth_spinel = self.depth[i]
 									self.p_spinel_trans = self.p[i]
@@ -1971,7 +1984,8 @@ class MATE(QMainWindow):
 						if transition_sp_search == True:
 							idx_sp = self.interception(self.p_spinel,self.p[:len(self.p_spinel)])
 							idx_gt = 8 #information index of spinel from csv file
-							if idx_sp != None:
+
+							if len(idx_sp) > 0:
 								#If producted geotherm intercepts P-T line of sp-gt transition
 								#change logical parameter to False for changing to gt.
 								transition_sp_search = False
@@ -2080,19 +2094,20 @@ class MATE(QMainWindow):
 
 		if MATE.melt_method == '0':
 
-			#Converting fractions to water holding species.
+			#Converting fractions to water holding species that has an exchange with coexisting melt.
 			self.ol_frac_wt = self.ol_frac / (self.ol_frac + self.opx_frac + self.cpx_frac + self.gt_frac + self.melt_frac)
 			self.opx_frac_wt = self.opx_frac / (self.ol_frac + self.opx_frac + self.cpx_frac + self.gt_frac + self.melt_frac)
 			self.cpx_frac_wt = self.cpx_frac / (self.ol_frac + self.opx_frac + self.cpx_frac + self.gt_frac + self.melt_frac)
 			self.gt_frac_wt = self.gt_frac / (self.ol_frac + self.opx_frac + self.cpx_frac + self.gt_frac + self.melt_frac)
 
+			#Calculating partition coeff of water between per and melt from Hirschmann et al. (2009)
 			self.d_per_melt = (self.ol_frac_wt * self.d_melt_ol_function[MATE.ol_melt_part_select]) +\
 				(self.opx_frac_wt * self.d_melt_opx_function[MATE.opx_melt_part_select]) +\
 				(self.cpx_frac_wt * self.d_melt_cpx_function[MATE.cpx_melt_part_select]) +\
 				(self.gt_frac_wt * self.d_melt_gt_function[MATE.gt_melt_part_select])
 
+			#Calculating the h2o content of melt that is in equilibrium with the entered solid-mixture.
 			self.melt_h2o = self.h2o / self.d_per_melt
-			self.h2o = self.h2o * self.d_per_melt
 
 		#CALCULATING AL-DEPENDENT PARTITION COEFF
 		if MATE.part_px_method == '1':
@@ -5069,11 +5084,7 @@ class MATE(QMainWindow):
 		self.ax5.add_patch(ast_obj)
 
 		if method == 'draw':
-			self.ax5.plot([50,50,51,51],[-0,-5,-5,-1],linewidth = 0.25,color = 'k')
-			circ_obj1 = patches.Circle((50,-5),2,color = '#b8725f',fill = True,facecolor = '#42632f')
-			circ_obj2 = patches.Circle((25,-7),3,color = '#9e4806',fill = True,facecolor = '#9e4806')
-			self.ax5.add_patch(circ_obj1)
-			self.ax5.add_patch(circ_obj2)
+			self.ax5.text(50,-1000,'Hello.',fontsize = 8, color = 'k')
 			self.canvas.draw()
 
 		elif method == 'save':
@@ -5619,7 +5630,9 @@ class MATE(QMainWindow):
 				else:
 					calc_count = 1
 
-				QMessageBox.about(self, 'Info', "Solving for water content at each layer. This might take a while (approx. 10-25 sec.) and the program may be unresponsive...")
+				QMessageBox.about(self, 'Info', "Solving for water content at each layer. Watch Calc. Progress bar for the process. Disregard the program not responding popups if there is any.")
+				self.progressBar.setMinimum(self.idx_moho)
+				self.progressBar.setMaximum(len(self.depth))
 
 				if MATE.cond_uncert_method == '0':
 					res_profile = (MATE.res_profile_plot_list[-1])
@@ -5640,17 +5653,18 @@ class MATE(QMainWindow):
 				MATE.sol_model_pref_select = 1
 				timelist = []
 
-				for i in range(self.idx_moho,len(self.depth)):
+				def _solve_(sol_index, water_search_start, water_search_end, water_search_increment):
+
 					self.water_end = False
-					water_search_start = 8
-					self.water_search = np.arange(0,self.h2o_from_sol[i],water_search_start)
+					water_search = np.arange(water_search_start, water_search_end[sol_index],water_search_increment)
 					restart = True
 					while restart:
+
 						residual_list = []
 						res_check = []
 						restart = False
-						for j in range(0,len(self.water_search)):
-							self.h2o[i] = self.water_search[j]
+						for j in range(0,len(water_search)):
+							self.h2o[sol_index] = water_search[j]
 							self.calculate_water()
 							self.calculate_ol_conductivity()
 							self.calculate_opx_conductivity()
@@ -5663,12 +5677,13 @@ class MATE(QMainWindow):
 							self.calculate_sp_chr_conductivity()
 							self.calculate_melt_conductivity()
 							self.phase_mixing_function(method = MATE.phs_mix_method)
+
 							if MATE.w_inp_method == '0':
-								residual = (1.0/self.bulk_cond[i] - res_to_invert[i])
+								residual = (1.0/self.bulk_cond[sol_index] - res_to_invert[sol_index])
 							elif MATE.w_inp_method == '1':
-								residual = (1.0/self.bulk_cond_min[i] - res_to_invert[i])
+								residual = (1.0/self.bulk_cond_min[sol_index] - res_to_invert[sol_index])
 							elif MATE.w_inp_method == '2':
-								residual = (1.0/self.bulk_cond_max[i] - res_to_invert[i])
+								residual = (1.0/self.bulk_cond_max[sol_index] - res_to_invert[sol_index])
 
 							residual_list.append(abs(residual))
 							res_check.append(residual)
@@ -5678,24 +5693,49 @@ class MATE(QMainWindow):
 									if res_check[k] < 0.0:
 										chek = chek + 1
 								if chek > 2:
-									water_search_start = water_search_start / 2.0
-									if self.water_search[j] >= water_search_start:
-										water_start = self.water_search[j-5]
+									water_search_increment = water_search_increment / 2.0
+									if water_search[j] >= water_search_increment:
+										water_search_start = water_search[j-5]
 									else:
-										water_start = 0.0
+										water_search_start = 0.0
 
-									self.water_search = np.arange(water_start,self.h2o_from_sol[i],water_search_start)
-									if water_search_start == 0.5:
+									water_search = np.arange(water_search_start,water_search_end[sol_index],water_search_increment)
+									if water_search_increment <= 0.5:
 										restart = False
 										break
 									else:
 										restart = True
 										break
 
-					min_idx = residual_list.index(min(residual_list))
-					self.h2o[i] = self.water_search[min_idx]
+					if len(residual_list) == 0:
+						self.h2o[sol_index] = 0.0
+					else:
+						min_idx = residual_list.index(min(residual_list))
+						self.h2o[sol_index] = water_search[min_idx]
+				start_time = timeit.default_timer()
 
-				start_time = timeit.timeit()
+
+				#Determining initial solution with three main depths
+				idx_depth_to_initialize = [self.idx_moho, int((len(self.depth) + self.idx_moho) / 2) , len(self.depth)-1]
+
+				solution_init = []
+				for idx in idx_depth_to_initialize:
+
+					_solve_(sol_index = idx, water_search_start = 0, water_search_end = self.h2o_from_sol, water_search_increment = 8)
+
+					solution_init.append(self.h2o[idx])
+
+				idx_input = np.arange(self.idx_moho, len(self.depth)-1, 1)
+				solution_water_init = np.interp(idx_input, np.array(idx_depth_to_initialize),np.array(solution_init))
+
+				for i in range(self.idx_moho,len(self.depth)):
+
+					_solve_(sol_index = i, water_search_start = solution_water_init[i - self.idx_moho -1], water_search_end = self.h2o_from_sol,  water_search_increment = 4)
+					self.progressBar.setValue(i+1)
+
+				self.progressBar.setValue(self.idx_moho)
+				total_time = str((timeit.default_timer()-start_time))
+
 				self.calculate_water()
 				self.calculate_ol_conductivity()
 				self.calculate_opx_conductivity()
@@ -5707,13 +5747,12 @@ class MATE(QMainWindow):
 					self.calculate_amp_conductivity()
 				self.calculate_sp_chr_conductivity()
 				self.calculate_melt_conductivity()
-				endtime = timeit.timeit()
-				print(endtime-start_time)
+
 				self.phase_mixing_function(method = MATE.phs_mix_method)
 				self.plot_water(method = 'draw')
 				self.plot_conductivity(method = 'draw', boundaries = False)
 
-				QMessageBox.about(self, 'Info', "The calculation has finished.")
+				QMessageBox.about(self, 'Info', "The calculation has finished in " + str(total_time) + " seconds.")
 
 			else:
 
@@ -7598,6 +7637,10 @@ class PHS_POP(QWidget):
 
 		phs_mix_layout = QVBoxLayout(self)
 
+		self.label_1_mixing = QLabel(self)
+		self.label_1_mixing.setText('--------Solid-State Mixing--------')
+		phs_mix_layout.addWidget(self.label_1_mixing)
+
 		self.btn_mix_1 = QRadioButton("Generalized Archie's Law (Glover, 2010)")
 		self.btn_mix_1.toggled.connect(lambda:self.btnstate_phsmix(self.btn_mix_1))
 		self.btn_mix_2 = QRadioButton("Hashin-Shtrikman Lower Bound (Berryman, 1995)")
@@ -7627,12 +7670,23 @@ class PHS_POP(QWidget):
 		self.prop_info_btn = QPushButton("Info")
 		self.prop_info_btn.clicked.connect(self.mixing_info)
 
+
 		phs_mix_layout.addWidget(self.btn_mix_1)
 		phs_mix_layout.addWidget(self.btn_mix_2)
 		phs_mix_layout.addWidget(self.btn_mix_3)
 		phs_mix_layout.addWidget(self.btn_mix_4)
 		phs_mix_layout.addWidget(self.btn_mix_5)
 		phs_mix_layout.addWidget(self.btn_mix_6)
+
+		self.label_2_mixing = QLabel(self)
+		self.label_2_mixing.setText('')
+		phs_mix_layout.addWidget(self.label_2_mixing)
+
+		self.label_3_mixing = QLabel(self)
+		self.label_3_mixing.setText('--------Melt-Solid Mixing--------')
+		phs_mix_layout.addWidget(self.label_3_mixing)
+
+
 		phs_mix_layout.addWidget(self.prop_info_btn)
 
 	def btnstate_phsmix(self,b):
@@ -8761,9 +8815,6 @@ class XEN_SOLV_POP(QWidget):
 				MATE.heat_flow_search_incr = float(text)
 			except ValueError:
 				QMessageBox.about(self,"Warning!","Please enter a value that can be converted to floating number.")
-
-
-
 
 def main():
 
