@@ -5,7 +5,6 @@ import os
 core_path_ext = os.path.join(os.path.dirname(os.path.abspath(__file__)) , 'mate_src')
 
 import sys, csv, itertools, math, platform, random, warnings
-from joblib import Parallel, delayed
 import numpy as np
 from scipy.interpolate import interp1d
 from scipy import optimize
@@ -61,14 +60,14 @@ class bcolors:
 
 #Installation of libraries:
 #In Linux (mac included) distros through terminal:
-#sudo pip3 install numpy,scipy,matplotlib,PyQt5
+#pip install numpy,scipy,matplotlib,PyQt5
 #In Windows skip sudo.
 
 print(bcolors.GREEN + '#############################################')
 print(' ')
 print(' ')
 print(' ')
-print(bcolors.GREEN + '                  MATE 1.3.1')
+print(bcolors.GREEN + '                  MATE 2.0')
 print(' ')
 print(bcolors.BLUE + '            Mantle Analysis Tools')
 print('                     for')
@@ -2108,6 +2107,8 @@ class MATE(QMainWindow):
 
 			#Calculating the h2o content of melt that is in equilibrium with the entered solid-mixture.
 			self.melt_h2o = self.h2o / self.d_per_melt
+			#Calculating the h2o content of the melt+solid system
+			self.system_h2o = (self.melt_frac * self.melt_h2o) + ((1 - self.melt_frac) * self.h2o)
 
 		#CALCULATING AL-DEPENDENT PARTITION COEFF
 		if MATE.part_px_method == '1':
@@ -5208,58 +5209,38 @@ class MATE(QMainWindow):
 			#Create error if the total mineralogy is indifferent to 1 at any layer.
 			ok_to_compute_comp = True
 
-			"""
-			for i in range(0,len(self.ol_frac_comp)):
-
-				if (self.ol_frac_comp[i] + self.opx_frac_comp[i] + self.cpx_frac_comp[i] + self.gt_frac_comp[i] + self.pl_frac_comp[i]) != 1.0:
-					if i == 0:
-						layer_no = i+1
-					else:
-						layer_no = (i/2) + 1
-					QMessageBox.about(self,'Error in comp file','The modal composition assemblage you entered is not equal to the value of 1 for the layer no ' + str(layer_no))
-					ok_to_compute_comp = False
-					break
-				else:
-					ok_to_compute_comp = True
-			"""
-
 			if ok_to_compute_comp == True:
 
 				if self.continue_adjusting == 1:
+					layers_bad_comp = []
+					for i in range(0,len(self.ol_frac_comp),2):
+						print(self.ol_frac_comp[i])
+						total_frac_solid = self.ol_frac_comp[i] + self.opx_frac_comp[i] + self.cpx_frac_comp[i] +\
+						 self.gt_frac_comp[i] + self.pl_frac_comp[i] + self.amp_frac_comp[i] + \
+						 self.cond_frac_comp[i]
 
-					if (MATE.amp_method == '1'):
-						while True:
-							for i in range(0,len(self.amp_frac_comp)):
-								if self.amp_frac_comp[i] != 0.0:
-									ok_to_compute_comp = False
-									break
-							if ok_to_compute_comp == False:
-								QMessageBox.about(self,'Error in comp file','Amphibole content is detected in composition entry, while its entry is suspended by the user. Change these values to zero or the settings from Composition Setup')
+						if total_frac_solid != 1.0:
+							if i == 0:
+								layers_bad_comp.append(i+1)
+							else:
+								layers_bad_comp.append(i-1)
+							ok_to_compute_comp = False
 
-							break
+					if ok_to_compute_comp == False:
+						QMessageBox.about(self,'Error in comp file','Sum of solid-state minerals do not add up to 100% at layers' + ','.join(str(item) for item in layers_bad_comp))
 
-					if (MATE.pl_method == '1'):
-						while True:
-							for i in range(0,len(self.pl_frac_comp)):
-								if self.pl_frac_comp[i] != 0.0:
-									ok_to_compute_comp = False
-									break
-							if ok_to_compute_comp == False:
-								QMessageBox.about(self,'Error in comp file','Phlogopite content is detected in composition entry, while its entry is suspended by the user. Change these values to zero or the settings from Composition Setup')
+					if ok_to_compute_comp == True:
+						self.calculate_pressure()
+						self.plot_composition(method = 'draw')
+						self.plot_mg(method = 'draw')
 
-							break
+						if MATE.al_method == '0':
+							if MATE.al_opx_model_select == 0:
+								self.plot_al(method = 'draw')
 
-					self.calculate_pressure()
-					self.plot_composition(method = 'draw')
-					self.plot_mg(method = 'draw')
-
-					if MATE.al_method == '0':
-						if MATE.al_opx_model_select == 0:
-							self.plot_al(method = 'draw')
-
-					self.drawn = self.drawn + 1
-					self.drawn_11 = self.drawn_11 + 1
-					self.act_comp_btn.setStyleSheet("QPushButton {min-width: 10em; font: bold; font-size: 9pt;background-color: #679c5f}")
+						self.drawn = self.drawn + 1
+						self.drawn_11 = self.drawn_11 + 1
+						self.act_comp_btn.setStyleSheet("QPushButton {min-width: 10em; font: bold; font-size: 9pt;background-color: #679c5f}")
 
 	def plot_water_button(self):
 
