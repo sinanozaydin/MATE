@@ -5214,7 +5214,7 @@ class MATE(QMainWindow):
 				if self.continue_adjusting == 1:
 					layers_bad_comp = []
 					for i in range(0,len(self.ol_frac_comp),2):
-						print(self.ol_frac_comp[i])
+						
 						total_frac_solid = self.ol_frac_comp[i] + self.opx_frac_comp[i] + self.cpx_frac_comp[i] +\
 						 self.gt_frac_comp[i] + self.pl_frac_comp[i] + self.amp_frac_comp[i] + \
 						 self.cond_frac_comp[i]
