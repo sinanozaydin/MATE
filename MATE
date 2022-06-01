@@ -373,6 +373,9 @@ class MATE(QMainWindow):
 		MATE.phs_mix_method = 0
 		MATE.phs_mix_type = 0
 
+		MATE.phs_melt_mix_method = 0
+		MATE.phs_mix_type = 0
+
 		MATE.mt_input_selection = 0
 		self.ModEM_dat_read = False
 		self.ModEM_model_read = False
@@ -465,7 +468,7 @@ class MATE(QMainWindow):
 		self.color_list_csv = []
 
 		MATE.csv_file_selection = 0
-		MATE.text = "Depth(km),Cw_bulk(ppm),ol_frac,opx_frac,cpx_frac,gt_frac,sp_chr_frac,pl_frac,amp_frac,melt_frac,cond_frac,cond_cond(ohm_m),XFe-ol,XFe-opx,XFe-cpx,XFe-gt,Al-opx(wt%),Ti-ol(wt%),m_ol,m_opx,m_cpx,m_gt,m_sp_chr,m_pl,m_amp,m_cond,t_k_cond(W/mK),fl_pl(wt%),ol_gs(mm),heat_prod(mW/m^2)\n"
+		MATE.text = "Depth(km),H2O_bulk(ppm),CO2_melt(ppm),ol_frac,opx_frac,cpx_frac,gt_frac,sp_chr_frac,pl_frac,amp_frac,cond_frac,cond_cond(ohm_m),melt_mass_frac,XFe-ol,XFe-opx,XFe-cpx,XFe-gt,Al-opx(wt%),Ti-ol(wt%),m_ol,m_opx,m_cpx,m_gt,m_sp_chr,m_pl,m_amp,m_cond,m_melt,t_k_cond(W/mK),fl_pl(wt%),ol_gs(mm),heat_prod(mW/m^2)\n"
 
 		#Setting up the global list where the model parameters will be appended.
 
@@ -773,7 +776,7 @@ class MATE(QMainWindow):
 				self.alpha_p[i][count-1] = float(self.cond_data_array[i][count][22])
 				self.alpha_p_err[i][count-1] = float(self.cond_data_array[i][count][23])
 				self.wtype[i][count-1] = int(self.cond_data_array[i][count][24])
-				self.dens_mat[i][count-1] = int(self.cond_data_array[i][count][25])
+				self.dens_mat[i][count-1] = float(self.cond_data_array[i][count][25])
 
 				count += 1
 
@@ -1518,6 +1521,7 @@ class MATE(QMainWindow):
 
 		self.depth_comp = []
 		self.h2o_comp = []
+		self.co2_comp = []
 		self.ol_frac_comp = []
 		self.opx_frac_comp = []
 		self.cpx_frac_comp = []
@@ -1525,9 +1529,9 @@ class MATE(QMainWindow):
 		self.sp_chr_frac_comp = []
 		self.pl_frac_comp = []
 		self.amp_frac_comp = []
-		self.melt_frac_comp = []
 		self.cond_frac_comp = []
 		self.cond_cond_comp = []
+		self.melt_frac_comp = []
 		self.fe_ol_comp = []
 		self.fe_opx_comp = []
 		self.fe_cpx_comp = []
@@ -1541,9 +1545,9 @@ class MATE(QMainWindow):
 		self.sp_chr_m_comp = []
 		self.pl_m_comp = []
 		self.amp_m_comp = []
-		self.melt_m_comp = []
 		self.cond_m_comp = []
 		self.cond_t_k_comp = []
+		self.melt_m_comp = []
 		self.flu_comp = []
 		self.ol_gs_comp = []
 		self.heat_prod_mantle = []
@@ -1596,35 +1600,36 @@ class MATE(QMainWindow):
 				for j in range(0,2):
 
 					self.h2o_comp.append(float(self.layer_data[i][1]))
-					self.ol_frac_comp.append(float(self.layer_data[i][2]) / 100.0) #converting to perc to fraction
-					self.opx_frac_comp.append(float(self.layer_data[i][3]) / 100.0)
-					self.cpx_frac_comp.append(float(self.layer_data[i][4]) / 100.0)
-					self.gt_frac_comp.append(float(self.layer_data[i][5]) / 100.0)
-					self.sp_chr_frac_comp.append(float(self.layer_data[i][6]) / 100.0)
-					self.pl_frac_comp.append(float(self.layer_data[i][7]) / 100.0)
-					self.amp_frac_comp.append(float(self.layer_data[i][8]) / 100.0)
-					self.melt_frac_comp.append(float(self.layer_data[i][9]) / 100.0)
+					self.co2_comp.append(float(self.layer_data[i][2]))
+					self.ol_frac_comp.append(float(self.layer_data[i][3]) / 100.0) #converting to perc to fraction
+					self.opx_frac_comp.append(float(self.layer_data[i][4]) / 100.0)
+					self.cpx_frac_comp.append(float(self.layer_data[i][5]) / 100.0)
+					self.gt_frac_comp.append(float(self.layer_data[i][6]) / 100.0)
+					self.sp_chr_frac_comp.append(float(self.layer_data[i][7]) / 100.0)
+					self.pl_frac_comp.append(float(self.layer_data[i][8]) / 100.0)
+					self.amp_frac_comp.append(float(self.layer_data[i][9]) / 100.0)
 					self.cond_frac_comp.append(float(self.layer_data[i][10]) / 100.0)
 					self.cond_cond_comp.append(1.0 / float(self.layer_data[i][11])) #converting to conductivity
-					self.fe_ol_comp.append(float(self.layer_data[i][12]))
-					self.fe_opx_comp.append(float(self.layer_data[i][13]))
-					self.fe_cpx_comp.append(float(self.layer_data[i][14]))
-					self.fe_gt_comp.append(float(self.layer_data[i][15]))
-					self.al_opx_comp.append(float(self.layer_data[i][16]))
-					self.ti_ol_comp.append(float(self.layer_data[i][17]))
-					self.ol_m_comp.append(float(self.layer_data[i][18]))
-					self.opx_m_comp.append(float(self.layer_data[i][19]))
-					self.cpx_m_comp.append(float(self.layer_data[i][20]))
-					self.gt_m_comp.append(float(self.layer_data[i][21]))
-					self.sp_chr_m_comp.append(float(self.layer_data[i][22]))
-					self.pl_m_comp.append(float(self.layer_data[i][23]))
-					self.amp_m_comp.append(float(self.layer_data[i][24]))
-					self.melt_m_comp.append(float(self.layer_data[i][25]))
+					self.melt_frac_comp.append(float(self.layer_data[i][12]) / 100.0)
+					self.fe_ol_comp.append(float(self.layer_data[i][13]))
+					self.fe_opx_comp.append(float(self.layer_data[i][14]))
+					self.fe_cpx_comp.append(float(self.layer_data[i][15]))
+					self.fe_gt_comp.append(float(self.layer_data[i][16]))
+					self.al_opx_comp.append(float(self.layer_data[i][17]))
+					self.ti_ol_comp.append(float(self.layer_data[i][18]))
+					self.ol_m_comp.append(float(self.layer_data[i][19]))
+					self.opx_m_comp.append(float(self.layer_data[i][20]))
+					self.cpx_m_comp.append(float(self.layer_data[i][21]))
+					self.gt_m_comp.append(float(self.layer_data[i][22]))
+					self.sp_chr_m_comp.append(float(self.layer_data[i][23]))
+					self.pl_m_comp.append(float(self.layer_data[i][24]))
+					self.amp_m_comp.append(float(self.layer_data[i][25]))
 					self.cond_m_comp.append(float(self.layer_data[i][26]))
 					self.cond_t_k_comp.append(float(self.layer_data[i][27]))
-					self.flu_comp.append(float(self.layer_data[i][28]))
-					self.ol_gs_comp.append(float(self.layer_data[i][29])*1e-3) #converting to mm to m
-					self.heat_prod_mantle.append(float(self.layer_data[i][30]))
+					self.melt_m_comp.append(float(self.layer_data[i][28]))
+					self.flu_comp.append(float(self.layer_data[i][29]))
+					self.ol_gs_comp.append(float(self.layer_data[i][30])*1e-3) #converting to mm to m
+					self.heat_prod_mantle.append(float(self.layer_data[i][31]))
 
 			self.depth_comp_plot = self.depth_comp[::2]
 
@@ -1638,9 +1643,9 @@ class MATE(QMainWindow):
 			f_sp_chr = interp1d(self.depth_comp,self.sp_chr_frac_comp)
 			f_pl = interp1d(self.depth_comp,self.pl_frac_comp)
 			f_amp = interp1d(self.depth_comp,self.amp_frac_comp)
-			f_melt = interp1d(self.depth_comp,self.melt_frac_comp)
 			f_cond = interp1d(self.depth_comp,self.cond_frac_comp)
 			f_cond_cond = interp1d(self.depth_comp,self.cond_cond_comp)
+			f_melt = interp1d(self.depth_comp,self.melt_frac_comp)
 			f_fe_ol = interp1d(self.depth_comp,self.fe_ol_comp)
 			f_fe_opx = interp1d(self.depth_comp,self.fe_opx_comp)
 			f_fe_cpx = interp1d(self.depth_comp,self.fe_cpx_comp)
@@ -1655,9 +1660,10 @@ class MATE(QMainWindow):
 			f_sp_chr_m = interp1d(self.depth_comp,self.sp_chr_m_comp)
 			f_pl_m = interp1d(self.depth_comp,self.pl_m_comp)
 			f_amp_m = interp1d(self.depth_comp,self.amp_m_comp)
-			f_melt_m = interp1d(self.depth_comp,self.melt_m_comp)
 			f_cond_m = interp1d(self.depth_comp,self.cond_m_comp)
+			f_melt_m = interp1d(self.depth_comp,self.melt_m_comp)
 			f_h2o = interp1d(self.depth_comp,self.h2o_comp)
+			f_co2 = interp1d(self.depth_comp,self.co2_comp)
 			f_cond_t_k = interp1d(self.depth_comp,self.cond_t_k_comp)
 			f_flu = interp1d(self.depth_comp,self.flu_comp)
 			f_ol_gs = interp1d(self.depth_comp,self.ol_gs_comp)
@@ -1674,9 +1680,9 @@ class MATE(QMainWindow):
 			self.sp_chr_frac = f_sp_chr(self.depth_mantle)
 			self.pl_frac = f_pl(self.depth_mantle)
 			self.amp_frac = f_amp(self.depth_mantle)
-			self.melt_frac = f_melt(self.depth_mantle)
 			self.cond_frac = f_cond(self.depth_mantle)
 			self.cond_cond = f_cond_cond(self.depth_mantle)
+			self.melt_mass_frac = f_melt(self.depth_mantle)
 			self.fe_ol = f_fe_ol(self.depth_mantle)
 			self.fe_opx = f_fe_opx(self.depth_mantle)
 			self.fe_cpx = f_fe_cpx(self.depth_mantle)
@@ -1696,10 +1702,11 @@ class MATE(QMainWindow):
 			self.sp_chr_m = f_sp_chr_m(self.depth_mantle)
 			self.pl_m = f_pl_m(self.depth_mantle)
 			self.amp_m = f_amp_m(self.depth_mantle)
-			self.melt_m = f_melt_m(self.depth_mantle)
 			self.cond_m = f_cond_m(self.depth_mantle)
+			self.melt_m = f_melt_m(self.depth_mantle)
 
 			self.h2o = f_h2o(self.depth_mantle)
+			self.co2 = f_co2(self.depth_mantle)
 			self.cond_t_k = f_cond_t_k(self.depth_mantle)
 			self.flu = f_flu(self.depth_mantle)
 			self.ol_gs = f_ol_gs(self.depth_mantle)
@@ -1714,10 +1721,11 @@ class MATE(QMainWindow):
 				self.sp_chr_frac = np.insert(self.sp_chr_frac,0,-999)
 				self.pl_frac = np.insert(self.pl_frac,0,-999)
 				self.amp_frac = np.insert(self.amp_frac,0,-999)
-				self.melt_frac = np.insert(self.melt_frac,0,-999)
 				self.cond_frac = np.insert(self.cond_frac,0,-999)
 				self.cond_cond = np.insert(self.cond_cond,0,-999)
+				self.melt_mass_frac = np.insert(self.melt_mass_frac,0,-999)
 				self.h2o = np.insert(self.h2o,0,-999)
+				self.co2 = np.insert(self.co2,0,-999)
 				self.cond_t_k = np.insert(self.cond_t_k,0,-999)
 				self.flu = np.insert(self.flu,0,-999)
 				self.ol_gs = np.insert(self.ol_gs,0,-999)
@@ -1739,8 +1747,8 @@ class MATE(QMainWindow):
 				self.sp_chr_m = np.insert(self.sp_chr_m,0,-999)
 				self.pl_m = np.insert(self.pl_m,0,-999)
 				self.amp_m = np.insert(self.amp_m,0,-999)
-				self.melt_m = np.insert(self.melt_m,0,-999)
 				self.cond_m = np.insert(self.cond_m,0,-999)
+				self.melt_m = np.insert(self.melt_m,0,-999)
 
 			self.d_z.append([self.dz] * int((MATE.moho) / self.dz))
 			self.d_z.append([self.dz] * int((MATE.lab-MATE.moho) / self.dz))
@@ -1763,7 +1771,7 @@ class MATE(QMainWindow):
 			else:
 				MATE.amp_method = '1'
 
-			if np.mean(self.melt_frac[self.idx_moho:]) > 0.0:
+			if np.mean(self.melt_mass_frac[self.idx_moho:]) > 0.0:
 				MATE.melt_method = '0'
 			else:
 				MATE.melt_method = '1'
@@ -2094,10 +2102,10 @@ class MATE(QMainWindow):
 		if MATE.melt_method == '0':
 
 			#Converting fractions to water holding species that has an exchange with coexisting melt.
-			self.ol_frac_wt = self.ol_frac / (self.ol_frac + self.opx_frac + self.cpx_frac + self.gt_frac + self.melt_frac)
-			self.opx_frac_wt = self.opx_frac / (self.ol_frac + self.opx_frac + self.cpx_frac + self.gt_frac + self.melt_frac)
-			self.cpx_frac_wt = self.cpx_frac / (self.ol_frac + self.opx_frac + self.cpx_frac + self.gt_frac + self.melt_frac)
-			self.gt_frac_wt = self.gt_frac / (self.ol_frac + self.opx_frac + self.cpx_frac + self.gt_frac + self.melt_frac)
+			self.ol_frac_wt = self.ol_frac / (self.ol_frac + self.opx_frac + self.cpx_frac + self.gt_frac)
+			self.opx_frac_wt = self.opx_frac / (self.ol_frac + self.opx_frac + self.cpx_frac + self.gt_frac)
+			self.cpx_frac_wt = self.cpx_frac / (self.ol_frac + self.opx_frac + self.cpx_frac + self.gt_frac)
+			self.gt_frac_wt = self.gt_frac / (self.ol_frac + self.opx_frac + self.cpx_frac + self.gt_frac)
 
 			#Calculating partition coeff of water between per and melt from Hirschmann et al. (2009)
 			self.d_per_melt = (self.ol_frac_wt * self.d_melt_ol_function[MATE.ol_melt_part_select]) +\
@@ -2105,10 +2113,13 @@ class MATE(QMainWindow):
 				(self.cpx_frac_wt * self.d_melt_cpx_function[MATE.cpx_melt_part_select]) +\
 				(self.gt_frac_wt * self.d_melt_gt_function[MATE.gt_melt_part_select])
 
-			#Calculating the h2o content of melt that is in equilibrium with the entered solid-mixture.
-			self.melt_h2o = self.h2o / self.d_per_melt
-			#Calculating the h2o content of the melt+solid system
-			self.system_h2o = (self.melt_frac * self.melt_h2o) + ((1 - self.melt_frac) * self.h2o)
+			#Calculating the h2o content of melt that is in equilibrium with the entered solid-mixture, from Sifre et al. (2014)
+			self.melt_h2o = self.h2o / (self.melt_mass_frac + ((1.0 - self.melt_mass_frac) * self.d_per_melt))
+
+			#Recalculating the self.h2o as peridotite (solid) water content
+			self.h2o = (self.h2o * self.d_per_melt) /\
+				(self.melt_mass_frac + ((1.0 - self.melt_mass_frac) * self.d_per_melt))
+
 
 		#CALCULATING AL-DEPENDENT PARTITION COEFF
 		if MATE.part_px_method == '1':
@@ -3666,7 +3677,7 @@ class MATE(QMainWindow):
 			self.melt_cond_min = cond_melt_min
 			self.melt_cond = cond_melt_max
 
-	def phase_mixing_function(self,method = None):
+	def phase_mixing_function(self,method = None, melt_method = None):
 
 		#Error message to prevent using Archie's model w/o entry of connectivity parameters.
 		if (method == 0):
@@ -3705,14 +3716,6 @@ class MATE(QMainWindow):
 				if self.sp_chr_frac[i] == 0.0:
 					self.sp_chr_m[i] = 1.0
 
-		if np.mean(self.melt_frac[self.idx_moho:]) == 0.0:
-			self.melt_m = np.ones(len(self.T))
-			self.melt_cond = np.ones(len(self.T))
-		else:
-			for i in range(self.idx_moho,len(self.melt_frac)):
-				if self.melt_frac[i] == 0.0:
-					self.melt_m[i] = 1.0
-
 		if np.mean(self.cond_frac[self.idx_moho:]) == 0.0:
 			self.cond_m = np.ones(len(self.T))
 			self.cond_cond = np.ones(len(self.T))
@@ -3727,8 +3730,8 @@ class MATE(QMainWindow):
 			#From Glover (2010, Geophysics), analytic solution.
 
 			for i in range(self.idx_moho,len(self.T)):
-				phase_list = [self.ol_frac[i],self.opx_frac[i],self.cpx_frac[i],self.gt_frac[i],self.sp_chr_frac[i],self.pl_frac[i],self.amp_frac[i],self.melt_frac[i],self.cond_frac[i]]
-				m_list = [self.ol_m[i],self.opx_m[i],self.cpx_m[i],self.gt_m[i],self.sp_chr_m[i],self.pl_m[i],self.amp_m[i],self.melt_m[i],self.cond_m[i]]
+				phase_list = [self.ol_frac[i],self.opx_frac[i],self.cpx_frac[i],self.gt_frac[i],self.sp_chr_frac[i],self.pl_frac[i],self.amp_frac[i],self.cond_frac[i]]
+				m_list = [self.ol_m[i],self.opx_m[i],self.cpx_m[i],self.gt_m[i],self.sp_chr_m[i],self.pl_m[i],self.amp_m[i],self.cond_m[i]]
 				frac_abundant = max(phase_list) #fraction of abundant mineral
 				idx_max_ph = phase_list.index(frac_abundant) #index of the abundant mineral
 				del phase_list[idx_max_ph] #deleting the abundant mineral form local list
@@ -3750,8 +3753,6 @@ class MATE(QMainWindow):
 				elif idx_max_ph == 6:
 					self.amp_m[i] = m_abundant
 				elif idx_max_ph == 7:
-					self.melt_m[i] = m_abundant
-				elif idx_max_ph == 8:
 					self.cond_m[i] = m_abundant
 
 			#Generalized Archie's Law for maximum, minimum bounds and neutral w/o errors
@@ -3763,7 +3764,6 @@ class MATE(QMainWindow):
 			self.connectedness_sp_chr = self.sp_chr_frac**self.sp_chr_m
 			self.connectedness_amp = self.amp_frac**self.amp_m
 			self.connectedness_pl = self.pl_frac**self.pl_m
-			self.connectedness_melt = self.melt_frac**self.melt_m
 			self.connectedness_cond = self.cond_frac**self.cond_m
 
 			self.bulk_cond_max = (self.ol_cond_max*(self.ol_frac**self.ol_m)) +\
@@ -3773,7 +3773,6 @@ class MATE(QMainWindow):
 			(self.sp_chr_cond_max*(self.sp_chr_frac**self.sp_chr_m)) +\
 			(self.pl_cond_max*(self.pl_frac**self.pl_m)) +\
 			(self.amp_cond_max*(self.amp_frac**self.amp_m)) +\
-			(self.melt_cond_max*(self.melt_frac**self.melt_m)) +\
 			(self.cond_cond*(self.cond_frac**self.cond_m))
 
 			self.bulk_cond_min = (self.ol_cond_min*(self.ol_frac**self.ol_m)) +\
@@ -3783,7 +3782,6 @@ class MATE(QMainWindow):
 			(self.sp_chr_cond_min*(self.sp_chr_frac**self.sp_chr_m)) +\
 			(self.pl_cond_min*(self.pl_frac**self.pl_m)) +\
 			(self.amp_cond_min*(self.amp_frac**self.amp_m)) +\
-			(self.melt_cond_min*(self.melt_frac**self.melt_m)) +\
 			(self.cond_cond*(self.cond_frac**self.cond_m))
 
 			self.bulk_cond = (self.ol_cond*(self.ol_frac**self.ol_m)) +\
@@ -3793,7 +3791,6 @@ class MATE(QMainWindow):
 			(self.sp_chr_cond*(self.sp_chr_frac**self.sp_chr_m)) +\
 			(self.pl_cond*(self.pl_frac**self.pl_m)) +\
 			(self.amp_cond*(self.amp_frac**self.amp_m)) +\
-			(self.melt_cond*(self.melt_frac**self.melt_m)) +\
 			(self.cond_cond*(self.cond_frac**self.cond_m))
 
 		elif method == 1:
@@ -3828,12 +3825,6 @@ class MATE(QMainWindow):
 					list_i_min.append(self.sp_chr_cond_min[i])
 					list_i.append(self.sp_chr_cond[i])
 
-				if np.mean(self.melt_frac[self.idx_moho:]) != 0.0:
-
-					list_i_max.append(self.melt_cond_max[i])
-					list_i_min.append(self.melt_cond_min[i])
-					list_i.append(self.melt_cond[i])
-
 				if np.mean(self.cond_frac[self.idx_moho:]) != 0.0:
 
 					list_i_max.append(self.cond_cond[i])
@@ -3865,7 +3856,6 @@ class MATE(QMainWindow):
 				(self.pl_frac[i] / (self.pl_cond_min[i] + (2*min_local_min))) +\
 				(self.amp_frac[i] / (self.amp_cond_min[i] + (2*min_local_min))) +\
 				(self.sp_chr_frac[i] / (self.sp_chr_cond_min[i] + (2*min_local_min))) +\
-				(self.melt_frac[i] / (self.melt_cond_min[i] + (2*min_local_min))) +\
 				(self.cond_frac[i] / (self.cond_cond[i] + (2*min_local_min))))**(-1.0)) -\
 				2.0*min_local_min
 
@@ -3876,7 +3866,6 @@ class MATE(QMainWindow):
 				(self.pl_frac[i] / (self.pl_cond_max[i] + (2*min_local_max))) +\
 				(self.amp_frac[i] / (self.amp_cond_max[i] + (2*min_local_max))) +\
 				(self.sp_chr_frac[i] / (self.sp_chr_cond_max[i] + (2*min_local_max))) +\
-				(self.melt_frac[i] / (self.melt_cond_max[i] + (2*min_local_max))) +\
 				(self.cond_frac[i] / (self.cond_cond[i] + (2*min_local_max))))**(-1.0)) -\
 				2.0*min_local_max
 
@@ -3887,7 +3876,6 @@ class MATE(QMainWindow):
 				(self.pl_frac[i] / (self.pl_cond[i] + (2*min_local))) +\
 				(self.amp_frac[i] / (self.amp_cond[i] + (2*min_local))) +\
 				(self.sp_chr_frac[i] / (self.sp_chr_cond[i] + (2*min_local))) +\
-				(self.melt_frac[i] / (self.melt_cond[i] + (2*min_local))) +\
 				(self.cond_frac[i] / (self.cond_cond[i] + (2*min_local))))**(-1.0)) -\
 				2.0*min_local
 
@@ -3923,12 +3911,6 @@ class MATE(QMainWindow):
 					list_i_min.append(self.sp_chr_cond_min[i])
 					list_i.append(self.sp_chr_cond[i])
 
-				if np.mean(self.melt_frac[self.idx_moho:]) != 0.0:
-
-					list_i_max.append(self.melt_cond_max[i])
-					list_i_min.append(self.melt_cond_min[i])
-					list_i.append(self.melt_cond[i])
-
 				if np.mean(self.cond_frac[self.idx_moho:]) != 0.0:
 
 					list_i_max.append(self.cond_cond[i])
@@ -3961,7 +3943,6 @@ class MATE(QMainWindow):
 				(self.pl_frac[i] / (self.pl_cond_min[i] + 2*max_local_min)) +\
 				(self.amp_frac[i] / (self.amp_cond_min[i] + 2*max_local_min)) +\
 				(self.sp_chr_frac[i] / (self.sp_chr_cond_min[i] + 2*max_local_min)) +\
-				(self.melt_frac[i] / (self.melt_cond_min[i] + 2*max_local_min)) +\
 				(self.cond_frac[i] / (self.cond_cond[i] + 2*max_local_min)))**(-1.0)) -\
 				2.0*max_local_min
 
@@ -3972,7 +3953,6 @@ class MATE(QMainWindow):
 				(self.pl_frac[i] / (self.pl_cond_max[i] + 2*max_local_max)) +\
 				(self.amp_frac[i] / (self.amp_cond_max[i] + 2*max_local_max)) +\
 				(self.sp_chr_frac[i] / (self.sp_chr_cond_max[i] + 2*max_local_max)) +\
-				(self.melt_frac[i] / (self.melt_cond_max[i] + 2*max_local_max)) +\
 				(self.cond_frac[i] / (self.cond_cond[i] + 2*max_local_max)))**(-1.0)) -\
 				2.0*max_local_max
 
@@ -3983,7 +3963,6 @@ class MATE(QMainWindow):
 				(self.pl_frac[i] / (self.pl_cond[i] + 2*max_local)) +\
 				(self.amp_frac[i] / (self.amp_cond[i] + 2*max_local)) +\
 				(self.sp_chr_frac[i] / (self.sp_chr_cond[i] + 2*max_local)) +\
-				(self.melt_frac[i] / (self.melt_cond[i] + 2*max_local)) +\
 				(self.cond_frac[i] / (self.cond_cond[i] + 2*max_local)))**(-1.0)) -\
 				2.0*max_local
 
@@ -3998,9 +3977,7 @@ class MATE(QMainWindow):
 			(self.pl_frac*self.pl_cond_max) +\
 			(self.amp_frac*self.amp_cond_max) +\
 			(self.sp_chr_frac*self.sp_chr_cond_max) +\
-			(self.melt_frac*self.melt_cond_max) +\
 			(self.cond_frac*self.cond_cond)
-
 
 			self.bulk_cond_min = (self.ol_frac*self.ol_cond_min) +\
 			(self.opx_frac*self.opx_cond_min) +\
@@ -4009,7 +3986,6 @@ class MATE(QMainWindow):
 			(self.pl_frac*self.pl_cond_min) +\
 			(self.amp_frac*self.amp_cond_min) +\
 			(self.sp_chr_frac*self.sp_chr_cond_min) +\
-			(self.melt_frac*self.melt_cond_min) +\
 			(self.cond_frac*self.cond_cond)
 
 			self.bulk_cond = (self.ol_frac*self.ol_cond) +\
@@ -4019,7 +3995,6 @@ class MATE(QMainWindow):
 			(self.pl_frac*self.pl_cond) +\
 			(self.amp_frac*self.amp_cond) +\
 			(self.sp_chr_frac*self.sp_chr_cond) +\
-			(self.melt_frac*self.melt_cond) +\
 			(self.cond_frac*self.cond_cond)
 
 		elif method == 4:
@@ -4054,10 +4029,6 @@ class MATE(QMainWindow):
 					self.amp_cond_max[i] = -999
 					self.amp_cond_min[i] = -999
 					self.amp_cond[i] = -999
-				if self.melt_frac[i] == 0.0:
-					self.melt_cond_max[i] = -999
-					self.melt_cond_min[i] = -999
-					self.melt_cond[i] = -999
 				if self.cond_frac[i] == 0.0:
 					self.cond_cond = -999
 
@@ -4068,7 +4039,6 @@ class MATE(QMainWindow):
 			(self.sp_chr_frac / self.sp_chr_cond_max) +\
 			(self.pl_frac / self.pl_cond_max) +\
 			(self.amp_frac / self.amp_cond_max) +\
-			(self.melt_frac / self.melt_cond_max) +\
 			(self.cond_frac / self.cond_cond))
 
 			self.bulk_cond_min = 1.0 / ((self.ol_frac / self.ol_cond_min) +\
@@ -4078,7 +4048,6 @@ class MATE(QMainWindow):
 			(self.sp_chr_frac / self.sp_chr_cond_min) +\
 			(self.pl_frac / self.pl_cond_min) +\
 			(self.amp_frac / self.amp_cond_min) +\
-			(self.melt_frac / self.melt_cond_min) +\
 			(self.cond_frac / self.cond_cond))
 
 			self.bulk_cond = 1.0 / ((self.ol_frac / self.ol_cond) +\
@@ -4088,7 +4057,6 @@ class MATE(QMainWindow):
 			(self.sp_chr_frac / self.sp_chr_cond) +\
 			(self.pl_frac / self.pl_cond) +\
 			(self.amp_frac / self.amp_cond) +\
-			(self.melt_frac / self.melt_cond) +\
 			(self.cond_frac / self.cond_cond))
 
 		elif method == 5:
@@ -4102,7 +4070,6 @@ class MATE(QMainWindow):
 			(self.sp_chr_cond_max**self.sp_chr_frac) *\
 			(self.pl_cond_max**self.pl_frac) *\
 			(self.amp_cond_max**self.amp_frac) *\
-			(self.melt_cond_max**self.melt_frac) *\
 			(self.cond_cond**self.cond_frac)
 
 			self.bulk_cond_min = (self.ol_cond_min**self.ol_frac) *\
@@ -4112,7 +4079,6 @@ class MATE(QMainWindow):
 			(self.sp_chr_cond_min**self.sp_chr_frac) *\
 			(self.pl_cond_min**self.pl_frac) *\
 			(self.amp_cond_min**self.amp_frac) *\
-			(self.melt_cond_min**self.melt_frac) *\
 			(self.cond_cond**self.cond_frac)
 
 			self.bulk_cond = (self.ol_cond**self.ol_frac) *\
@@ -4122,10 +4088,24 @@ class MATE(QMainWindow):
 			(self.sp_chr_cond**self.sp_chr_frac) *\
 			(self.pl_cond**self.pl_frac) *\
 			(self.amp_cond**self.amp_frac) *\
-			(self.melt_cond**self.melt_frac) *\
 			(self.cond_cond**self.cond_frac)
 
 		self.bulk_error = (self.bulk_cond_max - self.bulk_cond_min) / 2.0
+
+		if MATE.melt_method == '0':
+
+			#Determining xvol, first have to calculate the density of the melt.
+			dens_melt_dry = self.dens_mat[MATE.melt_cond_selection] / 1e3
+			dens_melt = (((self.melt_h2o * 1e-4) / 1e2) * 1.4) +\
+				(((self.co2 * 1e-4) / 1e2) * 2.4) + (1 - (((self.melt_h2o * 1e-4) +\
+				(self.co2 * 1e-4)) / 1e2)) * d_melt_dry
+
+			#Volume fraction of melt to calculate the
+			self.melt_frac = 1.0 / (1 + (((1.0/self.melt_mass_frac) - 1) * (dens_melt / (self.density_mantle / 1e3))))
+
+			#DO THE MELT STUFF HERE::::
+			cansu = 1
+
 
 	def read_ModEM_dat(self):
 
@@ -4958,20 +4938,20 @@ class MATE(QMainWindow):
 
 			if MATE.bounds_select == 1:
 
-				self.phase_mixing_function(method = 1)
+				self.phase_mixing_function(method = 1, melt_method = MATE.phs_melt_mix_method)
 				extremal_lower = self.bulk_cond
-				self.phase_mixing_function(method = 2)
+				self.phase_mixing_function(method = 2, melt_method = MATE.phs_melt_mix_method)
 				extremal_upper = self.bulk_cond
 
 			elif MATE.bounds_select == 2:
 
-				self.phase_mixing_function(method = 3)
+				self.phase_mixing_function(method = 3, melt_method = MATE.phs_melt_mix_method)
 				extremal_lower = self.bulk_cond
-				self.phase_mixing_function(method = 4)
+				self.phase_mixing_function(method = 4, melt_method = MATE.phs_melt_mix_method)
 				extremal_upper = self.bulk_cond
 
 			self.ax5.fill_betweenx(self.depth[self.idx_moho:]/1000.0, 1.0/extremal_upper[self.idx_moho:],1.0/extremal_lower[self.idx_moho:], color = '#5b5e5d',alpha = 0.50)
-			self.phase_mixing_function(method = MATE.phs_mix_method) #reinstating the original conductivity
+			self.phase_mixing_function(method = MATE.phs_mix_method, melt_method = MATE.phs_melt_mix_method) #reinstating the original conductivity
 
 		if (self.ModEM_dat_read == True) and (self.ModEM_model_read == True):
 
@@ -5214,7 +5194,7 @@ class MATE(QMainWindow):
 				if self.continue_adjusting == 1:
 					layers_bad_comp = []
 					for i in range(0,len(self.ol_frac_comp),2):
-						
+
 						total_frac_solid = self.ol_frac_comp[i] + self.opx_frac_comp[i] + self.cpx_frac_comp[i] +\
 						 self.gt_frac_comp[i] + self.pl_frac_comp[i] + self.amp_frac_comp[i] + \
 						 self.cond_frac_comp[i]
@@ -5325,7 +5305,7 @@ class MATE(QMainWindow):
 				self.calculate_amp_conductivity()
 			self.calculate_sp_chr_conductivity()
 			self.calculate_melt_conductivity()
-			self.phase_mixing_function(method = MATE.phs_mix_method)
+			self.phase_mixing_function(method = MATE.phs_mix_method, melt_method = MATE.phs_melt_mix_method)
 			self.plot_conductivity(method = 'draw',boundaries = False)
 			self.plt_cond_btn.setStyleSheet("QPushButton {min-width: 10em; font: bold; font-size: 9pt;background-color: #679c5f}")
 
@@ -5657,7 +5637,7 @@ class MATE(QMainWindow):
 								self.calculate_amp_conductivity()
 							self.calculate_sp_chr_conductivity()
 							self.calculate_melt_conductivity()
-							self.phase_mixing_function(method = MATE.phs_mix_method)
+							self.phase_mixing_function(method = MATE.phs_mix_method, melt_method = MATE.phs_melt_mix_method)
 
 							if MATE.w_inp_method == '0':
 								residual = (1.0/self.bulk_cond[sol_index] - res_to_invert[sol_index])
@@ -5729,7 +5709,7 @@ class MATE(QMainWindow):
 				self.calculate_sp_chr_conductivity()
 				self.calculate_melt_conductivity()
 
-				self.phase_mixing_function(method = MATE.phs_mix_method)
+				self.phase_mixing_function(method = MATE.phs_mix_method, melt_method = MATE.phs_melt_mix_method)
 				self.plot_water(method = 'draw')
 				self.plot_conductivity(method = 'draw', boundaries = False)
 
@@ -5850,7 +5830,7 @@ class MATE(QMainWindow):
 				idx_water = int(idx_water)
 				self.h2o_comp[i] = self.h2o[idx_water]
 
-			MATE.text = "Depth(km),Cw_bulk(ppm),ol_frac,opx_frac,cpx_frac,gt_frac,sp_chr_frac,pl_frac,amp_frac,cond_frac,cond_cond(ohm_m),XFe-ol,XFe-opx,XFe-cpx,XFe-gt,Al-opx(wt%),Ti-ol(wt%),m_ol,m_opx,m_cpx,m_gt,m_sp_chr,m_pl,m_amp,m_cond,t_k_cond(W/mK),fl_pl(wt%),ol_gs(mm),heat_prod(mW/m^2)\n"
+			MATE.text = "Depth(km),Cw_bulk(ppm),ol_frac,opx_frac,cpx_frac,gt_frac,sp_chr_frac,pl_frac,amp_frac,cond_frac,cond_cond(ohm_m),melt_mass_frac,XFe-ol,XFe-opx,XFe-cpx,XFe-gt,Al-opx(wt%),Ti-ol(wt%),m_ol,m_opx,m_cpx,m_gt,m_sp_chr,m_pl,m_amp,m_cond,t_k_cond(W/mK),fl_pl(wt%),ol_gs(mm),heat_prod(mW/m^2)\n"
 
 			for i in range(0,len(self.depth_comp)-1):
 				line = ','.join(('%4.2f' % (self.depth_comp[i]/1e3),'%4.2f' % self.h2o_comp[i],
@@ -5955,7 +5935,7 @@ class COMP_EDITOR(QWidget):
 			if platform.system() == 'Windows':
 				os.system('open ' + self.text_name[0])
 			else:
-				os.system(MATE.spreadsheet + ' ' +  self.text_name[0])
+				os.system(MATE.spreadsheet + ' ' +  self.text_name[0] + ' &')
 
 		else:
 			QMessageBox.about(self,"Warning!","First you have to load a file in order to open it externally with a spreadsheet program...")
@@ -7622,6 +7602,8 @@ class PHS_POP(QWidget):
 		self.label_1_mixing.setText('--------Solid-State Mixing--------')
 		phs_mix_layout.addWidget(self.label_1_mixing)
 
+		bg1 = QButtonGroup(self)
+
 		self.btn_mix_1 = QRadioButton("Generalized Archie's Law (Glover, 2010)")
 		self.btn_mix_1.toggled.connect(lambda:self.btnstate_phsmix(self.btn_mix_1))
 		self.btn_mix_2 = QRadioButton("Hashin-Shtrikman Lower Bound (Berryman, 1995)")
@@ -7652,12 +7634,20 @@ class PHS_POP(QWidget):
 		self.prop_info_btn.clicked.connect(self.mixing_info)
 
 
+		bg1.addButton(self.btn_mix_1)
+		bg1.addButton(self.btn_mix_2)
+		bg1.addButton(self.btn_mix_3)
+		bg1.addButton(self.btn_mix_4)
+		bg1.addButton(self.btn_mix_5)
+		bg1.addButton(self.btn_mix_6)
+
 		phs_mix_layout.addWidget(self.btn_mix_1)
 		phs_mix_layout.addWidget(self.btn_mix_2)
 		phs_mix_layout.addWidget(self.btn_mix_3)
 		phs_mix_layout.addWidget(self.btn_mix_4)
 		phs_mix_layout.addWidget(self.btn_mix_5)
 		phs_mix_layout.addWidget(self.btn_mix_6)
+
 
 		self.label_2_mixing = QLabel(self)
 		self.label_2_mixing.setText('')
@@ -7667,6 +7657,23 @@ class PHS_POP(QWidget):
 		self.label_3_mixing.setText('--------Melt-Solid Mixing--------')
 		phs_mix_layout.addWidget(self.label_3_mixing)
 
+		self.btn_mix_melt_1 = QRadioButton("Generalized Archie's Law (Glover, 2010)")
+		self.btn_mix_melt_1.toggled.connect(lambda:self.btnstate_phsmix_melt(self.btn_mix_melt_1))
+		self.btn_mix_melt_2 = QRadioButton("Tubes Model")
+		self.btn_mix_melt_2.toggled.connect(lambda:self.btnstate_phsmix_melt(self.btn_mix_melt_2))
+
+		bg2 = QButtonGroup(self)
+
+		bg2.addButton(self.btn_mix_melt_1)
+		bg2.addButton(self.btn_mix_melt_2)
+
+		phs_mix_layout.addWidget(self.btn_mix_melt_1)
+		phs_mix_layout.addWidget(self.btn_mix_melt_2)
+
+		if MATE.phs_melt_mix_method == 0:
+			self.btn_mix_melt_1.setChecked(True)
+		elif MATE.phs_melt_mix_method == 1:
+			self.btn_mix_melt_2.setChecked(True)
 
 		phs_mix_layout.addWidget(self.prop_info_btn)
 
@@ -7696,6 +7703,17 @@ class PHS_POP(QWidget):
 			if b.isChecked() == True:
 				MATE.phs_mix_method = 5
 				MATE.phs_mix_type = 1
+
+	def btnstate_phsmix_melt(self, b2):
+
+		if b2.text() == "Generalized Archie's Law (Glover, 2010)":
+			if b2.isChecked() == True:
+				MATE.phs_melt_mix_method = 0
+				MATE.phs_melt_mix_type = 0
+		elif b2.text() == "Tubes Model":
+			if b2.isChecked() == True:
+				MATE.phs_melt_mix_method = 1
+				MATE.phs_melt_mix_type = 1
 
 	def mixing_info(self):
 
