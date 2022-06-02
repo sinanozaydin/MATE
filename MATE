@@ -38,6 +38,7 @@ from cond_models.amp_odd import * #Conductivity functions of amphiboles
 from cond_models.melt_odd import * #Conductivity functions of melts
 from cond_models.sp_chr_odd import * #Conductivity functions of spinel-chromites
 from min_sol.ol_sol import * #Olivine solubility models
+from thermal.adiabat import * #Adiabat models
 
 warnings.filterwarnings("ignore", category=RuntimeWarning) #ignoring many RuntimeWarning printouts that are useless
 
@@ -447,6 +448,8 @@ class MATE(QMainWindow):
 
 		MATE.spinel_stab_select = 1
 		MATE.P_sp_manual = None
+		MATE.adiabat_options = ['No Adiabat', 'Katsura2022']
+		MATE.adiabat_selection = 1
 
 		self.fo2_input = False
 		self.water_inverted = False
@@ -1073,6 +1076,7 @@ class MATE(QMainWindow):
 		MATE.d_melt_opx_type = []
 		self.d_melt_opx_function = []
 		self.d_melt_opx_function_2 = []
+		self.d_melt_opx_change = []
 
 		for i in range(1,len(self.pl_data)):
 
@@ -1080,6 +1084,7 @@ class MATE(QMainWindow):
 			MATE.d_melt_opx_type.append(self.opx_melt_data[i][1])
 			self.d_melt_opx_function.append(self.opx_melt_data[i][2])
 			self.d_melt_opx_function_2.append(self.opx_melt_data[i][3])
+			self.d_melt_opx_change.append(self.opx_melt_data[i][4])
 
 		MATE.opx_melt_part_select = 0
 		MATE.opx_melt_display = MATE.d_melt_opx_items[MATE.opx_melt_part_select]
@@ -1092,6 +1097,7 @@ class MATE(QMainWindow):
 		MATE.d_melt_cpx_type = []
 		self.d_melt_cpx_function = []
 		self.d_melt_cpx_function_2 = []
+		self.d_melt_cpx_change = []
 
 		for i in range(1,len(self.pl_data)):
 
@@ -1099,6 +1105,7 @@ class MATE(QMainWindow):
 			MATE.d_melt_cpx_type.append(self.cpx_melt_data[i][1])
 			self.d_melt_cpx_function.append(self.cpx_melt_data[i][2])
 			self.d_melt_cpx_function_2.append(self.cpx_melt_data[i][3])
+			self.d_melt_cpx_change.append(self.cpx_melt_data[i][4])
 
 		MATE.cpx_melt_part_select = 0
 		MATE.cpx_melt_display = MATE.d_melt_cpx_items[MATE.cpx_melt_part_select]
@@ -2035,6 +2042,17 @@ class MATE(QMainWindow):
 					self.crust_production = MATE.q_0 - self.q[i]
 					self.moho_heat_flow = self.q[i]
 
+		if MATE.adiabat_selection != 0:
+
+			T_K_Adiabat, self.depth_adiabat_used, self.T_adiabat_used = eval(MATE.adiabat_options[MATE.adiabat_selection] + '(P_input = self.p)')
+
+			self.idx_T_adiabat = np.argwhere(np.diff(np.sign(self.T - T_K_Adiabat)) != 0)
+
+			try:
+				self.T[self.idx_T_adiabat[0][0]:] = T_K_Adiabat[self.idx_T_adiabat[0][0]:]
+			except IndexError:
+				pass
+
 		#After P and T calculation re-calculate al-model and plot it.
 		if MATE.al_method == '0':
 			if MATE.al_opx_model_select != 0:
@@ -2107,11 +2125,59 @@ class MATE(QMainWindow):
 			self.cpx_frac_wt = self.cpx_frac / (self.ol_frac + self.opx_frac + self.cpx_frac + self.gt_frac)
 			self.gt_frac_wt = self.gt_frac / (self.ol_frac + self.opx_frac + self.cpx_frac + self.gt_frac)
 
+
+			if (MATE.d_melt_opx_type[MATE.opx_melt_part_select] == '1') or (MATE.d_melt_opx_type[MATE.opx_melt_part_select] == '3'):
+
+				MATE.d_melt_opx = eval(self.d_melt_opx_function[MATE.opx_part_select])
+
+			elif (MATE.d_melt_opx_type[MATE.opx_melt_part_select] == '2'):
+
+				MATE.d_melt_opx = np.zeros(len(self.p))
+
+				for i in range(0,len(self.p)):
+					if self.p[i] < self.d_melt_opx_change[MATE.opx_melt_part_select]:
+						MATE.d_melt_opx[i] = eval(self.d_melt_opx_function[MATE.opx_melt_part_select])
+					else:
+						MATE.d_melt_opx[i] = eval(self.d_melt_opx_function[MATE.opx_melt_part_select])
+
+			elif (MATE.d_melt_opx_type[MATE.opx_melt_part_select] == '4'):
+
+				MATE.d_melt_opx = np.ones(len(self.p)) * float(self.d_melt_opx_function[MATE.opx_melt_part_select])
+
+
+			if (MATE.d_melt_cpx_type[MATE.cpx_melt_part_select] == '1') or (MATE.d_melt_cpx_type[MATE.cpx_melt_part_select] == '3'):
+
+				MATE.d_melt_cpx = eval(self.d_melt_cpx_function[MATE.cpx_part_select])
+
+			elif (MATE.d_melt_cpx_type[MATE.cpx_melt_part_select] == '2'):
+
+				MATE.d_melt_cpx = np.zeros(len(self.p))
+
+				for i in range(0,len(self.p)):
+					if self.p[i] < self.d_melt_cpx_change[MATE.cpx_melt_part_select]:
+						MATE.d_melt_cpx[i] = eval(self.d_melt_cpx_function[MATE.cpx_melt_part_select])
+					else:
+						MATE.d_melt_cpx[i] = eval(self.d_melt_cpx_function[MATE.cpx_melt_part_select])
+
+			elif (MATE.d_melt_cpx_type[MATE.cpx_melt_part_select] == '4'):
+
+				MATE.d_melt_cpx = np.ones(len(self.p)) * float(self.d_melt_cpx_function[MATE.cpx_melt_part_select])
+
+
+			if (MATE.d_melt_ol_type[MATE.ol_melt_part_select] == '4'):
+
+				MATE.d_melt_ol = np.ones(len(self.p)) * float(self.d_melt_ol_function[MATE.ol_melt_part_select])
+
+			if (MATE.d_melt_gt_type[MATE.gt_melt_part_select] == '4'):
+
+				MATE.d_melt_gt = np.ones(len(self.p)) * float(self.d_melt_gt_function[MATE.gt_melt_part_select])
+
+
 			#Calculating partition coeff of water between per and melt from Hirschmann et al. (2009)
-			self.d_per_melt = (self.ol_frac_wt * self.d_melt_ol_function[MATE.ol_melt_part_select]) +\
-				(self.opx_frac_wt * self.d_melt_opx_function[MATE.opx_melt_part_select]) +\
-				(self.cpx_frac_wt * self.d_melt_cpx_function[MATE.cpx_melt_part_select]) +\
-				(self.gt_frac_wt * self.d_melt_gt_function[MATE.gt_melt_part_select])
+			self.d_per_melt = (self.ol_frac_wt * MATE.d_melt_ol) +\
+				(self.opx_frac_wt * MATE.d_melt_opx) +\
+				(self.cpx_frac_wt * MATE.d_melt_cpx) +\
+				(self.gt_frac_wt * MATE.d_melt_gt)
 
 			#Calculating the h2o content of melt that is in equilibrium with the entered solid-mixture, from Sifre et al. (2014)
 			self.melt_h2o = self.h2o / (self.melt_mass_frac + ((1.0 - self.melt_mass_frac) * self.d_per_melt))
@@ -3671,7 +3737,7 @@ class MATE(QMainWindow):
 
 				melt_odd_function = MATE.name[7][MATE.melt_cond_selection]
 
-			cond_melt_max,cond_melt_min,cond_melt = eval(melt_odd_function + '(T = self.T)')
+			cond_melt_max,cond_melt_min,cond_melt = eval(melt_odd_function + '(T = self.T, Melt_H2O = self.melt_h2o, Melt_CO2 = self.co2)')
 
 			self.melt_cond_max = cond_melt_max
 			self.melt_cond_min = cond_melt_min
@@ -4094,18 +4160,103 @@ class MATE(QMainWindow):
 
 		if MATE.melt_method == '0':
 
-			#Determining xvol, first have to calculate the density of the melt.
-			dens_melt_dry = self.dens_mat[MATE.melt_cond_selection] / 1e3
+			#Determining xvol, first have to calculate the density of the melt from Sifre et al. (2014)
+			dens_melt_dry = float(self.dens_mat[7][MATE.melt_cond_selection]) / 1e3
+
 			dens_melt = (((self.melt_h2o * 1e-4) / 1e2) * 1.4) +\
 				(((self.co2 * 1e-4) / 1e2) * 2.4) + (1 - (((self.melt_h2o * 1e-4) +\
-				(self.co2 * 1e-4)) / 1e2)) * d_melt_dry
+				(self.co2 * 1e-4)) / 1e2)) * dens_melt_dry
 
-			#Volume fraction of melt to calculate the
-			self.melt_frac = 1.0 / (1 + (((1.0/self.melt_mass_frac) - 1) * (dens_melt / (self.density_mantle / 1e3))))
+			#Volume fraction of melt calculated from melt mass fraction (melt_mass_frac)
+			self.melt_frac = np.zeros(len(self.melt_mass_frac))
+			for i in range(0,len(self.melt_mass_frac)):
+				if self.melt_mass_frac[i] != 0.0:
+					self.melt_frac = 1.0 / (1 + (((1.0/self.melt_mass_frac) - 1) * (dens_melt / (self.density_mantle / 1e3))))
 
-			#DO THE MELT STUFF HERE::::
-			cansu = 1
+			if melt_method == 0:
 
+				#Modified Archie's Law taken from Glover et al. (2000) from eq. 8
+
+				for i in range(0,len(self.T)):
+
+					if self.melt_mass_frac[i] != 0.0:
+
+						p = np.log(1.0 - self.melt_frac[i]**self.melt_m[i]) / np.log(1.0 - self.melt_frac[i])
+
+						self.bulk_cond[i] = (self.bulk_cond[i] * (1.0 - self.melt_frac[i])**p) + (self.melt_cond[i] * (self.melt_frac[i]**self.melt_m[i]))
+						self.bulk_cond_max[i] = (self.bulk_cond_max[i] * (1.0 - self.melt_frac[i])**p) + (self.melt_cond_max[i] * (self.melt_frac[i]**self.melt_m[i]))
+						self.bulk_cond_min[i] = (self.bulk_cond_min[i] * (1.0 - self.melt_frac[i])**p) + (self.melt_cond_min[i] * (self.melt_frac[i]**self.melt_m[i]))
+
+			elif melt_method == 1:
+
+				#Tubes model for melt and solid mixture from ten Grotenhuis et al. (2005) eq.5
+
+				self.bulk_cond = ((1.0/3.0) * self.melt_frac * self.melt_cond) + ((1.0 - self.melt_frac) * self.bulk_cond)
+				self.bulk_cond_max = ((1.0/3.0) * self.melt_frac * self.melt_cond_max) + ((1.0 - self.melt_frac) * self.bulk_cond_max)
+				self.bulk_cond_min = ((1.0/3.0) * self.melt_frac * self.melt_cond_min) + ((1.0 - self.melt_frac) * self.bulk_cond_min)
+
+			elif melt_method == 2:
+
+				#Spheres model for melt ans solid mixture got from ten Grotenhuis et al. (2005), eq.3
+				self.bulk_cond = self.melt_cond + (self.melt_frac / ((1.0 / (self.melt_cond - self.bulk_cond)) +\
+					((1.0 - self.melt_frac) / 3.0 * self.bulk_cond)))
+				self.bulk_cond_max = self.melt_cond_max + (self.melt_frac / ((1.0 / (self.melt_cond_max - self.bulk_cond_max)) +\
+					((1.0 - self.melt_frac) / 3.0 * self.bulk_cond_max)))
+				self.bulk_cond_min = self.melt_cond_min + (self.melt_frac / ((1.0 / (self.melt_cond_min - self.bulk_cond_min)) +\
+					((1.0 - self.melt_frac) / 3.0 * self.bulk_cond_min)))
+
+			elif melt_method == 3:
+
+				#Modified brick-layer model from Glover et al. (2000)
+
+				self.bulk_cond = self.melt_cond * ((self.melt_cond * (((1-self.melt_frac)**(2.0/3.0)) - 1)) -\
+				 (((1-self.melt_frac)**(1.0/3.0)) * self.bulk_cond)) /\
+				 (((1 - self.melt_frac - ((1-self.melt_frac)**(2.0/3.0))) * self.melt_cond) +\
+				 ((((1-self.melt_frac)**(2.0/3.0)) - (1 - self.melt_frac) - 1) * self.bulk_cond))
+
+				self.bulk_cond_max = self.melt_cond_max * ((self.melt_cond_max * (((1-self.melt_frac)**(2.0/3.0)) - 1)) -\
+				 (((1-self.melt_frac)**(1.0/3.0)) * self.bulk_cond_max)) /\
+				 (((1 - self.melt_frac - ((1-self.melt_frac)**(2.0/3.0))) * self.melt_cond_max) +\
+				 ((((1-self.melt_frac)**(2.0/3.0)) - (1 - self.melt_frac) - 1) * self.bulk_cond_max))
+
+				self.bulk_cond_min = self.melt_cond_min * ((self.melt_cond_min * (((1-self.melt_frac)**(2.0/3.0)) - 1)) -\
+				 (((1-self.melt_frac)**(1.0/3.0)) * self.bulk_cond_min)) /\
+				 (((1 - self.melt_frac - ((1-self.melt_frac)**(2.0/3.0))) * self.melt_cond_min) +\
+				 ((((1-self.melt_frac)**(2.0/3.0)) - (1 - self.melt_frac) - 1) * self.bulk_cond_min))
+
+			elif melt_method == 4:
+
+				#Hashin-shtrikman upper bound from Glover et al. (2000)
+				vol_matrix = 1.0 - self.melt_frac
+
+				self.bulk_cond = self.melt_cond * (1 -\
+				((3 * vol_matrix * (self.melt_cond - self.bulk_cond)) /\
+				(3 * self.melt_cond - (self.melt_frac * (self.melt_cond - self.bulk_cond)))))
+
+				self.bulk_cond_max = self.melt_cond_max * (1 -\
+				((3 * vol_matrix * (self.melt_cond_max - self.bulk_cond_max)) /\
+				(3 * self.melt_cond_max - (self.melt_frac * (self.melt_cond_max - self.bulk_cond_max)))))
+
+				self.bulk_cond_min = self.melt_cond_min * (1 -\
+				((3 * vol_matrix * (self.melt_cond_min - self.bulk_cond_min)) /\
+				(3 * self.melt_cond_min - (self.melt_frac * (self.melt_cond_min - self.bulk_cond_min)))))
+
+			elif melt_method == 5:
+
+				#Hashin-shtrikman lower bound from Glover et al. (2000)
+				vol_matrix = 1.0 - self.melt_frac
+
+				self.bulk_cond = self.bulk_cond * (1 +\
+				((3 * self.melt_frac * (self.melt_cond - self.bulk_cond)) /\
+				(3 * self.bulk_cond + (vol_matrix * (self.melt_cond - self.bulk_cond)))))
+
+				self.bulk_cond_max = self.bulk_cond_max * (1 +\
+				((3 * self.melt_frac * (self.melt_cond_max - self.bulk_cond_max)) /\
+				(3 * self.bulk_cond_max + (vol_matrix * (self.melt_cond_max - self.bulk_cond_max)))))
+
+				self.bulk_cond_min = self.bulk_cond_min * (1 +\
+				((3 * self.melt_frac * (self.melt_cond_min - self.bulk_cond_min)) /\
+				(3 * self.bulk_cond_min + (vol_matrix * (self.melt_cond_min - self.bulk_cond_min)))))
 
 	def read_ModEM_dat(self):
 
@@ -4601,9 +4752,11 @@ class MATE(QMainWindow):
 		if MATE.amp_method == '0':
 			self.ax3.axhline(self.depth[self.idx_amph_st]/1000.0, linestyle = '--', color = '#9c2fa8', alpha = 0.85, label = 'Amphibole Stability',linewidth = 2.5)
 
-		#ADIABAT
-		#self.ax3.plot([1295,1383],[0.0,300.0],color = 'k', linestyle = '--',linewidth = 2.0) #Furlong and Chapman
-		self.ax3.fill_betweenx([0.0,250.0],[1280,1310],[1320,1360],color = 'k', alpha = 0.5) #Artemieva2009
+		if MATE.adiabat_selection != 0:
+			self.ax3.plot(np.array(self.T_adiabat_used) - 273.15, self.depth_adiabat_used, linestyle = '--', color = 'k')
+
+			if len(self.idx_T_adiabat) > 0:
+				self.ax3.axhline(self.depth[self.idx_T_adiabat]/1e3, linestyle = '--', color = '#551927', label = 'LAB',linewidth = 2.5)
 
 		if MATE.thermal_cond_method != '2':
 
@@ -5976,6 +6129,12 @@ class G_POP(QWidget):
 		self.btn_intro.clicked.connect(self.get_geoth_select)
 		heat_layout.addRow(self.btn_intro)
 
+		self.btn_adiabat = QPushButton("Adiabat")
+		self.btn_adiabat.clicked.connect(self.get_adiabat)
+		self.adiabat_textbox = QLineEdit(MATE.adiabat_options[MATE.adiabat_selection])
+		self.adiabat_textbox.setEnabled(False)
+		heat_layout.addRow(self.btn_adiabat,self.adiabat_textbox)
+
 		self.btn0 = QPushButton("Surface heat flow (mW/m^2)")
 		self.btn0.clicked.connect(self.get_heat_prod_0)
 		self.surf_hw_textbox = QLineEdit(str(MATE.q_0))
@@ -6036,6 +6195,16 @@ class G_POP(QWidget):
 			self.geoth_select_prop.show()
 		else:
 			QMessageBox.about(self,"Warning!","This option can only be available if the user select the Geotherm Input method from the Geotherm methods")
+
+	def get_adiabat(self):
+
+		item, ok = QInputDialog.getItem(self, "select input dialog",
+			"Conductivity model", MATE.adiabat_options, 0, False)
+
+		if ok and item:
+			self.adiabat_textbox.setText(item)
+
+		MATE.adiabat_selection = MATE.adiabat_options.index(item)
 
 	def get_heat_prod_0(self):
 
@@ -7657,23 +7826,48 @@ class PHS_POP(QWidget):
 		self.label_3_mixing.setText('--------Melt-Solid Mixing--------')
 		phs_mix_layout.addWidget(self.label_3_mixing)
 
-		self.btn_mix_melt_1 = QRadioButton("Generalized Archie's Law (Glover, 2010)")
+		self.btn_mix_melt_1 = QRadioButton("Modified Archie's Law (Glover et al., 2000)")
 		self.btn_mix_melt_1.toggled.connect(lambda:self.btnstate_phsmix_melt(self.btn_mix_melt_1))
-		self.btn_mix_melt_2 = QRadioButton("Tubes Model")
+		self.btn_mix_melt_2 = QRadioButton("Tubes Model (ten Grotenhuis et al., 2005)")
 		self.btn_mix_melt_2.toggled.connect(lambda:self.btnstate_phsmix_melt(self.btn_mix_melt_2))
+		self.btn_mix_melt_3 = QRadioButton("Spheres Model (ten Grotenhuis et al., 2005)")
+		self.btn_mix_melt_3.toggled.connect(lambda:self.btnstate_phsmix_melt(self.btn_mix_melt_3))
+		self.btn_mix_melt_4 = QRadioButton("Modified Brick-layer Model (Glover et al., 2000)")
+		self.btn_mix_melt_4.toggled.connect(lambda:self.btnstate_phsmix_melt(self.btn_mix_melt_4))
+		self.btn_mix_melt_5 = QRadioButton("Hashin-Shtrikman Upper-Bound (Glover et al., 2000)")
+		self.btn_mix_melt_5.toggled.connect(lambda:self.btnstate_phsmix_melt(self.btn_mix_melt_5))
+		self.btn_mix_melt_6 = QRadioButton("Hashin-Shtrikman Lower-Bound (Glover et al., 2000)")
+		self.btn_mix_melt_6.toggled.connect(lambda:self.btnstate_phsmix_melt(self.btn_mix_melt_6))
 
 		bg2 = QButtonGroup(self)
 
 		bg2.addButton(self.btn_mix_melt_1)
 		bg2.addButton(self.btn_mix_melt_2)
+		bg2.addButton(self.btn_mix_melt_3)
+		bg2.addButton(self.btn_mix_melt_4)
+		bg2.addButton(self.btn_mix_melt_5)
+		bg2.addButton(self.btn_mix_melt_6)
 
 		phs_mix_layout.addWidget(self.btn_mix_melt_1)
 		phs_mix_layout.addWidget(self.btn_mix_melt_2)
+		phs_mix_layout.addWidget(self.btn_mix_melt_3)
+		phs_mix_layout.addWidget(self.btn_mix_melt_4)
+		phs_mix_layout.addWidget(self.btn_mix_melt_5)
+		phs_mix_layout.addWidget(self.btn_mix_melt_6)
 
 		if MATE.phs_melt_mix_method == 0:
 			self.btn_mix_melt_1.setChecked(True)
 		elif MATE.phs_melt_mix_method == 1:
 			self.btn_mix_melt_2.setChecked(True)
+		elif MATE.phs_melt_mix_method == 2:
+			self.btn_mix_melt_3.setChecked(True)
+		elif MATE.phs_melt_mix_method == 3:
+			self.btn_mix_melt_4.setChecked(True)
+		elif MATE.phs_melt_mix_method == 4:
+			self.btn_mix_melt_5.setChecked(True)
+		elif MATE.phs_melt_mix_method == 5:
+			self.btn_mix_melt_6.setChecked(True)
+
 
 		phs_mix_layout.addWidget(self.prop_info_btn)
 
@@ -7706,14 +7900,32 @@ class PHS_POP(QWidget):
 
 	def btnstate_phsmix_melt(self, b2):
 
-		if b2.text() == "Generalized Archie's Law (Glover, 2010)":
+		if b2.text() == "Modified Archie's Law (Glover et al., 2000)":
 			if b2.isChecked() == True:
 				MATE.phs_melt_mix_method = 0
 				MATE.phs_melt_mix_type = 0
-		elif b2.text() == "Tubes Model":
+		elif b2.text() == "Tubes Model (ten Grotenhuis et al., 2005)":
 			if b2.isChecked() == True:
 				MATE.phs_melt_mix_method = 1
 				MATE.phs_melt_mix_type = 1
+		elif b2.text() == "Spheres Model (ten Grotenhuis et al., 2005)":
+			if b2.isChecked() == True:
+				MATE.phs_melt_mix_method = 2
+				MATE.phs_melt_mix_type = 1
+		elif b2.text() == "Modified Brick-layer Model (Glover et al., 2000)":
+			if b2.isChecked() == True:
+				MATE.phs_melt_mix_method = 3
+				MATE.phs_melt_mix_type = 1
+		elif b2.text() == "Hashin-Shtrikman Upper-Bound (Glover et al., 2000)":
+			if b2.isChecked() == True:
+				MATE.phs_melt_mix_method = 4
+				MATE.phs_melt_mix_type = 1
+		elif b2.text() == "Hashin-Shtrikman Lower-Bound (Glover et al., 2000)":
+			if b2.isChecked() == True:
+				MATE.phs_melt_mix_method = 5
+				MATE.phs_melt_mix_type = 1
+
+
 
 	def mixing_info(self):
 

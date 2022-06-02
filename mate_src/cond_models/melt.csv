@@ -1,2 +1,2 @@
 StudyName,Type,Tmin,Tmax,Pmin,Pmax,WCalib,Mg#,sigma_i,sigma_i_err,h_i,h_i_err,sigma_pol,sigma_pol_err,h_pol,h_pol_err,sigma_p,sigma_p_err,h_p,h_p_err,r,r_err,alpha_p,alpha_p_err,wtype,dens_mat
-Gaillard2008_Carbonatite,3,1473,1923,2,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2800
+Sifre2014,3,1473,1923,2,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2800

@@ -23,6 +23,7 @@ def Sifre2014(T, Melt_H2O, Melt_CO2):
 	R_const = 8.3144621
 
 	Melt_H2O = Melt_H2O * 1e-4 #converting ppm to wt percent
+	Melt_CO2 = Melt_CO2 * 1e-4
 
 	E_CO2 = 789166.0 * np.exp(-0.1808 * Melt_CO2) + 32820.0
 	E_H2O = 88744 * np.exp(-3.88 * Melt_H2O) + 73029.0
