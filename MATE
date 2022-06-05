@@ -218,6 +218,9 @@ class MATE(QMainWindow):
 		plotslct = QAction("Plot T Graphs of Selected Models", self)
 		plotslct.triggered.connect(self.generate_Tcondplot)
 
+		plot_other_comp = QAction("Plot Other Compositional Parameters", self)
+		plot_other_comp.triggered.connect(self.generate_composition_plot)
+
 		figureProp = QAction("Figure Properties", self)
 		figureProp.triggered.connect(self.figure_prop_popup)
 		self.figprop_popup = None
@@ -226,6 +229,7 @@ class MATE(QMainWindow):
 		saveFigure.triggered.connect(self.save_figures)
 
 		figureMenu.addAction(plotslct)
+		figureMenu.addAction(plot_other_comp)
 		figureMenu.addAction(figureProp)
 		figureMenu.addAction(saveFigure)
 
@@ -421,6 +425,9 @@ class MATE(QMainWindow):
 
 		MATE.condlinestyle_select = 0
 		MATE.condlinestyle_list = ['-','--','-.',':']
+
+		self.upper_bound_load = False
+		self.lower_bound_load = False
 
 		MATE.condlinewidth = 2.0
 
@@ -4500,13 +4507,17 @@ class MATE(QMainWindow):
 	def plot_composition(self,method = None):
 
 		if method == 'draw':
-			self.ax0 = plt.subplot2grid((16,16),(0,0), rowspan = 16,colspan = 2, fig = self.fig)
+			if MATE.melt_method == '0':
+				self.ax0 = plt.subplot2grid((16,16),(0,0), rowspan = 16,colspan = 3, fig = self.fig)
+			else:
+				self.ax0 = plt.subplot2grid((16,16),(0,0), rowspan = 16,colspan = 4, fig = self.fig)
 			fontsize_labels = 8
 
 		elif method == 'save':
 			self.figure_comp_save = plt.figure(figsize = (2,7))
 			fontsize_labels = 10
 			self.ax0 = plt.subplot(111)
+
 
 		self.ax0.fill_betweenx(self.depth[self.idx_moho:]/1000.0,self.ol_frac[self.idx_moho:] * 100.0,np.zeros(len(self.ol_frac[self.idx_moho:])),color = '#0b820f',alpha = 0.8,label = 'ol')
 		scnd_box = self.ol_frac[self.idx_moho:] * 100.0 + self.opx_frac[self.idx_moho:] * 100
@@ -4538,7 +4549,7 @@ class MATE(QMainWindow):
 			tick.label.set_fontsize(fontsize_labels)
 		for tick in self.ax0.yaxis.get_major_ticks():
 			tick.label.set_fontsize(fontsize_labels)
-		self.ax0.legend(fontsize = fontsize_labels, bbox_to_anchor=(0.5, 1.14), borderaxespad=0.1)
+
 		self.ax0.set_ylabel(r'$Depth \, (km)$', fontsize = 9)
 		self.ax0.set_xlabel(r'Fraction (%)', fontsize = 9)
 		self.ax0.set_xlim((0,100.0))
@@ -4549,15 +4560,61 @@ class MATE(QMainWindow):
 		self.ax0.add_patch(crust_obj)
 		self.ax0.add_patch(ast_obj)
 
+		self.fig.tight_layout()
+
 		if method == 'draw':
 
 			self.canvas.draw()
-			self.fig.tight_layout()
 
 		elif method == 'save':
 
+			self.ax0.legend(fontsize = fontsize_labels, bbox_to_anchor=(0.5, 1.14), borderaxespad=0.1)
 			plt.savefig(self.png_file_name + '_composition.png',dpi = 300,bbox_inches = "tight")
 			os.system(self.commandmv + ' ' + self.png_file_name + '_composition.png ' + self.dir_path)
+
+	def plot_melt_frac(self, method = None):
+
+		if method == 'draw':
+			self.ax_melt_frac = plt.subplot2grid((16,16),(0,3), rowspan = 16,colspan = 1, fig = self.fig)
+			fontsize_labels = 8
+
+		elif method == 'save':
+			self.figure_comp_save = plt.figure(figsize = (2,7))
+			fontsize_labels = 10
+			self.ax_melt_frac = plt.subplot(111)
+
+		self.ax_melt_frac.axhline(MATE.moho/1000.0, linestyle = '--',color = '#BA43C2', alpha = 0.85,linewidth = 2.5)
+		self.ax_melt_frac.axhline(MATE.lab/1000.0, linestyle = '--', color = 'k', alpha = 0.85,linewidth = 2.5)
+		for i in range(0,len(self.depth_comp_plot)):
+			self.ax_melt_frac.axhline(self.depth_comp_plot[i]/1000.0,linewidth = 0.75, alpha = 0.5, color = 'k',linestyle = '-.')
+
+		self.ax_melt_frac.plot(self.melt_mass_frac[self.idx_moho:]*100, self.depth[self.idx_moho:]/1e3, linestyle = '-', color = 'k', linewidth = 1.25)
+		self.ax_melt_frac.set_xlim((0,int(np.amax(self.melt_mass_frac[self.idx_moho:])*200)))
+		self.ax_melt_frac.set_ylim((MATE.lab / 1000.0) + 25.0, 0.0)
+
+		if method == 'save':
+			for tick in self.ax_melt_frac.yaxis.get_major_ticks():
+				tick.label.set_fontsize(fontsize_labels)
+			for tick in self.ax_melt_frac.yaxis.get_major_ticks():
+				tick.label.set_fontsize(fontsize_labels)
+		else:
+			for tick in self.ax_melt_frac.xaxis.get_major_ticks():
+				tick.label.set_fontsize(fontsize_labels)
+			self.ax_melt_frac.set_yticklabels([])
+
+		self.ax_melt_frac.set_xlabel('Melt Mass Frac %', fontsize = fontsize_labels)
+
+		crust_obj = patches.Rectangle((0,0) ,100.0,MATE.moho / 1000.0, color = '#b76314', alpha = 0.6,hatch = 'xxxx')
+		ast_obj = patches.Rectangle((0,MATE.lab / 1000.0),100.0,1e5, color = '#b73114', alpha = 0.6,hatch = 'xx')
+		self.ax_melt_frac.add_patch(crust_obj)
+		self.ax_melt_frac.add_patch(ast_obj)
+
+		if method == 'draw':
+			self.canvas.draw()
+		elif method == 'save':
+			plt.savefig(self.png_file_name + '_melt_frac.png',dpi = 300,bbox_inches = "tight")
+			os.system(self.commandmv + ' ' + self.png_file_name + '_mg.png ' + self.dir_path)
+
 
 	def plot_mg(self, method = None):
 
@@ -4665,7 +4722,7 @@ class MATE(QMainWindow):
 	def plot_geotherm(self, method = None):
 
 		if method == 'draw':
-			self.ax3 = plt.subplot2grid((16,16),(0,5), rowspan = 16,colspan = 3, fig = self.fig)
+			self.ax3 = plt.subplot2grid((16,16),(0,4), rowspan = 16,colspan = 3, fig = self.fig)
 			fontsize_labels = 8
 
 		elif method == 'save':
@@ -4699,6 +4756,9 @@ class MATE(QMainWindow):
 		self.ax3.add_patch(crust_obj)
 		ast_obj = patches.Rectangle((0,MATE.lab / 1000.0),np.amax(self.T) - 273.0 + 50.0,1e5, color = '#b73114', alpha = 0.6,hatch = 'xx')
 		self.ax3.add_patch(ast_obj)
+
+		for i in range(0,len(self.depth_comp_plot)):
+			self.ax3.axhline(self.depth_comp_plot[i]/1000.0,linewidth = 0.75, alpha = 0.5, color = 'k',linestyle = '-.')
 
 		if self.xenolith_existence == True:
 			self.depth_xen = []
@@ -4772,18 +4832,17 @@ class MATE(QMainWindow):
 
 		self.ax3.plot([649.890,1734.60],self.graphite_depth,color = '#2f9172',linewidth = 2.5,label = 'Graphite-Diamond')
 
-		self.ax3.legend(fontsize = fontsize_labels, bbox_to_anchor=(0.8, 1.14), borderaxespad=0.1)
-
 		if method == 'draw':
 			self.canvas.draw()
 		elif method == 'save':
+			self.ax3.legend(fontsize = fontsize_labels, bbox_to_anchor=(0.8, 1.14), borderaxespad=0.1)
 			plt.savefig(self.png_file_name + '_geotherm.png',dpi = 300,bbox_inches = "tight")
 			os.system(self.commandmv + ' ' + self.png_file_name + '_geotherm.png ' + self.dir_path)
 
 	def plot_water(self, method = None):
 
 		if method == 'draw':
-			self.ax4 = plt.subplot2grid((16,16),(0,8), rowspan = 16,colspan = 3, fig = self.fig)
+			self.ax4 = plt.subplot2grid((16,16),(0,7), rowspan = 16,colspan = 4, fig = self.fig)
 			fontsize_labels = 8
 		elif method == 'save':
 			self.figure_water_save = plt.figure(figsize = (2,7))
@@ -5028,7 +5087,7 @@ class MATE(QMainWindow):
 			tick.label.set_fontsize(fontsize_labels)
 		if method == 'draw':
 			self.ax4.set_yticks([])
-			self.ax4.legend(fontsize = fontsize_labels, bbox_to_anchor=(0.2, 0.85), borderaxespad=0.1,markerscale=0.5,framealpha = 1.0,handles = handle_list)
+			# self.ax4.legend(fontsize = fontsize_labels, bbox_to_anchor=(0.2, 0.85), borderaxespad=0.1,markerscale=0.5,framealpha = 1.0,handles = handle_list)
 		if method == 'save':
 			self.ax4.set_ylabel(r'$Depth \, (km)$',fontsize = fontsize_labels)
 			self.ax4.legend(fontsize = fontsize_labels,bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.1,handles = handle_list)
@@ -5043,6 +5102,9 @@ class MATE(QMainWindow):
 		ast_obj = patches.Rectangle((0,MATE.lab / 1000.0),100000.0,1e5, color = '#b73114', alpha = 0.6,hatch = 'xx')
 		self.ax4.add_patch(crust_obj)
 		self.ax4.add_patch(ast_obj)
+
+		for i in range(0,len(self.depth_comp_plot)):
+			self.ax4.axhline(self.depth_comp_plot[i]/1000.0,linewidth = 0.75, alpha = 0.5, color = 'k',linestyle = '-.')
 
 		if MATE.sol_plot_scale_method == 1:
 			self.ax4.set_xscale('log')
@@ -5080,7 +5142,7 @@ class MATE(QMainWindow):
 			self.color_list_cond.append('#%02X%02X%02X' % (r_color(),r_color(),r_color()))
 
 		if method == 'draw':
-			self.ax5 = plt.subplot2grid((16,16),(0,11), rowspan = 16,colspan = 4, fig = self.fig)
+			self.ax5 = plt.subplot2grid((16,16),(0,11), rowspan = 16,colspan = 5, fig = self.fig)
 			fontsize_labels = 8
 		elif method == 'save':
 			self.figure_cond_save = plt.figure(figsize = (4,7))
@@ -5217,6 +5279,9 @@ class MATE(QMainWindow):
 		self.ax5.add_patch(crust_obj)
 		self.ax5.add_patch(ast_obj)
 
+		for i in range(0,len(self.depth_comp_plot)):
+			self.ax5.axhline(self.depth_comp_plot[i]/1000.0,linewidth = 0.75, alpha = 0.5, color = 'k',linestyle = '-.')
+
 		if method == 'draw':
 			self.ax5.text(50,-1000,'Hello.',fontsize = 8, color = 'k')
 			self.canvas.draw()
@@ -5286,6 +5351,31 @@ class MATE(QMainWindow):
 		else:
 			QMessageBox.about(self,'Input Missing!','You have to input composition and calculate geotherm first to continue.')
 
+	def generate_composition_plot(self):
+
+		if MATE.lodge_check == False:
+			QMessageBox.about(self,'Input Missing!','You have to input a composition file first to continue.')
+		else:
+			self.figure_other_comp = plt.figure(figsize = (16,16))
+			self.ax_mg = plt.subplot2grid((16,16),(0,0), rowspan = 16,colspan = 3, fig = self.figure_other_comp)
+
+			self.ax_mg.plot((1.0 - self.fe_ol[self.idx_moho:]) * 100.0, self.depth[self.idx_moho:] / 1000.0,color = '#0b820f', linewidth = 1.5, linestyle = '--')
+			self.ax_mg.plot((1.0 - self.fe_opx[self.idx_moho:]) * 100.0, self.depth[self.idx_moho:] / 1000.0,color = '#0b3c82', linewidth = 1.5, linestyle = '--')
+			self.ax_mg.plot((1.0 - self.fe_cpx[self.idx_moho:]) * 100.0, self.depth[self.idx_moho:] / 1000.0,color = '#dbc14e', linewidth = 1.5, linestyle = '--')
+			self.ax_mg.plot((1.0 - self.fe_gt[self.idx_moho:]) * 100.0, self.depth[self.idx_moho:] / 1000.0,color = '#ad0f1f', linewidth = 1.5, linestyle = '--')
+
+			self.ax_mg.axhline(MATE.moho/1000.0, linestyle = '--',color = '#BA43C2', alpha = 0.85,linewidth = 2.5,label = 'Moho')
+			self.ax_mg.axhline(MATE.lab/1000.0, linestyle = '--', color = 'k', alpha = 0.85,linewidth = 2.5)
+
+			arrays_fe = [np.amin((1.0 - self.fe_ol[self.idx_moho:]) * 100.0),np.amin((1.0 - self.fe_opx[self.idx_moho:]) * 100.0),
+			np.amin((1.0 - self.fe_cpx[self.idx_moho:]) * 100.0),np.amin((1.0 - self.fe_gt[self.idx_moho:]) * 100.0)]
+
+			self.ax_mg.set_xlim((min(arrays_fe) - 5.0),95.0)
+			self.ax_mg.set_ylim((MATE.lab / 1000.0) + 25.0, 0.0)
+			self.ax_mg.set_xlabel(r'$Mg\#$',fontsize = 9)
+
+
+		cansu = 1
 	def plot_geotherm_button(self):
 
 		ok_to_plot_geotherm = True
@@ -5327,6 +5417,7 @@ class MATE(QMainWindow):
 					self.ax0.remove()
 				except KeyError:
 					pass
+			"""
 			if self.drawn_1 !=0:
 				try:
 					self.ax2.remove()
@@ -5337,7 +5428,7 @@ class MATE(QMainWindow):
 					self.ax1.remove()
 				except KeyError:
 					pass
-
+			"""
 			self.adjust_composition()
 			#Create error if the total mineralogy is indifferent to 1 at any layer.
 			ok_to_compute_comp = True
@@ -5365,12 +5456,14 @@ class MATE(QMainWindow):
 					if ok_to_compute_comp == True:
 						self.calculate_pressure()
 						self.plot_composition(method = 'draw')
-						self.plot_mg(method = 'draw')
-
+						if MATE.melt_method == '0':
+							self.plot_melt_frac(method = 'draw')
+						# self.plot_mg(method = 'draw')
+						"""
 						if MATE.al_method == '0':
 							if MATE.al_opx_model_select == 0:
 								self.plot_al(method = 'draw')
-
+						"""
 						self.drawn = self.drawn + 1
 						self.drawn_11 = self.drawn_11 + 1
 						self.act_comp_btn.setStyleSheet("QPushButton {min-width: 10em; font: bold; font-size: 9pt;background-color: #679c5f}")
@@ -5789,7 +5882,8 @@ class MATE(QMainWindow):
 							if MATE.amp_method == '0':
 								self.calculate_amp_conductivity()
 							self.calculate_sp_chr_conductivity()
-							self.calculate_melt_conductivity()
+							if MATE.melt_method == '0':
+								self.calculate_melt_conductivity()
 							self.phase_mixing_function(method = MATE.phs_mix_method, melt_method = MATE.phs_melt_mix_method)
 
 							if MATE.w_inp_method == '0':
@@ -5860,7 +5954,9 @@ class MATE(QMainWindow):
 				if MATE.amp_method == '0':
 					self.calculate_amp_conductivity()
 				self.calculate_sp_chr_conductivity()
-				self.calculate_melt_conductivity()
+				if MATE.melt_method == '0':
+					self.calculate_melt_conductivity()
+
 
 				self.phase_mixing_function(method = MATE.phs_mix_method, melt_method = MATE.phs_melt_mix_method)
 				self.plot_water(method = 'draw')
