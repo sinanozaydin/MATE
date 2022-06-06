@@ -93,6 +93,8 @@ class MATE(QMainWindow):
 		else:
 			self.commandmv = 'mv'
 
+		plt.ion()
+
 		self.setGeometry(25,25,1250,600)
 		self.setFixedSize(1800,1000)
 		self.setStyleSheet("QMainWindow{background-color: #c1ccc1;border: 1px solid black}")
@@ -642,13 +644,18 @@ class MATE(QMainWindow):
 		plt_reset_btn.setStyleSheet("QPushButton {min-width: 10em; font: bold; font-size: 9pt;background-color: #de5d5d}")
 		plt_reset_btn.clicked.connect(self.reset_all_plot)
 
+		plt_legend_btn = QPushButton('Plot Legend',self)
+		plt_legend_btn.move(10,835)
+		plt_legend_btn.setStyleSheet("QPushButton {min-width: 10em; font: bold; font-size: 9pt;background-color: #ddb62b}")
+		plt_legend_btn.clicked.connect(self.plot_legend)
+
 		progress_label = QLabel(self)
 		progress_label.setText('Calc. Progress')
 		progress_label.setStyleSheet("QLabel {font:bold};fontsize: 10pt;color: red")
-		progress_label.move(10,835)
+		progress_label.move(28,925)
 
 		self.progressBar = QProgressBar(self)
-		self.progressBar.setGeometry(10, 865, 150, 30)
+		self.progressBar.setGeometry(10, 950, 150, 30)
 
 		#Setting up the blank canvas on the main page.
 
@@ -2433,8 +2440,6 @@ class MATE(QMainWindow):
 				else:
 					self.fo2_exchange[i] = 0.0
 			self.fo2 = 10.0**(np.log10(self.fo2) + self.fo2_exchange)
-
-
 
 		else:
 
@@ -5289,6 +5294,54 @@ class MATE(QMainWindow):
 		elif method == 'save':
 			plt.savefig(self.png_file_name + '_conductivity.png',dpi = 300,bbox_inches = "tight")
 			os.system(self.commandmv + ' ' + self.png_file_name + '_conductivity.png ' + self.dir_path)
+
+	def plot_legend(self):
+
+		fig_legend = plt.figure(figsize = (5,5))
+		ax_legend = plt.subplot(111)
+		ax_legend.grid(None)
+		ax_legend.axis('off')
+		ax_legend.text(0.05,1.05,'--Composition--', fontweight = 'semibold')
+		ax_legend.add_patch(patches.Rectangle((0.01,0.95),0.05,0.05,color = '#0b820f'))
+		ax_legend.text(0.08,0.96, 'Olivine')
+		ax_legend.add_patch(patches.Rectangle((0.01,0.89),0.05,0.05,color = '#0b3c82'))
+		ax_legend.text(0.08,0.90, 'Orthopyroxene')
+		ax_legend.add_patch(patches.Rectangle((0.01,0.83),0.05,0.05,color = '#dbc14e'))
+		ax_legend.text(0.08,0.84, 'Clinopyroxene')
+		ax_legend.add_patch(patches.Rectangle((0.01,0.77),0.05,0.05,color = '#ad0f1f'))
+		ax_legend.text(0.08,0.78, 'Garnet')
+		ax_legend.add_patch(patches.Rectangle((0.01,0.71),0.05,0.05,color = '#0fadad'))
+		ax_legend.text(0.08,0.72, 'Spinel-Chromite')
+		ax_legend.add_patch(patches.Rectangle((0.01,0.65),0.05,0.05,color = '#2dff5b'))
+		ax_legend.text(0.08,0.66, 'Phlogopite')
+		ax_legend.add_patch(patches.Rectangle((0.01,0.59),0.05,0.05,color = '#853de3'))
+		ax_legend.text(0.08,0.60, 'Amphibole')
+
+		ax_legend.text(0.7,1.05,'--Lines--', fontweight = 'semibold')
+		ax_legend.plot([0.5,0.65],[0.98,0.98], color = '#BA43C2', linewidth = 2.5, linestyle = '--')
+		ax_legend.text(0.67,0.965, 'MOHO')
+		ax_legend.plot([0.5,0.65],[0.9,0.9], color = 'k', linewidth = 2.5, linestyle = '--')
+		ax_legend.text(0.67,0.885, 'Max. Depth')
+		ax_legend.plot([0.5,0.65],[0.82,0.82], color = '#7EB345', linewidth = 2.5, linestyle = '--')
+		ax_legend.text(0.67,0.805, 'Sp-gt transition.')
+		ax_legend.plot([0.5,0.65],[0.74,0.74], color = '#D83A3A', linewidth = 2.5, linestyle = '--')
+		ax_legend.text(0.67,0.725, 'Upper-crust')
+		ax_legend.plot([0.5,0.65],[0.66,0.66], color = 'k', linewidth = 0.75, linestyle = '-.')
+		ax_legend.text(0.67,0.645, 'Composition Layer Mark')
+
+		ax_legend.text(0.05,0.45, '--Geotherm Figure--', fontweight = 'semibold')
+		ax_legend.plot([0.0,0.15], [0.40,0.4] , color = 'k', linestyle = '-', linewidth = 1)
+		ax_legend.text(0.17,0.385, 'Conductive Geotherm')
+		ax_legend.plot([0.0,0.15], [0.32,0.32] , color = 'k', linestyle = '--', linewidth = 1)
+		ax_legend.text(0.17,0.305, 'Adiabat')
+		ax_legend.plot([0.08], [0.24] , 'o', color = '#bd3b24')
+		ax_legend.text(0.17,0.225, 'Xenolith Data')
+		ax_legend.text(0.08,0.15, '--Water Figure--', fontweight = 'semibold')
+		ax_legend.plot([0.0,0.15], [0.07,0.07] , color = 'k', linestyle = '--', linewidth = 2.5)
+		ax_legend.text(0.17,0.055, 'Bulk Water')
+		ax_legend.set_xlim((0,1))
+		ax_legend.set_ylim((0,1))
+		plt.show()
 
 	def generate_Tcondplot(self):
 
