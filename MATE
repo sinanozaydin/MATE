@@ -4,7 +4,7 @@ import os
 
 core_path_ext = os.path.join(os.path.dirname(os.path.abspath(__file__)) , 'mate_src')
 
-import sys, csv, itertools, math, platform, random, warnings
+import sys, csv, itertools, math, platform, random, warnings, timeit
 import numpy as np
 from scipy.interpolate import interp1d
 from scipy import optimize
@@ -18,7 +18,6 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 from PyQt5 import QtGui, QtCore
 from PyQt5.QtWidgets import *
-import timeit
 
 #Importing external functions
 
@@ -95,8 +94,9 @@ class MATE(QMainWindow):
 
 		plt.ion()
 
-		self.setGeometry(25,25,1250,600)
-		self.setFixedSize(1800,1000)
+		# self.setGeometry(25,25,1250,600)
+		self.setMinimumSize(1800,1000)
+		# self.setGeometry(25,25,1800,1000)
 		self.setStyleSheet("QMainWindow{background-color: #c1ccc1;border: 1px solid black}")
 		self.setWindowTitle("MATE")
 		self.setWindowIcon(QtGui.QIcon(self.core_path + '/mate.png'))
@@ -4219,22 +4219,19 @@ class MATE(QMainWindow):
 
 			elif melt_method == 3:
 
-				#Modified brick-layer model from Glover et al. (2000)
+				#Modified brick-layer model from Schilling et al. (1997)
 
-				self.bulk_cond = self.melt_cond * ((self.melt_cond * (((1-self.melt_frac)**(2.0/3.0)) - 1)) -\
-				 (((1-self.melt_frac)**(1.0/3.0)) * self.bulk_cond)) /\
-				 (((1 - self.melt_frac - ((1-self.melt_frac)**(2.0/3.0))) * self.melt_cond) +\
-				 ((((1-self.melt_frac)**(2.0/3.0)) - (1 - self.melt_frac) - 1) * self.bulk_cond))
+				ones = (1.0 - self.melt_frac)
+				two_thirds = (1.0 - self.melt_frac)**(2.0/3.0)
 
-				self.bulk_cond_max = self.melt_cond_max * ((self.melt_cond_max * (((1-self.melt_frac)**(2.0/3.0)) - 1)) -\
-				 (((1-self.melt_frac)**(1.0/3.0)) * self.bulk_cond_max)) /\
-				 (((1 - self.melt_frac - ((1-self.melt_frac)**(2.0/3.0))) * self.melt_cond_max) +\
-				 ((((1-self.melt_frac)**(2.0/3.0)) - (1 - self.melt_frac) - 1) * self.bulk_cond_max))
+				self.bulk_cond = self.melt_cond * (((self.melt_cond * (two_thirds - 1.0)) - (self.bulk_cond * two_thirds)) /\
+				((self.bulk_cond * (ones - two_thirds)) + (self.melt_cond * (two_thirds - ones - 1.0))))
 
-				self.bulk_cond_min = self.melt_cond_min * ((self.melt_cond_min * (((1-self.melt_frac)**(2.0/3.0)) - 1)) -\
-				 (((1-self.melt_frac)**(1.0/3.0)) * self.bulk_cond_min)) /\
-				 (((1 - self.melt_frac - ((1-self.melt_frac)**(2.0/3.0))) * self.melt_cond_min) +\
-				 ((((1-self.melt_frac)**(2.0/3.0)) - (1 - self.melt_frac) - 1) * self.bulk_cond_min))
+				self.bulk_cond_max = self.melt_cond_max * ((self.melt_cond_max * (two_thirds - 1.0)) - (self.bulk_cond_max * two_thirds)) /\
+				((self.bulk_cond_max * (ones - two_thirds)) + (self.melt_cond_max * (two_thirds - ones - 1.0)))
+
+				self.bulk_cond_min = self.melt_cond_min * ((self.melt_cond_min * (two_thirds - 1.0)) - (self.bulk_cond_min * two_thirds)) /\
+				((self.bulk_cond_min * (ones- two_thirds)) + (self.melt_cond_min * (two_thirds - ones - 1.0)))
 
 			elif melt_method == 4:
 
@@ -7981,7 +7978,7 @@ class PHS_POP(QWidget):
 		self.btn_mix_melt_2.toggled.connect(lambda:self.btnstate_phsmix_melt(self.btn_mix_melt_2))
 		self.btn_mix_melt_3 = QRadioButton("Spheres Model (ten Grotenhuis et al., 2005)")
 		self.btn_mix_melt_3.toggled.connect(lambda:self.btnstate_phsmix_melt(self.btn_mix_melt_3))
-		self.btn_mix_melt_4 = QRadioButton("Modified Brick-layer Model (Glover et al., 2000)")
+		self.btn_mix_melt_4 = QRadioButton("Modified Brick-layer Model (Schilling et al., 1997)")
 		self.btn_mix_melt_4.toggled.connect(lambda:self.btnstate_phsmix_melt(self.btn_mix_melt_4))
 		self.btn_mix_melt_5 = QRadioButton("Hashin-Shtrikman Upper-Bound (Glover et al., 2000)")
 		self.btn_mix_melt_5.toggled.connect(lambda:self.btnstate_phsmix_melt(self.btn_mix_melt_5))
