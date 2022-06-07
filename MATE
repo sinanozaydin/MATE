@@ -4210,12 +4210,15 @@ class MATE(QMainWindow):
 			elif melt_method == 2:
 
 				#Spheres model for melt ans solid mixture got from ten Grotenhuis et al. (2005), eq.3
-				self.bulk_cond = self.melt_cond + (self.melt_frac / ((1.0 / (self.melt_cond - self.bulk_cond)) +\
-					((1.0 - self.melt_frac) / 3.0 * self.bulk_cond)))
-				self.bulk_cond_max = self.melt_cond_max + (self.melt_frac / ((1.0 / (self.melt_cond_max - self.bulk_cond_max)) +\
-					((1.0 - self.melt_frac) / 3.0 * self.bulk_cond_max)))
-				self.bulk_cond_min = self.melt_cond_min + (self.melt_frac / ((1.0 / (self.melt_cond_min - self.bulk_cond_min)) +\
-					((1.0 - self.melt_frac) / 3.0 * self.bulk_cond_min)))
+
+				self.bulk_cond = self.melt_cond + ((1.0 - self.melt_frac) / ((1.0 / (self.bulk_cond - self.melt_cond)) +\
+				 	(self.melt_frac / (3.0 * self.melt_cond))))
+
+				self.bulk_cond_max = self.melt_cond_max + ((1.0 - self.melt_frac) / ((1.0 / (self.bulk_cond_max - self.melt_cond_max)) +\
+				 	(self.melt_frac / (3.0 * self.melt_cond_max))))
+
+				self.bulk_cond_min = self.melt_cond_min + ((1.0 - self.melt_frac) / ((1.0 / (self.bulk_cond_min - self.melt_cond_min)) +\
+				 	(self.melt_frac / (3.0 * self.melt_cond_min))))
 
 			elif melt_method == 3:
 
