@@ -92,8 +92,6 @@ class MATE(QMainWindow):
 		else:
 			self.commandmv = 'mv'
 
-		plt.ion()
-
 		# self.setGeometry(25,25,1250,600)
 		self.setMinimumSize(1800,1000)
 		# self.setGeometry(25,25,1800,1000)
@@ -4565,10 +4563,11 @@ class MATE(QMainWindow):
 		self.ax0.add_patch(crust_obj)
 		self.ax0.add_patch(ast_obj)
 
-		self.fig.tight_layout()
+
 
 		if method == 'draw':
 
+			self.fig.tight_layout()
 			self.canvas.draw()
 
 		elif method == 'save':
@@ -4618,112 +4617,10 @@ class MATE(QMainWindow):
 			self.canvas.draw()
 		elif method == 'save':
 			plt.savefig(self.png_file_name + '_melt_frac.png',dpi = 300,bbox_inches = "tight")
-			os.system(self.commandmv + ' ' + self.png_file_name + '_mg.png ' + self.dir_path)
-
-
-	def plot_mg(self, method = None):
-
-		#Setting a conditional if the al-method is being used in case wor plotting in wider format.
-		if MATE.al_method == '0':
-			colsp = 2
-		else:
-			colsp = 3
-
-		if method == 'draw':
-			self.ax1 = plt.subplot2grid((16,16),(0,2), rowspan = 16,colspan = colsp, fig = self.fig)
-			fontsize_labels = 8
-
-		elif method == 'save':
-
-			self.figure_mg_save = plt.figure(figsize = (3,7))
-			self.ax1 = plt.subplot(111)
-			fontsize_labels = 10
-
-
-		self.ax1.plot((1.0 - self.fe_ol[self.idx_moho:]) * 100.0, self.depth[self.idx_moho:] / 1000.0,color = '#0b820f', linewidth = 1.5, linestyle = '--')
-		self.ax1.plot((1.0 - self.fe_opx[self.idx_moho:]) * 100.0, self.depth[self.idx_moho:] / 1000.0,color = '#0b3c82', linewidth = 1.5, linestyle = '--')
-		self.ax1.plot((1.0 - self.fe_cpx[self.idx_moho:]) * 100.0, self.depth[self.idx_moho:] / 1000.0,color = '#dbc14e', linewidth = 1.5, linestyle = '--')
-		self.ax1.plot((1.0 - self.fe_gt[self.idx_moho:]) * 100.0, self.depth[self.idx_moho:] / 1000.0,color = '#ad0f1f', linewidth = 1.5, linestyle = '--')
-
-		self.ax1.axhline(MATE.moho/1000.0, linestyle = '--',color = '#BA43C2', alpha = 0.85,linewidth = 2.5,label = 'Moho')
-		self.ax1.axhline(MATE.lab/1000.0, linestyle = '--', color = 'k', alpha = 0.85,linewidth = 2.5,label = 'LAB')
-
-		arrays_fe = [np.amin((1.0 - self.fe_ol[self.idx_moho:]) * 100.0),np.amin((1.0 - self.fe_opx[self.idx_moho:]) * 100.0),
-		np.amin((1.0 - self.fe_cpx[self.idx_moho:]) * 100.0),np.amin((1.0 - self.fe_gt[self.idx_moho:]) * 100.0)]
-
-		self.ax1.set_xlim((min(arrays_fe) - 5.0),95.0)
-		self.ax1.set_ylim((MATE.lab / 1000.0) + 25.0, 0.0)
-		self.ax1.set_xlabel(r'$Mg\#$',fontsize = 9)
-
-		for tick in self.ax1.xaxis.get_major_ticks():
-			tick.label.set_fontsize(fontsize_labels)
-
-		if method == 'save':
-			for tick in self.ax1.yaxis.get_major_ticks():
-				tick.label.set_fontsize(fontsize_labels)
-			for tick in self.ax1.yaxis.get_major_ticks():
-				tick.label.set_fontsize(fontsize_labels)
-		else:
-			self.ax1.set_yticklabels([])
-
-		self.ax1.legend(fontsize = fontsize_labels, bbox_to_anchor=(0.8, 1.14), borderaxespad=0.1)
-
-		crust_obj = patches.Rectangle((0,0) ,100.0,MATE.moho / 1000.0, color = '#b76314', alpha = 0.6,hatch = 'xxxx')
-		ast_obj = patches.Rectangle((0,MATE.lab / 1000.0),100.0,1e5, color = '#b73114', alpha = 0.6,hatch = 'xx')
-		self.ax1.add_patch(crust_obj)
-		self.ax1.add_patch(ast_obj)
-
-		if method == 'draw':
-			self.canvas.draw()
-		elif method == 'save':
-			plt.savefig(self.png_file_name + '_mg.png',dpi = 300,bbox_inches = "tight")
-			os.system(self.commandmv + ' ' + self.png_file_name + '_mg.png ' + self.dir_path)
-
-	def plot_al(self, method = None):
-
-		if method == 'draw':
-			self.ax2 = plt.subplot2grid((16,16),(0,4), rowspan = 16,colspan = 1, fig = self.fig)
-			fontsize_labels = 8
-
-		elif method == 'save':
-			self.figure_al_save = plt.figure(figsize = (2,7))
-			self.ax2 = plt.subplot(111)
-			fontsize_labels = 10
-
-		self.ax2.plot(self.al_opx[self.idx_moho:], self.depth[self.idx_moho:] / 1000.0, color = '#083fb5', linewidth = 1.5, label = r'$Al_2O_3$')
-		self.ax2.set_xlim((0.0,6.5))
-		self.ax2.set_xlabel(r'$Al_2O_3 \, in \, opx$',fontsize = 9)
-		self.ax2.set_ylim((MATE.lab / 1000.0) + 25.0, 0.0)
-
-		self.ax2.axhline(MATE.moho/1000.0, linestyle = '--',color = '#BA43C2', alpha = 0.85,linewidth = 2.5)
-		self.ax2.axhline(MATE.lab/1000.0, linestyle = '--', color = 'k', alpha = 0.85,linewidth = 2.5)
-
-		for tick in self.ax2.xaxis.get_major_ticks():
-			tick.label.set_fontsize(fontsize_labels)
-
-		if method == 'save':
-			for tick in self.ax2.yaxis.get_major_ticks():
-				tick.label.set_fontsize(fontsize_labels)
-			for tick in self.ax2.yaxis.get_major_ticks():
-				tick.label.set_fontsize(fontsize_labels)
-			self.ax2.set_ylabel(r'$Depth \, (km)$',fontsize = 9)
-		else:
-			self.ax2.set_yticklabels([])
-
-		crust_obj = patches.Rectangle((0,0) ,300.0,MATE.moho / 1000.0, color = '#b76314', alpha = 0.6,hatch = 'xxxx')
-		ast_obj = patches.Rectangle((0,MATE.lab / 1000.0),300.0,1e5, color = '#b73114', alpha = 0.6,hatch = 'xx')
-		self.ax2.add_patch(crust_obj)
-		self.ax2.add_patch(ast_obj)
-
-		if method == 'draw':
-			self.canvas.draw()
-		elif method == 'save':
-			plt.savefig(self.png_file_name + '_al.png',dpi = 300,bbox_inches = "tight")
-			os.system(self.commandmv + ' ' + self.png_file_name + '_al.png ' + self.dir_path)
-
-		self.drawn_1 = self.drawn_1 + 1
-
-
+			try:
+				os.system(self.commandmv + ' ' + self.png_file_name + '_melt_frac.png ' + self.dir_path)
+			except UserWarning:
+				pass
 	def plot_geotherm(self, method = None):
 
 		if method == 'draw':
@@ -5274,11 +5171,6 @@ class MATE(QMainWindow):
 			(self.depth[index_t_max_gt] - self.depth[index_t_min_gt]) / 1000.0 , color = '#ad0f1f', alpha = 1)
 			self.ax3.add_patch(gt_t_object)
 
-		if self.fo2_input == True:
-
-			#self.ax5.axhline(self.depth[self.idx_start_fo2]/1e3,linestyle = '--', color = '#934d2b',lw = 2,label = r'End of $f_{o_2} Data$')
-			pass
-
 		crust_obj = patches.Rectangle((1e-5,0) ,1e10,MATE.moho / 1000.0, color = '#b76314', alpha = 0.6,hatch = 'xxxx')
 		ast_obj = patches.Rectangle((1e-5,MATE.lab / 1000.0),1e10,1e5, color = '#b73114', alpha = 0.6,hatch = 'xx')
 		self.ax5.add_patch(crust_obj)
@@ -5297,6 +5189,7 @@ class MATE(QMainWindow):
 
 	def plot_legend(self):
 
+		plt.ion()
 		fig_legend = plt.figure(figsize = (5,5))
 		ax_legend = plt.subplot(111)
 		ax_legend.grid(None)
@@ -5342,10 +5235,12 @@ class MATE(QMainWindow):
 		ax_legend.set_xlim((0,1))
 		ax_legend.set_ylim((0,1))
 		plt.show()
+		plt.ioff()
 
 	def generate_Tcondplot(self):
 
 		if (self.data_existence == True) and (self.geotherm_existence == True):
+			plt.ion()
 			genax_fig = plt.figure(figsize = (10,7))
 			genax = plt.subplot(111)
 			water_gen = [0,100.0]
@@ -5401,24 +5296,32 @@ class MATE(QMainWindow):
 			if MATE.sol_plot == True:
 				self.solubility_ol()
 				self.solubility_partitioning()
+
+			plt.ioff()
 		else:
 			QMessageBox.about(self,'Input Missing!','You have to input composition and calculate geotherm first to continue.')
+
+
 
 	def generate_composition_plot(self):
 
 		if MATE.lodge_check == False:
 			QMessageBox.about(self,'Input Missing!','You have to input a composition file first to continue.')
 		else:
+			plt.ion()
 			self.figure_other_comp = plt.figure(figsize = (16,16))
+			fontsize_labels = 8
+			#Mg plot
 			self.ax_mg = plt.subplot2grid((16,16),(0,0), rowspan = 16,colspan = 3, fig = self.figure_other_comp)
 
-			self.ax_mg.plot((1.0 - self.fe_ol[self.idx_moho:]) * 100.0, self.depth[self.idx_moho:] / 1000.0,color = '#0b820f', linewidth = 1.5, linestyle = '--')
-			self.ax_mg.plot((1.0 - self.fe_opx[self.idx_moho:]) * 100.0, self.depth[self.idx_moho:] / 1000.0,color = '#0b3c82', linewidth = 1.5, linestyle = '--')
-			self.ax_mg.plot((1.0 - self.fe_cpx[self.idx_moho:]) * 100.0, self.depth[self.idx_moho:] / 1000.0,color = '#dbc14e', linewidth = 1.5, linestyle = '--')
-			self.ax_mg.plot((1.0 - self.fe_gt[self.idx_moho:]) * 100.0, self.depth[self.idx_moho:] / 1000.0,color = '#ad0f1f', linewidth = 1.5, linestyle = '--')
+			self.ax_mg.plot((1.0 - self.fe_ol[self.idx_moho:]) * 100.0, self.depth[self.idx_moho:] / 1000.0,color = '#0b820f', linewidth = 1.5, linestyle = '--',label = 'Ol')
+			self.ax_mg.plot((1.0 - self.fe_opx[self.idx_moho:]) * 100.0, self.depth[self.idx_moho:] / 1000.0,color = '#0b3c82', linewidth = 1.5, linestyle = '--',label = 'Opx')
+			self.ax_mg.plot((1.0 - self.fe_cpx[self.idx_moho:]) * 100.0, self.depth[self.idx_moho:] / 1000.0,color = '#dbc14e', linewidth = 1.5, linestyle = '--', label = 'Cpx')
+			self.ax_mg.plot((1.0 - self.fe_gt[self.idx_moho:]) * 100.0, self.depth[self.idx_moho:] / 1000.0,color = '#ad0f1f', linewidth = 1.5, linestyle = '--', label = 'Gt')
 
 			self.ax_mg.axhline(MATE.moho/1000.0, linestyle = '--',color = '#BA43C2', alpha = 0.85,linewidth = 2.5,label = 'Moho')
 			self.ax_mg.axhline(MATE.lab/1000.0, linestyle = '--', color = 'k', alpha = 0.85,linewidth = 2.5)
+			self.ax_mg.set_xlabel('')
 
 			arrays_fe = [np.amin((1.0 - self.fe_ol[self.idx_moho:]) * 100.0),np.amin((1.0 - self.fe_opx[self.idx_moho:]) * 100.0),
 			np.amin((1.0 - self.fe_cpx[self.idx_moho:]) * 100.0),np.amin((1.0 - self.fe_gt[self.idx_moho:]) * 100.0)]
@@ -5426,9 +5329,109 @@ class MATE(QMainWindow):
 			self.ax_mg.set_xlim((min(arrays_fe) - 5.0),95.0)
 			self.ax_mg.set_ylim((MATE.lab / 1000.0) + 25.0, 0.0)
 			self.ax_mg.set_xlabel(r'$Mg\#$',fontsize = 9)
+			self.ax_mg.set_ylabel('Depth [km]')
+			self.ax_mg.legend(fontsize = fontsize_labels, bbox_to_anchor=(0.8, 1.14), borderaxespad=0.1)
 
+			crust_obj = patches.Rectangle((0,0) ,100.0,MATE.moho / 1000.0, color = '#b76314', alpha = 0.6,hatch = 'xxxx')
+			ast_obj = patches.Rectangle((0,MATE.lab / 1000.0),100.0,1e5, color = '#b73114', alpha = 0.6,hatch = 'xx')
+			self.ax_mg.add_patch(crust_obj)
+			self.ax_mg.add_patch(ast_obj)
 
-		cansu = 1
+			#Al2o3 plot
+			self.ax_al = plt.subplot2grid((16,16),(0,3), rowspan = 16,colspan = 3, fig = self.figure_other_comp)
+
+			self.ax_al.plot(self.al_opx[self.idx_moho:], self.depth[self.idx_moho:] / 1000.0, color = '#083fb5', linewidth = 1.5)
+			self.ax_al.set_xlim((0.0,6.5))
+			self.ax_al.set_xlabel(r'$Al_2O_3 \, in \, opx$ [wt%]',fontsize = 9)
+			self.ax_al.set_ylim((MATE.lab / 1000.0) + 25.0, 0.0)
+
+			self.ax_al.axhline(MATE.moho/1000.0, linestyle = '--',color = '#BA43C2', alpha = 0.85,linewidth = 2.5)
+			self.ax_al.axhline(MATE.lab/1000.0, linestyle = '--', color = 'k', alpha = 0.85,linewidth = 2.5)
+
+			for tick in self.ax_al.xaxis.get_major_ticks():
+				tick.label.set_fontsize(fontsize_labels)
+
+			self.ax_al.set_yticklabels([])
+
+			crust_obj = patches.Rectangle((0,0) ,300.0,MATE.moho / 1000.0, color = '#b76314', alpha = 0.6,hatch = 'xxxx')
+			ast_obj = patches.Rectangle((0,MATE.lab / 1000.0),300.0,1e5, color = '#b73114', alpha = 0.6,hatch = 'xx')
+			self.ax_al.add_patch(crust_obj)
+			self.ax_al.add_patch(ast_obj)
+
+			#TiO2 Ol plot
+
+			self.ax_ti = plt.subplot2grid((16,16),(0,6), rowspan = 16,colspan = 3, fig = self.figure_other_comp)
+
+			self.ax_ti.plot(self.ti_ol[self.idx_moho:], self.depth[self.idx_moho:] / 1000.0, color = '#083fb5', linewidth = 1.5)
+			corr = [1,10,100,1000,10000]
+			ti_max_corr_idx = [np.amax(self.ti_ol[self.idx_moho:])*item%1 for item in corr].index(0.0)
+			ti_max = 10**-(ti_max_corr_idx-1)
+			self.ax_ti.set_xlim((0.0,ti_max))
+			self.ax_ti.set_xlabel(r'$TiO_2 \, in \, ol$ [wt%]',fontsize = 9)
+			self.ax_ti.set_ylim((MATE.lab / 1000.0) + 25.0, 0.0)
+
+			self.ax_ti.axhline(MATE.moho/1000.0, linestyle = '--',color = '#BA43C2', alpha = 0.85,linewidth = 2.5)
+			self.ax_ti.axhline(MATE.lab/1000.0, linestyle = '--', color = 'k', alpha = 0.85,linewidth = 2.5)
+
+			for tick in self.ax_ti.xaxis.get_major_ticks():
+				tick.label.set_fontsize(fontsize_labels)
+
+			self.ax_ti.set_yticklabels([])
+
+			crust_obj = patches.Rectangle((0,0) ,300.0,MATE.moho / 1000.0, color = '#b76314', alpha = 0.6,hatch = 'xxxx')
+			ast_obj = patches.Rectangle((0,MATE.lab / 1000.0),300.0,1e5, color = '#b73114', alpha = 0.6,hatch = 'xx')
+			self.ax_ti.add_patch(crust_obj)
+			self.ax_ti.add_patch(ast_obj)
+
+			#Fluorine in phlogopite
+
+			self.ax_flour = plt.subplot2grid((16,16),(0,9), rowspan = 16,colspan = 3, fig = self.figure_other_comp)
+
+			self.ax_flour.plot(self.flu[self.idx_moho:], self.depth[self.idx_moho:] / 1000.0, color = '#083fb5', linewidth = 1.5)
+
+			self.ax_flour.set_xlim((0.0,2.0))
+			self.ax_flour.set_xlabel(r'$F \, in \, phlg$ [wt%]',fontsize = 9)
+			self.ax_flour.set_ylim((MATE.lab / 1000.0) + 25.0, 0.0)
+
+			self.ax_flour.axhline(MATE.moho/1000.0, linestyle = '--',color = '#BA43C2', alpha = 0.85,linewidth = 2.5)
+			self.ax_flour.axhline(MATE.lab/1000.0, linestyle = '--', color = 'k', alpha = 0.85,linewidth = 2.5)
+
+			for tick in self.ax_flour.xaxis.get_major_ticks():
+				tick.label.set_fontsize(fontsize_labels)
+
+			self.ax_flour.set_yticklabels([])
+
+			crust_obj = patches.Rectangle((0,0) ,300.0,MATE.moho / 1000.0, color = '#b76314', alpha = 0.6,hatch = 'xxxx')
+			ast_obj = patches.Rectangle((0,MATE.lab / 1000.0),300.0,1e5, color = '#b73114', alpha = 0.6,hatch = 'xx')
+			self.ax_flour.add_patch(crust_obj)
+			self.ax_flour.add_patch(ast_obj)
+
+			#CO2 melt
+
+			self.ax_carbon = plt.subplot2grid((16,16),(0,9), rowspan = 16,colspan = 3, fig = self.figure_other_comp)
+
+			self.ax_carbon.plot(self.co2[self.idx_moho:], self.depth[self.idx_moho:] / 1000.0, color = '#083fb5', linewidth = 1.5)
+
+			self.ax_carbon.set_xlim((0.0,1e3))
+			self.ax_carbon.set_xlabel(r'$CO_2 \, in \, melt$ [wt%]',fontsize = 9)
+			self.ax_carbon.set_ylim((MATE.lab / 1000.0) + 25.0, 0.0)
+
+			self.ax_carbon.axhline(MATE.moho/1000.0, linestyle = '--',color = '#BA43C2', alpha = 0.85,linewidth = 2.5)
+			self.ax_carbon.axhline(MATE.lab/1000.0, linestyle = '--', color = 'k', alpha = 0.85,linewidth = 2.5)
+
+			for tick in self.ax_carbon.xaxis.get_major_ticks():
+				tick.label.set_fontsize(fontsize_labels)
+
+			self.ax_carbon.set_yticklabels([])
+
+			crust_obj = patches.Rectangle((0,0), 10000.0, MATE.moho / 1000.0, color = '#b76314', alpha = 0.6,hatch = 'xxxx')
+			ast_obj = patches.Rectangle((0, MATE.lab / 1000.0), 10000.0, 1e5, color = '#b73114', alpha = 0.6,hatch = 'xx')
+			self.ax_carbon.add_patch(crust_obj)
+			self.ax_carbon.add_patch(ast_obj)
+
+			plt.show()
+			plt.ioff()
+
 	def plot_geotherm_button(self):
 
 		ok_to_plot_geotherm = True
@@ -5511,12 +5514,7 @@ class MATE(QMainWindow):
 						self.plot_composition(method = 'draw')
 						if MATE.melt_method == '0':
 							self.plot_melt_frac(method = 'draw')
-						# self.plot_mg(method = 'draw')
-						"""
-						if MATE.al_method == '0':
-							if MATE.al_opx_model_select == 0:
-								self.plot_al(method = 'draw')
-						"""
+
 						self.drawn = self.drawn + 1
 						self.drawn_11 = self.drawn_11 + 1
 						self.act_comp_btn.setStyleSheet("QPushButton {min-width: 10em; font: bold; font-size: 9pt;background-color: #679c5f}")
@@ -5731,14 +5729,8 @@ class MATE(QMainWindow):
 			self.dir_path = self.png_file_save_name[:self.png_file_save_name.rfind('/')+1]
 			self.png_file_name = self.png_file_save_name[self.png_file_save_name.rfind('/')+1:]
 
-
 			if self.drawn != 0:
 				self.plot_composition(method = 'save')
-			if self.drawn_1 != 0:
-				if MATE.al_method == '0':
-					self.plot_al(method = 'save')
-			if self.drawn_11 != 0:
-				self.plot_mg(method = 'save')
 			if self.drawn_3 != 0:
 				self.plot_geotherm(method = 'save')
 			if self.drawn_4 != 0:
@@ -5986,9 +5978,11 @@ class MATE(QMainWindow):
 
 					solution_init.append(self.h2o[idx])
 
+				#Interpolating the sparse solution for the initial starting model.
 				idx_input = np.arange(self.idx_moho, len(self.depth)-1, 1)
 				solution_water_init = np.interp(idx_input, np.array(idx_depth_to_initialize),np.array(solution_init))
 
+				#Actual solution loop.
 				for i in range(self.idx_moho,len(self.depth)):
 
 					_solve_(sol_index = i, water_search_start = solution_water_init[i - self.idx_moho -1], water_search_end = self.h2o_from_sol,  water_search_increment = 4)
@@ -6009,7 +6003,6 @@ class MATE(QMainWindow):
 				self.calculate_sp_chr_conductivity()
 				if MATE.melt_method == '0':
 					self.calculate_melt_conductivity()
-
 
 				self.phase_mixing_function(method = MATE.phs_mix_method, melt_method = MATE.phs_melt_mix_method)
 				self.plot_water(method = 'draw')
