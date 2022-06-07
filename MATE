@@ -92,9 +92,7 @@ class MATE(QMainWindow):
 		else:
 			self.commandmv = 'mv'
 
-		# self.setGeometry(25,25,1250,600)
 		self.setMinimumSize(1800,1000)
-		# self.setGeometry(25,25,1800,1000)
 		self.setStyleSheet("QMainWindow{background-color: #c1ccc1;border: 1px solid black}")
 		self.setWindowTitle("MATE")
 		self.setWindowIcon(QtGui.QIcon(self.core_path + '/mate.png'))
@@ -4694,7 +4692,6 @@ class MATE(QMainWindow):
 			self.P_equivalent = np.asarray(self.P_equivalent)
 			self.T_equivalent = np.asarray(self.T_equivalent)
 
-			#xenolith_rms = self.xenolith_RMS(T = self.T_xen_plot,P = self.p_xen,std_T = temp_err,std_P = pres_err,P_eq = self.P_equivalent,T_eq = self.T_equivalent)
 			positive_pressure_diff_list = []
 			negative_pressure_diff_list = []
 			for i in range(0,len(pres_err)):
@@ -4809,7 +4806,6 @@ class MATE(QMainWindow):
 			sol_order_list = [np.mean(self.max_ol_h2o[self.idx_moho:]),np.mean(self.max_gt_h2o[self.idx_moho:])]
 			sol_plot_order_list = [self.max_ol_h2o[self.idx_moho:],self.max_gt_h2o[self.idx_moho:]]
 			color_order_list = ['#0b820f','#ad0f1f']
-			#label_list = ['Ol Solubility', 'Gt Solubility']
 
 			index_first = sol_order_list.index(min(sol_order_list))
 			index_last = sol_order_list.index(max(sol_order_list))
@@ -4989,7 +4985,6 @@ class MATE(QMainWindow):
 			tick.label.set_fontsize(fontsize_labels)
 		if method == 'draw':
 			self.ax4.set_yticks([])
-			# self.ax4.legend(fontsize = fontsize_labels, bbox_to_anchor=(0.2, 0.85), borderaxespad=0.1,markerscale=0.5,framealpha = 1.0,handles = handle_list)
 		if method == 'save':
 			self.ax4.set_ylabel(r'$Depth \, (km)$',fontsize = fontsize_labels)
 			self.ax4.legend(fontsize = fontsize_labels,bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.1,handles = handle_list)
@@ -4997,7 +4992,6 @@ class MATE(QMainWindow):
 				tick.label.set_fontsize(fontsize_labels)
 
 		self.ax4.set_xlabel(r'$C_w \, (ppm)$', fontsize = fontsize_labels)
-		#self.ax4.set_xlim((0,self.maxwater + 50.0))
 		self.ax4.set_xlim((0,MATE.waterplotlim_up))
 		self.ax4.set_ylim((MATE.lab / 1000.0) + 25.0, 0.0)
 		crust_obj = patches.Rectangle((0,0) ,100000.0,MATE.moho / 1000.0, color = '#b76314', alpha = 0.6,hatch = 'xxxx')
@@ -5084,11 +5078,7 @@ class MATE(QMainWindow):
 
 		if (self.csv_MT_read == True):
 
-			#r_color = lambda: random.randint(0,255)
-			#self.color_list_csv.append('#%02X%02X%02X' % (r_color(),r_color(),r_color()))
 			self.color_list_csv = ['#cf56d5','#b10000','k','#d08300', '#30c245','#468afe','#5fb9da','#ffcf00']
-			# self.color_list_csv = ['#D55672','#369d31', '#1B4079', 'k']
-			# self.marker_list_csv = ['--',':','-.','--',':','-.','--',':','-.']
 			self.marker_list_csv = ['-','-','-','-','-','-','-','-','-']
 			if len(MATE.z_depth_plot_list) > 8:
 				r_color = lambda: random.randint(0,255)
@@ -5473,18 +5463,7 @@ class MATE(QMainWindow):
 					self.ax0.remove()
 				except KeyError:
 					pass
-			"""
-			if self.drawn_1 !=0:
-				try:
-					self.ax2.remove()
-				except KeyError:
-					pass
-			if self.drawn_11 !=0:
-				try:
-					self.ax1.remove()
-				except KeyError:
-					pass
-			"""
+			
 			self.adjust_composition()
 			#Create error if the total mineralogy is indifferent to 1 at any layer.
 			ok_to_compute_comp = True
