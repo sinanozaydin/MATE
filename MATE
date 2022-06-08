@@ -486,6 +486,7 @@ class MATE(QMainWindow):
 		self.bulk_cond_list = []
 		self.linestyle_list = []
 		self.linewidth_list = []
+		self.h2o_bulk_list = []
 		self.h2o_list = []
 		self.h2o_max_list = []
 		self.h2o_min_list = []
@@ -510,6 +511,9 @@ class MATE(QMainWindow):
 		self.pl_h2o_list = []
 		self.pl_h2o_max_list = []
 		self.pl_h2o_min_list = []
+		self.melt_h2o_list = []
+		self.melt_h2o_max_list = []
+		self.melt_h2o_min_list = []
 
 		#Reading parameter files...
 
@@ -1793,6 +1797,14 @@ class MATE(QMainWindow):
 			else:
 				MATE.melt_method = '1'
 
+
+			if MATE.melt_method == '0':
+
+				self.idx_melt_zero = []
+				for i in range(self.idx_moho, len(self.melt_mass_frac)):
+					if self.melt_mass_frac[i] == 0.0:
+						self.idx_melt_zero.append(i)
+
 			self.data_existence = True
 
 	def calculate_pressure(self):
@@ -2135,7 +2147,6 @@ class MATE(QMainWindow):
 			self.cpx_frac_wt = self.cpx_frac / (self.ol_frac + self.opx_frac + self.cpx_frac + self.gt_frac)
 			self.gt_frac_wt = self.gt_frac / (self.ol_frac + self.opx_frac + self.cpx_frac + self.gt_frac)
 
-
 			if (MATE.d_melt_opx_type[MATE.opx_melt_part_select] == '1') or (MATE.d_melt_opx_type[MATE.opx_melt_part_select] == '3'):
 
 				MATE.d_melt_opx = eval(self.d_melt_opx_function[MATE.opx_part_select])
@@ -2192,10 +2203,15 @@ class MATE(QMainWindow):
 			#Calculating the h2o content of melt that is in equilibrium with the entered solid-mixture, from Sifre et al. (2014)
 			self.melt_h2o = self.h2o / (self.melt_mass_frac + ((1.0 - self.melt_mass_frac) * self.d_per_melt))
 
-			#Recalculating the self.h2o as peridotite (solid) water content
-			self.h2o = (self.h2o * self.d_per_melt) /\
-				(self.melt_mass_frac + ((1.0 - self.melt_mass_frac) * self.d_per_melt))
+			#reassigning the zero mass frac melt layers using pre-mapped indexing array.
+			self.melt_h2o[self.idx_melt_zero] = 0.0
 
+			#Recalculating the self.h2o as peridotite (solid) water content
+			self.h2o_solid = (self.h2o * self.d_per_melt) /\
+				(self.melt_mass_frac + ((1.0 - self.melt_mass_frac) * self.d_per_melt))
+		else:
+
+			self.h2o_solid = self.h2o
 
 		#CALCULATING AL-DEPENDENT PARTITION COEFF
 		if MATE.part_px_method == '1':
@@ -2262,10 +2278,10 @@ class MATE(QMainWindow):
 		if MATE.part_px_method == '1':
 
 			if MATE.hydr_part_method == 0:
-				self.ol_h2o = self.h2o / (self.ol_frac + ((self.opx_frac * MATE.d_opx_ol) + (self.cpx_frac * MATE.d_cpx_ol) + (self.gt_frac * MATE.d_gt_ol) +\
+				self.ol_h2o = self.h2o_solid / (self.ol_frac + ((self.opx_frac * MATE.d_opx_ol) + (self.cpx_frac * MATE.d_cpx_ol) + (self.gt_frac * MATE.d_gt_ol) +\
 				(self.amp_frac * MATE.d_amp_ol) + (self.pl_frac * MATE.d_pl_ol)))
 			else:
-				self.ol_h2o = self.h2o / (self.ol_frac + ((self.opx_frac * MATE.d_opx_ol) + (self.cpx_frac * MATE.d_cpx_ol) + (self.gt_frac * MATE.d_gt_ol)))
+				self.ol_h2o = self.h2o_solid / (self.ol_frac + ((self.opx_frac * MATE.d_opx_ol) + (self.cpx_frac * MATE.d_cpx_ol) + (self.gt_frac * MATE.d_gt_ol)))
 
 			for i in range(self.idx_moho,len(self.ol_h2o)):
 					if self.opx_frac[i] != 0:
@@ -2299,10 +2315,10 @@ class MATE(QMainWindow):
 
 			self.px_frac = self.opx_frac + self.cpx_frac
 			if MATE.hydr_part_method == 0:
-				self.ol_h2o = self.h2o / (self.ol_frac + ((self.px_frac * MATE.d_opx_ol) + (self.gt_frac * MATE.d_gt_ol) +\
+				self.ol_h2o = self.h2o_solid / (self.ol_frac + ((self.px_frac * MATE.d_opx_ol) + (self.gt_frac * MATE.d_gt_ol) +\
 				(self.amp_frac * MATE.d_amp_ol) + (self.pl_frac * MATE.d_pl_ol)))
 			else:
-				self.ol_h2o = self.h2o / (self.ol_frac + ((self.px_frac * MATE.d_opx_ol) + (self.gt_frac * MATE.d_gt_ol)))
+				self.ol_h2o = self.h2o_solid / (self.ol_frac + ((self.px_frac * MATE.d_opx_ol) + (self.gt_frac * MATE.d_gt_ol)))
 
 			for i in range(self.idx_moho,len(self.ol_h2o)):
 				if self.px_frac[i] != 0:
@@ -2327,13 +2343,15 @@ class MATE(QMainWindow):
 					else:
 						self.pl_h2o[i] = 0.0
 
-		all_h2o = [self.h2o,self.ol_h2o,self.opx_h2o,self.cpx_h2o,self.gt_h2o,self.px_h2o]
+		all_h2o = [self.h2o,self.h2o_solid,self.ol_h2o,self.opx_h2o,self.cpx_h2o,self.gt_h2o,self.px_h2o]
 		if self.amp_method == 0:
 			all_h2o.append(self.amp_h2o)
 		if self.pl_method == 0:
 			all_h2o.append(self.pl_h2o)
+		if MATE.melt_method == '0':
+			all_h2o.append(self.melt_h2o)
 		all_h2o = np.asarray(list(itertools.chain(*all_h2o)))
-		self.maxwater = np.amax(all_h2o)
+		self.maxwater = np.amax(all_h2o) + (np.amax(all_h2o) / 5.0)
 
 		if self.water_end == True:
 			if MATE.w_inp_method == '0':
@@ -2474,6 +2492,7 @@ class MATE(QMainWindow):
 
 		self.fo2_input = True
 		QMessageBox.about(self, "Info","Oxygen fugacity data is succesfully improted to the program.")
+
 	def calculate_h2o_fugacity(self):
 
 		#Water fugacity calculation for pure water from the EOS of Pitzer and Sterner (1994), adapted after the python script of Tony Withers taken from his personal website.
@@ -2615,6 +2634,14 @@ class MATE(QMainWindow):
 				self.h2o_from_sol = (self.ol_h2o * self.ol_frac) + (self.opx_h2o * self.opx_frac) + (self.cpx_h2o * self.cpx_frac) + (self.gt_h2o * self.gt_frac)
 			else:
 				self.h2o_from_sol = (self.ol_h2o * self.ol_frac) + (self.px_h2o * (self.opx_frac + self.cpx_frac)) + (self.gt_h2o * self.gt_frac)
+
+			if MATE.melt_method == '0':
+
+				self.melt_h2o = self.h2o_from_sol / self.d_per_melt
+				self.melt_h2o[self.idx_melt_zero] = 0.0
+
+				self.h2o = self.h2o_from_sol * (self.melt_frac + ((1-self.melt_frac) * self.d_per_melt)) / self.d_per_melt
+
 
 	def check_sol_limit(self):
 
@@ -4561,8 +4588,6 @@ class MATE(QMainWindow):
 		self.ax0.add_patch(crust_obj)
 		self.ax0.add_patch(ast_obj)
 
-
-
 		if method == 'draw':
 
 			self.fig.tight_layout()
@@ -4753,14 +4778,16 @@ class MATE(QMainWindow):
 			self.h2o_max_list.append(self.h2o_from_sol)
 			self.h2o_min_list.append(self.h2o_from_sol)
 		else:
-			self.h2o_list.append(self.h2o)
+			self.h2o_list.append(self.h2o_solid)
 			if MATE.w_inp_method == '0':
 				if self.water_error_calculated == True:
 					self.h2o_max_list.append(self.h2o_max)
 					self.h2o_min_list.append(self.h2o_min)
 			else:
-				self.h2o_max_list.append(self.h2o)
-				self.h2o_min_list.append(self.h2o)
+				self.h2o_max_list.append(self.h2o_solid)
+				self.h2o_min_list.append(self.h2o_solid)
+
+		self.h2o_bulk_list.append(self.h2o)
 
 		self.ol_h2o_list.append(self.ol_h2o)
 		if MATE.w_inp_method == '0':
@@ -4844,7 +4871,7 @@ class MATE(QMainWindow):
 		for i in range(0,len(self.h2o_list)):
 
 			if MATE.bulk_water_method == 0:
-				water_plot_0, = self.ax4.plot(self.h2o_list[i][self.idx_moho:],self.depth[self.idx_moho:] / 1000.0, linestyle = '--', color = 'k', linewidth = 4, alpha = 0.85, label = r'$C_w^{Bulk}$')
+				water_plot_0, = self.ax4.plot(self.h2o_list[i][self.idx_moho:],self.depth[self.idx_moho:] / 1000.0, linestyle = '--', color = 'k', linewidth = 4, alpha = 0.85, label = r'$C_w^{Solid-Bulk}$')
 				if MATE.w_inp_method == '0':
 					if self.water_error_calculated == True:
 						self.ax4.fill_betweenx(self.depth[self.idx_moho:],self.h2o_min_list[i][self.idx_moho:],self.h2o_max_list[i][self.idx_moho:],color = 'k',alpha = 0.3)
@@ -4944,6 +4971,14 @@ class MATE(QMainWindow):
 					if self.water_error_calculated == True:
 						self.ax4.fill_betweenx(self.depth[self.idx_moho:],self.px_h2o_min_list[i][self.idx_moho:],self.px_h2o_max_list[i][self.idx_moho:],color = '#f49b42',alpha = 0.3)
 
+		if MATE.melt_method == '0':
+
+			self.melt_h2o_list.append(self.melt_h2o)
+			water_plot_5, = self.ax4.plot(self.melt_h2o_list[i][self.idx_moho:],self.depth[self.idx_moho:] / 1000.0, color = '#f45328', linewidth = 2.0, label = r'$C_w^{melt}$',
+			path_effects=[pe.Stroke(linewidth=2.5, foreground='k'), pe.Normal()])
+
+			water_plot_6, = self.ax4.plot(self.h2o_bulk_list[i][self.idx_moho:],self.depth[self.idx_moho:] / 1000.0, linestyle = '-.', color = '#37bb9c', linewidth = 4, alpha = 0.85, label = r'$C_w^{Bulk}$')
+
 		self.ax4.axhline(MATE.moho/1000.0, linestyle = '--',color = '#BA43C2', alpha = 0.85,linewidth = 2.5)
 		self.ax4.axhline(MATE.lab/1000.0, linestyle = '--', color = 'k', alpha = 0.85,linewidth = 2.5)
 		self.ax4.axhline(self.depth_spinel / 1000.0, linestyle = '--', color = '#7EB345', alpha = 0.85,linewidth = 2.5)
@@ -4991,20 +5026,26 @@ class MATE(QMainWindow):
 			for tick in self.ax4.yaxis.get_major_ticks():
 				tick.label.set_fontsize(fontsize_labels)
 
+		if MATE.melt_method == '0':
+			self.ax4.set_xlim((1,self.maxwater))
+			self.ax4.set_xscale('log')
+		else:
+			self.ax4.set_xlim((0,MATE.waterplotlim_up))
+
 		self.ax4.set_xlabel(r'$C_w \, (ppm)$', fontsize = fontsize_labels)
-		self.ax4.set_xlim((0,MATE.waterplotlim_up))
 		self.ax4.set_ylim((MATE.lab / 1000.0) + 25.0, 0.0)
-		crust_obj = patches.Rectangle((0,0) ,100000.0,MATE.moho / 1000.0, color = '#b76314', alpha = 0.6,hatch = 'xxxx')
-		ast_obj = patches.Rectangle((0,MATE.lab / 1000.0),100000.0,1e5, color = '#b73114', alpha = 0.6,hatch = 'xx')
+		crust_obj = patches.Rectangle((0,0) ,1e10,MATE.moho / 1000.0, color = '#b76314', alpha = 0.6,hatch = 'xxxx')
+		ast_obj = patches.Rectangle((0,MATE.lab / 1000.0),1e10,1e5, color = '#b73114', alpha = 0.6,hatch = 'xx')
 		self.ax4.add_patch(crust_obj)
 		self.ax4.add_patch(ast_obj)
 
 		for i in range(0,len(self.depth_comp_plot)):
 			self.ax4.axhline(self.depth_comp_plot[i]/1000.0,linewidth = 0.75, alpha = 0.5, color = 'k',linestyle = '-.')
 
-		if MATE.sol_plot_scale_method == 1:
-			self.ax4.set_xscale('log')
-			self.ax4.set_xlim((1e-1,1e4))
+		if MATE.melt_method != '0':
+			if MATE.sol_plot_scale_method == 1:
+				self.ax4.set_xscale('log')
+				self.ax4.set_xlim((1e-1,1e4))
 
 		if (MATE.sol_method == 1) or (MATE.sol_method == 2):
 
@@ -5221,7 +5262,7 @@ class MATE(QMainWindow):
 		ax_legend.text(0.17,0.225, 'Xenolith Data')
 		ax_legend.text(0.08,0.15, '--Water Figure--', fontweight = 'semibold')
 		ax_legend.plot([0.0,0.15], [0.07,0.07] , color = 'k', linestyle = '--', linewidth = 2.5)
-		ax_legend.text(0.17,0.055, 'Bulk Water')
+		ax_legend.text(0.17,0.055, 'Bulk Water - Solid')
 		ax_legend.set_xlim((0,1))
 		ax_legend.set_ylim((0,1))
 		plt.show()
@@ -5463,7 +5504,7 @@ class MATE(QMainWindow):
 					self.ax0.remove()
 				except KeyError:
 					pass
-			
+
 			self.adjust_composition()
 			#Create error if the total mineralogy is indifferent to 1 at any layer.
 			ok_to_compute_comp = True
@@ -5534,6 +5575,7 @@ class MATE(QMainWindow):
 
 	def plot_water_reset(self):
 
+		self.h2o_bulk_list = []
 		self.h2o_list = []
 		self.h2o_max_list = []
 		self.h2o_min_list = []
@@ -5558,6 +5600,9 @@ class MATE(QMainWindow):
 		self.pl_h2o_list = []
 		self.pl_h2o_max_list = []
 		self.pl_h2o_min_list = []
+		self.melt_h2o_list = []
+		self.melt_h2o_max_list = []
+		self.melt_h2o_min_list = []
 		self.plt_water_btn.setStyleSheet("QPushButton {min-width: 10em; font: bold; font-size: 9pt;background-color: #93db88}")
 
 		self.water_inverted = False
@@ -5646,6 +5691,7 @@ class MATE(QMainWindow):
 		self.bulk_cond_list = []
 		self.linestyle_list = []
 		self.linewidth_list = []
+		self.h2o_bulk_list = []
 		self.h2o_list = []
 		self.h2o_max_list = []
 		self.h2o_min_list = []
@@ -5670,6 +5716,9 @@ class MATE(QMainWindow):
 		self.pl_h2o_list = []
 		self.pl_h2o_max_list = []
 		self.pl_h2o_min_list = []
+		self.melt_h2o_list = []
+		self.melt_h2o_max_list = []
+		self.melt_h2o_min_list = []
 		MATE.z_depth_plot_list = []
 		MATE.res_profile_plot_list = []
 		MATE.res_profile_max_plot_list = []
