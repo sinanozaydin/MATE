@@ -2,7 +2,7 @@
 
 import numpy as np
 
-def Sifre2014(T, Melt_H2O, Melt_CO2):
+def Sifre2014(T, Melt_H2O, Melt_CO2, Melt_NaO, Melt_SiO2):
 
 	R_const = 8.3144621
 
@@ -19,3 +19,9 @@ def Sifre2014(T, Melt_H2O, Melt_CO2):
 	 	(sigma_co2 * np.exp(-E_CO2 / (R_const * T)))
 
 	return cond, cond, cond
+
+def Pommier2008(T, Melt_H2O, Melt_CO2, Melt_NaO, Melt_SiO2):
+
+	R_const = 8.3144621
+
+	pass
