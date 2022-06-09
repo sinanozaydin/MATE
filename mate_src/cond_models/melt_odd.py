@@ -2,9 +2,9 @@
 
 import numpy as np
 
-def Sifre2014(T, Melt_H2O, Melt_CO2, Melt_NaO, Melt_SiO2):
+R_const = 8.3144621
 
-	R_const = 8.3144621
+def Sifre2014(T, P, Melt_H2O, Melt_CO2, Melt_Na2O):
 
 	Melt_H2O = Melt_H2O * 1e-4 #converting ppm to wt percent
 	Melt_CO2 = Melt_CO2 * 1e-4 #converting ppm to wt percent
@@ -20,8 +20,80 @@ def Sifre2014(T, Melt_H2O, Melt_CO2, Melt_NaO, Melt_SiO2):
 
 	return cond, cond, cond
 
-def Pommier2008(T, Melt_H2O, Melt_CO2, Melt_NaO, Melt_SiO2):
+def Pommier2008(T, P, Melt_H2O, Melt_CO2, Melt_Na2O):
 
-	R_const = 8.3144621
+	Melt_H2O = Melt_H2O * 1e-4 #convering ppm to wt
+	P = P * 1e3 #converting GPa to MPa
 
-	pass
+	phi = (2.439e-11 * Melt_Na2O) + 1.72e-10
+	G = (-2.107e11 * Melt_Na2O) + 1.297e12
+
+	Eb = 0.23 * (1*8*(1.602e-19)**2) / (phi * (1.02e-10 - 1.4e-10))
+	Es = 4.0 * np.pi * G * 1.7e-10 * (1.02e-10 - 9.3e-11)**2.0 + (1e3 * Melt_H2O**2.0)
+
+	Ea = Eb + Es
+
+	sigma_0 = np.exp((Ea + 9.9) / 12.5)
+
+	cond = sigma_0 * np.exp((-Ea - (P * 20)) / (R_const*T))
+
+
+	return cond, cond, cond
+
+
+def Ni2011(T, P, Melt_H2O, Melt_CO2, Melt_Na2O):
+
+	Melt_H2O = 0.3 #convering ppm to wt
+
+	cond = 10**(2.172 - ((860.82 - (204.46*np.sqrt(Melt_H2O))) / (T - 1146.8)))
+
+	return cond, cond, cond
+
+def Scarlato2004_DryBasalt(T, P, Melt_H2O, Melt_CO2, Melt_Na2O):
+
+	sigma_0 = 309.0
+	E = 82000
+
+	cond = sigma_0 * np.exp(-E / (R_const * T))
+
+	return cond, cond, cond
+
+def TyburczyWaff1983_DryTholeiite(T, P, Melt_H2O, Melt_CO2, Melt_Na2O):
+
+	sigma_0_low = 1.12e5
+	E_low = 112000.0
+	dv_low = 4.6
+
+	sigma_0_high = 2.15e5
+	E_high = 153000.0
+	dv_high = -0.06
+
+	cond = np.zeros(len(T))
+	for i in range(0,len(T)):
+
+		if P[i] < 0.9:
+			cond[i] = sigma_0_low * np.exp(-(E_low + (dv_low * P[i] * 1e3)) / (R_const * T[i]))
+		else:
+			cond[i] = sigma_0_high * np.exp(-(E_high + (dv_high * P[i] * 1e3)) / (R_const * T[i]))
+
+	return cond, cond, cond
+
+def TyburczyWaff1983_DryAndesite(T, P, Melt_H2O, Melt_CO2, Melt_Na2O):
+
+	sigma_0_low = 1.01e3
+	E_low = 78000.0
+	dv_low = 17.9
+
+	sigma_0_high = 6.61e3
+	E_high = 117000.0
+	dv_high = 3.25
+
+	cond = np.zeros(len(T))
+	for i in range(0,len(T)):
+
+		if P[i] < 0.9:
+			cond[i] = sigma_0_low * np.exp(-(E_low + (dv_low * P[i] * 1e3)) / (R_const * T[i]))
+		else:
+			cond[i] = sigma_0_high * np.exp(-(E_high + (dv_high * P[i] * 1e3)) / (R_const * T[i]))
+
+	return cond, cond, cond
