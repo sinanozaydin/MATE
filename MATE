@@ -476,7 +476,7 @@ class MATE(QMainWindow):
 		self.color_list_csv = []
 
 		MATE.csv_file_selection = 0
-		MATE.text = "Depth(km),H2O_bulk(ppm),CO2_melt(ppm),ol_frac,opx_frac,cpx_frac,gt_frac,sp_chr_frac,pl_frac,amp_frac,cond_frac,cond_cond(ohm_m),melt_mass_frac,XFe-ol,XFe-opx,XFe-cpx,XFe-gt,Al-opx(wt%),Ti-ol(wt%),NaO_melt(wt%),m_ol,m_opx,m_cpx,m_gt,m_sp_chr,m_pl,m_amp,m_cond,m_melt,t_k_cond(W/mK),fl_pl(wt%),ol_gs(mm),heat_prod(mW/m^2)\n"
+		MATE.text = "Depth(km),H2O_bulk(ppm),CO2_melt(ppm),ol_frac,opx_frac,cpx_frac,gt_frac,sp_chr_frac,pl_frac,amp_frac,cond_frac,cond_cond(ohm_m),melt_mass_frac,XFe-ol,XFe-opx,XFe-cpx,XFe-gt,m_ol,m_opx,m_cpx,m_gt,m_sp_chr,m_pl,m_amp,m_cond,m_melt,Al-opx(wt%),Ti-ol(wt%),NaO_melt(wt%),K2O_melt(wt%),t_k_cond(W/mK),fl_pl(wt%),ol_gs(mm),heat_prod(mW/m^2)\n"
 
 		#Setting up the global list where the model parameters will be appended.
 
@@ -1560,6 +1560,7 @@ class MATE(QMainWindow):
 		self.al_opx_comp = []
 		self.ti_ol_comp = []
 		self.na2o_melt_comp = []
+		self.k2o_melt_comp = []
 		self.ol_m_comp = []
 		self.opx_m_comp = []
 		self.cpx_m_comp = []
@@ -1637,22 +1638,23 @@ class MATE(QMainWindow):
 					self.fe_opx_comp.append(float(self.layer_data[i][14]))
 					self.fe_cpx_comp.append(float(self.layer_data[i][15]))
 					self.fe_gt_comp.append(float(self.layer_data[i][16]))
-					self.al_opx_comp.append(float(self.layer_data[i][17]))
-					self.ti_ol_comp.append(float(self.layer_data[i][18]))
-					self.na2o_melt_comp.append(float(self.layer_data[i][19]))
-					self.ol_m_comp.append(float(self.layer_data[i][20]))
-					self.opx_m_comp.append(float(self.layer_data[i][21]))
-					self.cpx_m_comp.append(float(self.layer_data[i][22]))
-					self.gt_m_comp.append(float(self.layer_data[i][23]))
-					self.sp_chr_m_comp.append(float(self.layer_data[i][24]))
-					self.pl_m_comp.append(float(self.layer_data[i][25]))
-					self.amp_m_comp.append(float(self.layer_data[i][26]))
-					self.cond_m_comp.append(float(self.layer_data[i][27]))
-					self.cond_t_k_comp.append(float(self.layer_data[i][28]))
-					self.melt_m_comp.append(float(self.layer_data[i][29]))
-					self.flu_comp.append(float(self.layer_data[i][30]))
-					self.ol_gs_comp.append(float(self.layer_data[i][31])*1e-3) #converting to mm to m
-					self.heat_prod_mantle.append(float(self.layer_data[i][32]))
+					self.ol_m_comp.append(float(self.layer_data[i][17]))
+					self.opx_m_comp.append(float(self.layer_data[i][18]))
+					self.cpx_m_comp.append(float(self.layer_data[i][19]))
+					self.gt_m_comp.append(float(self.layer_data[i][20]))
+					self.sp_chr_m_comp.append(float(self.layer_data[i][21]))
+					self.pl_m_comp.append(float(self.layer_data[i][22]))
+					self.amp_m_comp.append(float(self.layer_data[i][23]))
+					self.cond_m_comp.append(float(self.layer_data[i][24]))
+					self.melt_m_comp.append(float(self.layer_data[i][25]))
+					self.al_opx_comp.append(float(self.layer_data[i][26]))
+					self.ti_ol_comp.append(float(self.layer_data[i][27]))
+					self.na2o_melt_comp.append(float(self.layer_data[i][28]))
+					self.k2o_melt_comp.append(float(self.layer_data[i][29]))
+					self.cond_t_k_comp.append(float(self.layer_data[i][30]))
+					self.flu_comp.append(float(self.layer_data[i][31]))
+					self.ol_gs_comp.append(float(self.layer_data[i][32])*1e-3) #converting to mm to m
+					self.heat_prod_mantle.append(float(self.layer_data[i][33]))
 
 			self.depth_comp_plot = self.depth_comp[::2]
 
@@ -1677,6 +1679,7 @@ class MATE(QMainWindow):
 				f_al_opx = interp1d(self.depth_comp,self.al_opx_comp)
 			f_ti_ol = interp1d(self.depth_comp,self.ti_ol_comp)
 			f_na2o_melt = interp1d(self.depth_comp,self.na2o_melt_comp)
+			f_k2o_melt = interp1d(self.depth_comp,self.k2o_melt_comp)
 			f_ol_m = interp1d(self.depth_comp,self.ol_m_comp)
 			f_opx_m = interp1d(self.depth_comp,self.opx_m_comp)
 			f_cpx_m = interp1d(self.depth_comp,self.cpx_m_comp)
@@ -1719,6 +1722,7 @@ class MATE(QMainWindow):
 
 			self.ti_ol = f_ti_ol(self.depth_mantle)
 			self.na2o_melt = f_na2o_melt(self.depth_mantle)
+			self.k2o_melt = f_k2o_melt(self.depth_mantle)
 
 			self.ol_m = f_ol_m(self.depth_mantle)
 			self.opx_m = f_opx_m(self.depth_mantle)
@@ -1765,6 +1769,7 @@ class MATE(QMainWindow):
 
 				self.ti_ol = np.insert(self.ti_ol,0,-999)
 				self.na2o_melt = np.insert(self.na2o_melt,0,-999)
+				self.k2o_melt = np.insert(self.k2o_melt,0,-999)
 
 				self.ol_m = np.insert(self.ol_m,0,-999)
 				self.opx_m = np.insert(self.opx_m,0,-999)
@@ -3777,7 +3782,7 @@ class MATE(QMainWindow):
 
 				melt_odd_function = MATE.name[7][MATE.melt_cond_selection]
 
-			cond_melt_max,cond_melt_min,cond_melt = eval(melt_odd_function + '(T = self.T, P = self.p, Melt_H2O = self.melt_h2o, Melt_CO2 = self.co2, Melt_Na2O = self.na2o_melt)')
+			cond_melt_max,cond_melt_min,cond_melt = eval(melt_odd_function + '(T = self.T, P = self.p, Melt_H2O = self.melt_h2o, Melt_CO2 = self.co2, Melt_Na2O = self.na2o_melt, Melt_K2O = self.k2o_melt)')
 
 			self.melt_cond_max = cond_melt_max
 			self.melt_cond_min = cond_melt_min
@@ -4593,9 +4598,10 @@ class MATE(QMainWindow):
 		self.ax0.add_patch(crust_obj)
 		self.ax0.add_patch(ast_obj)
 
+		self.fig.tight_layout()
+
 		if method == 'draw':
 
-			self.fig.tight_layout()
 			self.canvas.draw()
 
 		elif method == 'save':
@@ -5467,26 +5473,49 @@ class MATE(QMainWindow):
 
 			#NaO melt
 
-			self.ax_carbon = plt.subplot2grid((16,16),(0,9), rowspan = 16,colspan = 3, fig = self.figure_other_comp)
+			self.ax_na2o = plt.subplot2grid((16,16),(0,9), rowspan = 16,colspan = 3, fig = self.figure_other_comp)
 
-			self.ax_carbon.plot(self.self.na2o_melt[self.idx_moho:], self.depth[self.idx_moho:] / 1000.0, color = '#083fb5', linewidth = 1.5)
+			self.ax_na2o.plot(self.na2o_melt[self.idx_moho:], self.depth[self.idx_moho:] / 1000.0, color = '#083fb5', linewidth = 1.5)
 
-			self.ax_carbon.set_xlim((0.0,1e3))
-			self.ax_carbon.set_xlabel(r'$NaO_2 \, in \, melt$ [wt%]',fontsize = 9)
-			self.ax_carbon.set_ylim((MATE.lab / 1000.0) + 25.0, 0.0)
+			self.ax_na2o.set_xlim((0.0,5))
+			self.ax_na2o.set_xlabel(r'$Na_2O \, in \, melt$ [wt%]',fontsize = 9)
+			self.ax_na2o.set_ylim((MATE.lab / 1000.0) + 25.0, 0.0)
 
-			self.ax_carbon.axhline(MATE.moho/1000.0, linestyle = '--',color = '#BA43C2', alpha = 0.85,linewidth = 2.5)
-			self.ax_carbon.axhline(MATE.lab/1000.0, linestyle = '--', color = 'k', alpha = 0.85,linewidth = 2.5)
+			self.ax_na2o.axhline(MATE.moho/1000.0, linestyle = '--',color = '#BA43C2', alpha = 0.85,linewidth = 2.5)
+			self.ax_na2o.axhline(MATE.lab/1000.0, linestyle = '--', color = 'k', alpha = 0.85,linewidth = 2.5)
 
-			for tick in self.ax_carbon.xaxis.get_major_ticks():
+			for tick in self.ax_na2o.xaxis.get_major_ticks():
 				tick.label.set_fontsize(fontsize_labels)
 
-			self.ax_carbon.set_yticklabels([])
+			self.ax_na2o.set_yticklabels([])
 
 			crust_obj = patches.Rectangle((0,0), 10000.0, MATE.moho / 1000.0, color = '#b76314', alpha = 0.6,hatch = 'xxxx')
 			ast_obj = patches.Rectangle((0, MATE.lab / 1000.0), 10000.0, 1e5, color = '#b73114', alpha = 0.6,hatch = 'xx')
-			self.ax_carbon.add_patch(crust_obj)
-			self.ax_carbon.add_patch(ast_obj)
+			self.ax_na2o.add_patch(crust_obj)
+			self.ax_na2o.add_patch(ast_obj)
+
+			#K2O melt
+
+			self.ax_k2o = plt.subplot2grid((16,16),(0,12), rowspan = 16,colspan = 3, fig = self.figure_other_comp)
+
+			self.ax_k2o.plot(self.k2o_melt[self.idx_moho:], self.depth[self.idx_moho:] / 1000.0, color = '#083fb5', linewidth = 1.5)
+
+			self.ax_k2o.set_xlim((0.0,2))
+			self.ax_k2o.set_xlabel(r'$K_2O \, in \, melt$ [wt%]',fontsize = 9)
+			self.ax_k2o.set_ylim((MATE.lab / 1000.0) + 25.0, 0.0)
+
+			self.ax_k2o.axhline(MATE.moho/1000.0, linestyle = '--',color = '#BA43C2', alpha = 0.85,linewidth = 2.5)
+			self.ax_k2o.axhline(MATE.lab/1000.0, linestyle = '--', color = 'k', alpha = 0.85,linewidth = 2.5)
+
+			for tick in self.ax_k2o.xaxis.get_major_ticks():
+				tick.label.set_fontsize(fontsize_labels)
+
+			self.ax_k2o.set_yticklabels([])
+
+			crust_obj = patches.Rectangle((0,0), 10000.0, MATE.moho / 1000.0, color = '#b76314', alpha = 0.6,hatch = 'xxxx')
+			ast_obj = patches.Rectangle((0, MATE.lab / 1000.0), 10000.0, 1e5, color = '#b73114', alpha = 0.6,hatch = 'xx')
+			self.ax_k2o.add_patch(crust_obj)
+			self.ax_k2o.add_patch(ast_obj)
 
 			plt.show()
 			plt.ioff()

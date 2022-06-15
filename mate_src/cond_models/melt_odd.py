@@ -4,7 +4,7 @@ import numpy as np
 
 R_const = 8.3144621
 
-def Sifre2014(T, P, Melt_H2O, Melt_CO2, Melt_Na2O):
+def Sifre2014(T, P, Melt_H2O, Melt_CO2, Melt_Na2O, Melt_K2O):
 
 	Melt_H2O = Melt_H2O * 1e-4 #converting ppm to wt percent
 	Melt_CO2 = Melt_CO2 * 1e-4 #converting ppm to wt percent
@@ -20,7 +20,7 @@ def Sifre2014(T, P, Melt_H2O, Melt_CO2, Melt_Na2O):
 
 	return cond, cond, cond
 
-def Pommier2008(T, P, Melt_H2O, Melt_CO2, Melt_Na2O):
+def Pommier2008(T, P, Melt_H2O, Melt_CO2, Melt_Na2O, Melt_K2O):
 
 	Melt_H2O = Melt_H2O * 1e-4 #convering ppm to wt
 	P = P * 1e3 #converting GPa to MPa
@@ -41,7 +41,7 @@ def Pommier2008(T, P, Melt_H2O, Melt_CO2, Melt_Na2O):
 	return cond, cond, cond
 
 
-def Ni2011(T, P, Melt_H2O, Melt_CO2, Melt_Na2O):
+def Ni2011(T, P, Melt_H2O, Melt_CO2, Melt_Na2O, Melt_K2O):
 
 	Melt_H2O = 0.3 #convering ppm to wt
 
@@ -49,7 +49,7 @@ def Ni2011(T, P, Melt_H2O, Melt_CO2, Melt_Na2O):
 
 	return cond, cond, cond
 
-def Scarlato2004_DryBasalt(T, P, Melt_H2O, Melt_CO2, Melt_Na2O):
+def Scarlato2004_DryBasalt(T, P, Melt_H2O, Melt_CO2, Melt_Na2O, Melt_K2O):
 
 	sigma_0 = 309.0
 	E = 82000
@@ -58,7 +58,7 @@ def Scarlato2004_DryBasalt(T, P, Melt_H2O, Melt_CO2, Melt_Na2O):
 
 	return cond, cond, cond
 
-def TyburczyWaff1983_DryTholeiite(T, P, Melt_H2O, Melt_CO2, Melt_Na2O):
+def TyburczyWaff1983_DryTholeiite(T, P, Melt_H2O, Melt_CO2, Melt_Na2O, Melt_K2O):
 
 	sigma_0_low = 1.12e5
 	E_low = 112000.0
@@ -78,7 +78,7 @@ def TyburczyWaff1983_DryTholeiite(T, P, Melt_H2O, Melt_CO2, Melt_Na2O):
 
 	return cond, cond, cond
 
-def TyburczyWaff1983_DryAndesite(T, P, Melt_H2O, Melt_CO2, Melt_Na2O):
+def TyburczyWaff1983_DryAndesite(T, P, Melt_H2O, Melt_CO2, Melt_Na2O, Melt_K2O):
 
 	sigma_0_low = 1.01e3
 	E_low = 78000.0
@@ -95,5 +95,14 @@ def TyburczyWaff1983_DryAndesite(T, P, Melt_H2O, Melt_CO2, Melt_Na2O):
 			cond[i] = sigma_0_low * np.exp(-(E_low + (dv_low * P[i] * 1e3)) / (R_const * T[i]))
 		else:
 			cond[i] = sigma_0_high * np.exp(-(E_high + (dv_high * P[i] * 1e3)) / (R_const * T[i]))
+
+	return cond, cond, cond
+
+def Gaillard2005_K2O_Dependent(T, P, Melt_H2O, Melt_CO2, Melt_Na2O, Melt_K2O):
+
+	a = 0.172 - (0.105 * Melt_K2O)
+	b = 4.742 - (0.6 * Melt_K2O)
+
+	cond = 10.0**(a + (b * (1.0/T)))
 
 	return cond, cond, cond
