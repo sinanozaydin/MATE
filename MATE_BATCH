@@ -78,6 +78,7 @@ class MATE_batch(object):
 	def __init__(self, core_path = core_path_ext):
 
 		args_input = sys.argv
+		self.core_path = core_path
 
 		try:
 
@@ -98,6 +99,9 @@ class MATE_batch(object):
 			sys.exit()
 
 		self.read_batch_parameter_file()
+		self.read_cond_models()
+		self.read_cond_dry_models()
+		self.read_params()
 
 
 	def read_csv(self,filename,delim):
@@ -186,5 +190,520 @@ class MATE_batch(object):
 		self.model_method_gt = int(self.setup_data[48][1])
 
 		self.model_method = [self.model_method_ol,self.model_method_opx,self.model_method_cpx,self.model_method_gt]
+
+	def read_cond_models(self):
+
+		#A function that reads conductivity model files and get the data.
+
+		self.ol_cond_data = self.read_csv(os.path.join(self.core_path, 'cond_models' , 'ol.csv'),delim = ',')
+		self.opx_cond_data = self.read_csv(os.path.join(self.core_path, 'cond_models' , 'opx.csv'),delim = ',')
+		self.cpx_cond_data = self.read_csv(os.path.join(self.core_path, 'cond_models' , 'cpx.csv'),delim = ',')
+		self.gt_cond_data = self.read_csv(os.path.join(self.core_path, 'cond_models' , 'gt.csv'),delim = ',')
+		self.sp_chr_cond_data = self.read_csv(os.path.join(self.core_path, 'cond_models' , 'sp_chr.csv'),delim = ',')
+		self.amp_cond_data = self.read_csv(os.path.join(self.core_path, 'cond_models' , 'amp.csv'),delim = ',')
+		self.pl_cond_data = self.read_csv(os.path.join(self.core_path, 'cond_models' , 'phlg.csv'),delim = ',')
+		self.melt_cond_data = self.read_csv(os.path.join(self.core_path, 'cond_models' , 'melt.csv'),delim = ',')
+
+		self.cond_data_array = [self.ol_cond_data,self.opx_cond_data,self.cpx_cond_data,self.gt_cond_data,self.amp_cond_data,self.pl_cond_data,self.sp_chr_cond_data,self.melt_cond_data]
+
+		len_ol = len(self.ol_cond_data) - 1
+		len_opx = len(self.opx_cond_data) - 1
+		len_cpx = len(self.cpx_cond_data) - 1
+		len_gt = len(self.gt_cond_data) - 1
+		len_sp_chr = len(self.sp_chr_cond_data) - 1
+		len_amp = len(self.amp_cond_data) - 1
+		len_pl = len(self.pl_cond_data) - 1
+		len_melt = len(self.melt_cond_data) - 1
+
+		#Creating empty arrays for appending new data.
+		self.name = [[None] * len_ol , [None] * len_opx,[None] * len_cpx, [None] * len_gt,[None] * len_amp,[None] * len_pl, [None] * len_sp_chr, [None] * len_melt]
+		self.type = [[None] * len_ol , [None] * len_opx,[None] * len_cpx, [None] * len_gt,[None] * len_amp,[None] * len_pl, [None] * len_sp_chr, [None] * len_melt]
+		self.t_min = [[None] * len_ol , [None] * len_opx, [None] * len_cpx, [None] * len_gt,[None] * len_amp,[None] * len_pl, [None] * len_sp_chr, [None] * len_melt]
+		self.t_max = [[None] * len_ol , [None] * len_opx, [None] * len_cpx, [None] * len_gt,[None] * len_amp,[None] * len_pl, [None] * len_sp_chr, [None] * len_melt]
+		self.p_min = [[None] * len_ol , [None] * len_opx, [None] * len_cpx, [None] * len_gt,[None] * len_amp,[None] * len_pl, [None] * len_sp_chr, [None] * len_melt]
+		self.p_max = [[None] * len_ol , [None] * len_opx, [None] * len_cpx, [None] * len_gt,[None] * len_amp,[None] * len_pl, [None] * len_sp_chr, [None] * len_melt]
+		self.w_calib = [[None] * len_ol , [None] * len_opx, [None] * len_cpx, [None] * len_gt,[None] * len_amp,[None] * len_pl, [None] * len_sp_chr, [None] * len_melt]
+		self.mg_cond = [[None] * len_ol , [None] * len_opx, [None] * len_cpx, [None] * len_gt,[None] * len_amp,[None] * len_pl, [None] * len_sp_chr, [None] * len_melt]
+		self.sigma_i = [[None] * len_ol , [None] * len_opx, [None] * len_cpx, [None] * len_gt,[None] * len_amp,[None] * len_pl,[None] * len_sp_chr, [None] * len_melt]
+		self.sigma_i_err = [[None] * len_ol , [None] * len_opx, [None] * len_cpx, [None] * len_gt,[None] * len_amp,[None] * len_pl,[None] * len_sp_chr, [None] * len_melt]
+		self.h_i = [[None] * len_ol , [None] * len_opx, [None] * len_cpx, [None] * len_gt,[None] * len_amp,[None] * len_pl,[None] * len_sp_chr, [None] * len_melt]
+		self.h_i_err =[[None] * len_ol , [None] * len_opx, [None] * len_cpx, [None] * len_gt,[None] * len_amp,[None] * len_pl,[None] * len_sp_chr, [None] * len_melt]
+		self.sigma_pol = [[None] * len_ol , [None] * len_opx, [None] * len_cpx, [None] * len_gt,[None] * len_amp,[None] * len_pl,[None] * len_sp_chr, [None] * len_melt]
+		self.sigma_pol_err = [[None] * len_ol , [None] * len_opx, [None] * len_cpx, [None] * len_gt,[None] * len_amp,[None] * len_pl,[None] * len_sp_chr, [None] * len_melt]
+		self.h_pol = [[None] * len_ol , [None] * len_opx, [None] * len_cpx, [None] * len_gt,[None] * len_amp,[None] * len_pl,[None] * len_sp_chr, [None] * len_melt]
+		self.h_pol_err = [[None] * len_ol , [None] * len_opx, [None] * len_cpx, [None] * len_gt,[None] * len_amp,[None] * len_pl,[None] * len_sp_chr, [None] * len_melt]
+		self.sigma_p = [[None] * len_ol , [None] * len_opx, [None] * len_cpx, [None] * len_gt,[None] * len_amp,[None] * len_pl,[None] * len_sp_chr, [None] * len_melt]
+		self.sigma_p_err = [[None] * len_ol , [None] * len_opx, [None] * len_cpx, [None] * len_gt,[None] * len_amp,[None] * len_pl,[None] * len_sp_chr, [None] * len_melt]
+		self.h_p = [[None] * len_ol , [None] * len_opx, [None] * len_cpx, [None] * len_gt,[None] * len_amp,[None] * len_pl,[None] * len_sp_chr, [None] * len_melt]
+		self.h_p_err = [[None] * len_ol , [None] * len_opx, [None] * len_cpx, [None] * len_gt,[None] * len_amp,[None] * len_pl,[None] * len_sp_chr, [None] * len_melt]
+		self.r = [[None] * len_ol , [None] * len_opx, [None] * len_cpx, [None] * len_gt,[None] * len_amp,[None] * len_pl,[None] * len_sp_chr, [None] * len_melt]
+		self.r_err = [[None] * len_ol , [None] * len_opx, [None] * len_cpx, [None] * len_gt,[None] * len_amp,[None] * len_pl,[None] * len_sp_chr, [None] * len_melt]
+		self.alpha_p = [[None] * len_ol , [None] * len_opx, [None] * len_cpx, [None] * len_gt,[None] * len_amp,[None] * len_pl,[None] * len_sp_chr, [None] * len_melt]
+		self.alpha_p_err = [[None] * len_ol , [None] * len_opx, [None] * len_cpx, [None] * len_gt,[None] * len_amp,[None] * len_pl,[None] * len_sp_chr, [None] * len_melt]
+		self.wtype = [[None] * len_ol , [None] * len_opx, [None] * len_cpx, [None] * len_gt,[None] * len_amp,[None] * len_pl,[None] * len_sp_chr, [None] * len_melt]
+		self.dens_mat = [[None] * len_ol , [None] * len_opx, [None] * len_cpx, [None] * len_gt,[None] * len_amp,[None] * len_pl,[None] * len_sp_chr, [None] * len_melt]
+
+		#Filling up the arrays.
+		for i in range(0,len(self.type)):
+			count = 1
+			for j in range(0,len(self.type[i])):
+				self.name[i][count-1] = self.cond_data_array[i][count][0]
+				self.type[i][count-1] = self.cond_data_array[i][count][1]
+				self.t_min[i][count-1] = float(self.cond_data_array[i][count][2])
+				self.t_max[i][count-1] = float(self.cond_data_array[i][count][3])
+				self.p_min[i][count-1] = float(self.cond_data_array[i][count][4])
+				self.p_max[i][count-1] = float(self.cond_data_array[i][count][5])
+				self.w_calib[i][count-1] = int(self.cond_data_array[i][count][6])
+				self.mg_cond[i][count-1] = float(self.cond_data_array[i][count][7])
+				self.sigma_i[i][count-1] = float(self.cond_data_array[i][count][8])
+				self.sigma_i_err[i][count-1] = float(self.cond_data_array[i][count][9])
+				self.h_i[i][count-1] = float(self.cond_data_array[i][count][10])
+				self.h_i_err[i][count-1] = float(self.cond_data_array[i][count][11])
+				self.sigma_pol[i][count-1] = float(self.cond_data_array[i][count][12])
+				self.sigma_pol_err[i][count-1] = float(self.cond_data_array[i][count][13])
+				self.h_pol[i][count-1] = float(self.cond_data_array[i][count][14])
+				self.h_pol_err[i][count-1] = float(self.cond_data_array[i][count][15])
+				self.sigma_p[i][count-1] = float(self.cond_data_array[i][count][16])
+				self.sigma_p_err[i][count-1] = float(self.cond_data_array[i][count][17])
+				self.h_p[i][count-1] = float(self.cond_data_array[i][count][18])
+				self.h_p_err[i][count-1] = float(self.cond_data_array[i][count][19])
+				self.r[i][count-1] = float(self.cond_data_array[i][count][20])
+				self.r_err[i][count-1] = float(self.cond_data_array[i][count][21])
+				self.alpha_p[i][count-1] = float(self.cond_data_array[i][count][22])
+				self.alpha_p_err[i][count-1] = float(self.cond_data_array[i][count][23])
+				self.wtype[i][count-1] = int(self.cond_data_array[i][count][24])
+				self.dens_mat[i][count-1] = float(self.cond_data_array[i][count][25])
+
+				count += 1
+
+	def read_cond_dry_models(self):
+
+		#A function that reads the dry conductivity models from the external csv files.
+		self.ol_dry_cond_data = self.read_csv(os.path.join(self.core_path, 'cond_models' , 'ol_dry.csv'),delim = ',')
+		self.opx_dry_cond_data = self.read_csv(os.path.join(self.core_path, 'cond_models' , 'opx_dry.csv'),delim = ',')
+		self.cpx_dry_cond_data = self.read_csv(os.path.join(self.core_path, 'cond_models' , 'cpx_dry.csv'),delim = ',')
+		self.gt_dry_cond_data = self.read_csv(os.path.join(self.core_path, 'cond_models' , 'gt_dry.csv'),delim = ',')
+
+		self.cond_dry_data_array = [self.ol_dry_cond_data,self.opx_dry_cond_data,self.cpx_dry_cond_data,self.gt_dry_cond_data]
+
+		self.name_dry = [[None] * (len(self.ol_dry_cond_data)-1) , [None] * (len(self.opx_dry_cond_data) - 1),[None] * (len(self.cpx_dry_cond_data) - 1), [None] * (len(self.gt_dry_cond_data)-1)]
+		self.type_dry = [[None] * (len(self.ol_dry_cond_data)-1) , [None] * (len(self.opx_dry_cond_data) - 1),[None] * (len(self.cpx_dry_cond_data) - 1), [None] * (len(self.gt_dry_cond_data)-1)]
+		self.t_min_dry = [[None] * (len(self.ol_dry_cond_data)-1) , [None] * (len(self.opx_dry_cond_data) - 1),[None] * (len(self.cpx_dry_cond_data) - 1), [None] * (len(self.gt_dry_cond_data)-1)]
+		self.t_max_dry = [[None] * (len(self.ol_dry_cond_data)-1) , [None] * (len(self.opx_dry_cond_data) - 1),[None] * (len(self.cpx_dry_cond_data) - 1), [None] * (len(self.gt_dry_cond_data)-1)]
+		self.p_min_dry = [[None] * (len(self.ol_dry_cond_data)-1) , [None] * (len(self.opx_dry_cond_data) - 1),[None] * (len(self.cpx_dry_cond_data) - 1), [None] * (len(self.gt_dry_cond_data)-1)]
+		self.p_max_dry = [[None] * (len(self.ol_dry_cond_data)-1) , [None] * (len(self.opx_dry_cond_data) - 1),[None] * (len(self.cpx_dry_cond_data) - 1), [None] * (len(self.gt_dry_cond_data)-1)]
+		self.mg_cond_dry = [[None] * (len(self.ol_dry_cond_data)-1) , [None] * (len(self.opx_dry_cond_data) - 1),[None] * (len(self.cpx_dry_cond_data) - 1), [None] * (len(self.gt_dry_cond_data)-1)]
+		self.sigma_i_dry = [[None] * (len(self.ol_dry_cond_data)-1) , [None] * (len(self.opx_dry_cond_data) - 1),[None] * (len(self.cpx_dry_cond_data) - 1), [None] * (len(self.gt_dry_cond_data)-1)]
+		self.sigma_i_dry_err = [[None] * (len(self.ol_dry_cond_data)-1) , [None] * (len(self.opx_dry_cond_data) - 1),[None] * (len(self.cpx_dry_cond_data) - 1), [None] * (len(self.gt_dry_cond_data)-1)]
+		self.h_i_dry = [[None] * (len(self.ol_dry_cond_data)-1) , [None] * (len(self.opx_dry_cond_data) - 1),[None] * (len(self.cpx_dry_cond_data) - 1), [None] * (len(self.gt_dry_cond_data)-1)]
+		self.h_i_dry_err =[[None] * (len(self.ol_dry_cond_data)-1) , [None] * (len(self.opx_dry_cond_data) - 1),[None] * (len(self.cpx_dry_cond_data) - 1), [None] * (len(self.gt_dry_cond_data)-1)]
+		self.sigma_pol_dry = [[None] * (len(self.ol_dry_cond_data)-1) , [None] * (len(self.opx_dry_cond_data) - 1),[None] * (len(self.cpx_dry_cond_data) - 1), [None] * (len(self.gt_dry_cond_data)-1)]
+		self.sigma_pol_dry_err = [[None] * (len(self.ol_dry_cond_data)-1) , [None] * (len(self.opx_dry_cond_data) - 1),[None] * (len(self.cpx_dry_cond_data) - 1), [None] * (len(self.gt_dry_cond_data)-1)]
+		self.h_pol_dry = [[None] * (len(self.ol_dry_cond_data)-1) , [None] * (len(self.opx_dry_cond_data) - 1),[None] * (len(self.cpx_dry_cond_data) - 1), [None] * (len(self.gt_dry_cond_data)-1)]
+		self.h_pol_dry_err = [[None] * (len(self.ol_dry_cond_data)-1) , [None] * (len(self.opx_dry_cond_data) - 1),[None] * (len(self.cpx_dry_cond_data) - 1), [None] * (len(self.gt_dry_cond_data)-1)]
+
+		for i in range(0,len(self.cond_dry_data_array)):
+			count = 1
+			for j in range(0,len(self.cond_dry_data_array[i])-1):
+
+				self.name_dry[i][count-1] = self.cond_dry_data_array[i][count][0]
+				self.type_dry[i][count-1] = self.cond_dry_data_array[i][count][1]
+				self.t_min_dry[i][count-1] = float(self.cond_dry_data_array[i][count][2])
+				self.t_max_dry[i][count-1] = float(self.cond_dry_data_array[i][count][3])
+				self.p_min_dry[i][count-1] = float(self.cond_dry_data_array[i][count][4])
+				self.p_max_dry[i][count-1] = float(self.cond_dry_data_array[i][count][5])
+				self.mg_cond_dry[i][count-1] = float(self.cond_dry_data_array[i][count][6])
+				self.sigma_i_dry[i][count-1] = float(self.cond_dry_data_array[i][count][7])
+				self.sigma_i_dry_err[i][count-1] = float(self.cond_dry_data_array[i][count][8])
+				self.h_i_dry[i][count-1] = float(self.cond_dry_data_array[i][count][9])
+				self.h_i_dry_err[i][count-1] = float(self.cond_dry_data_array[i][count][10])
+				self.sigma_pol_dry[i][count-1] = float(self.cond_dry_data_array[i][count][11])
+				self.sigma_pol_dry_err[i][count-1] = float(self.cond_dry_data_array[i][count][12])
+				self.h_pol_dry[i][count-1] = float(self.cond_dry_data_array[i][count][13])
+				self.h_pol_dry_err[i][count-1] = float(self.cond_dry_data_array[i][count][14])
+				count += 1
+
+	def read_params(self):
+
+		#READING THE PARAMETERS IN PARAMS.CSV WHICH ARE GENERAL PHYSICAL CONSTANTS
+		#AND PROPERTIES OF MATERIALS
+
+		params_dat = self.read_csv(os.path.join(self.core_path, 'params.csv'), delim = ',')
+
+		self.g = float(params_dat[0][1]) # in kg/
+		self.R = float(params_dat[1][1])
+		self.rho_crust = float(params_dat[2][1])
+		self.rho_mantle = float(params_dat[3][1])
+		self.rho_forst = float(params_dat[4][1])
+		self.rho_fayal = float(params_dat[5][1])
+		self.rho_enst = float(params_dat[6][1])
+		self.rho_ferrosil = float(params_dat[7][1])
+		self.rho_diop = float(params_dat[8][1])
+		self.rho_heden = float(params_dat[9][1])
+		self.rho_pyrop = float(params_dat[10][1])
+		self.rho_alm = float(params_dat[11][1])
+		self.rho_sp_chr = float(params_dat[12][1])
+		self.rho_amph = float(params_dat[13][1])
+		self.rho_phlg = float(params_dat[14][1])
+		self.avog = float(params_dat[15][1])
+		self.boltz = float(params_dat[16][1])
+		self.el_q = float(params_dat[17][1])
+		self.spreadsheet = str(params_dat[18][1])
+		self.mu = 4.0 * np.pi * 10**(-7)
+
+		#READING THE GEOTHERM CALCULATION PARAMETERS FROM HASTEROK AND CHAPMAN (2011) -
+
+		hasterok_vanilla_dat = self.read_csv(os.path.join(self.core_path, 'thermal', 'hasterok_vanilla.csv'), delim = ',')
+
+		self.k0_upper_1 = float(hasterok_vanilla_dat[0][1])
+		self.k0_upper_2 = float(hasterok_vanilla_dat[1][1])
+		self.k0_mid_1 = float(hasterok_vanilla_dat[2][1])
+		self.k0_mid_2 = float(hasterok_vanilla_dat[3][1])
+		self.k0_low_1 = float(hasterok_vanilla_dat[4][1])
+		self.k0_low_2 =float(hasterok_vanilla_dat[5][1])
+		self.k0_mantle_sp = float(hasterok_vanilla_dat[6][1])
+		self.k0_mantle_gt = float(hasterok_vanilla_dat[7][1])
+
+		self.k1_upper_1 = float(hasterok_vanilla_dat[8][1])
+		self.k1_upper_2 = float(hasterok_vanilla_dat[9][1])
+		self.k1_mid_1 = float(hasterok_vanilla_dat[10][1])
+		self.k1_mid_2 = float(hasterok_vanilla_dat[11][1])
+		self.k1_low_1 = float(hasterok_vanilla_dat[12][1])
+		self.k1_low_2 = float(hasterok_vanilla_dat[13][1])
+		self.k1_mantle_sp = float(hasterok_vanilla_dat[14][1])
+		self.k1_mantle_gt =float(hasterok_vanilla_dat[15][1])
+
+		self.k2_upper_1 = float(hasterok_vanilla_dat[16][1])
+		self.k2_upper_2 = float(hasterok_vanilla_dat[17][1])
+		self.k2_mid_1 = float(hasterok_vanilla_dat[18][1])
+		self.k2_mid_2 = float(hasterok_vanilla_dat[19][1])
+		self.k2_low_1 = float(hasterok_vanilla_dat[20][1])
+		self.k2_low_2 = float(hasterok_vanilla_dat[21][1])
+		self.k2_mantle_sp = float(hasterok_vanilla_dat[22][1])
+		self.k2_mantle_gt = float(hasterok_vanilla_dat[23][1])
+
+		self.k3_upper_1 = float(hasterok_vanilla_dat[24][1])
+		self.k3_upper_2 = float(hasterok_vanilla_dat[25][1])
+		self.k3_mid_1 = float(hasterok_vanilla_dat[26][1])
+		self.k3_mid_2 = float(hasterok_vanilla_dat[27][1])
+		self.k3_low_1 = float(hasterok_vanilla_dat[28][1])
+		self.k3_low_2 = float(hasterok_vanilla_dat[29][1])
+		self.k3_mantle_sp = float(hasterok_vanilla_dat[30][1])
+		self.k3_mantle_gt = float(hasterok_vanilla_dat[31][1])
+		self.t_criterion = float(hasterok_vanilla_dat[32][1])
+
+		self.thermal_data = self.read_csv(os.path.join(self.core_path, 'thermal', 'thermal.csv'), delim = ',')
+
+		self.k_0 = []
+		self.k_1 = []
+		self.k_2 = []
+		self.n_thermal = []
+		self.lambda_r_max = []
+		self.omega_thermal = []
+		self.T_ref = []
+		self.rho_thermal = []
+		self.K_T = []
+		self.K_T2 = []
+
+		for i in range(1,len(self.thermal_data)):
+
+			self.k_0.append(float(self.thermal_data[i][1]))
+			self.k_1.append(float(self.thermal_data[i][2]))
+			self.k_2.append(float(self.thermal_data[i][3]))
+			self.n_thermal.append(float(self.thermal_data[i][4]))
+			self.lambda_r_max.append(float(self.thermal_data[i][5]))
+			self.omega_thermal.append(float(self.thermal_data[i][6]))
+			self.T_ref.append(float(self.thermal_data[i][7]))
+			self.rho_thermal.append(float(self.thermal_data[i][8]))
+			self.K_T.append(float(self.thermal_data[i][9]))
+			self.K_T2.append(float(self.thermal_data[i][10]))
+
+		#WATER PARTITIONING PARAMETERS OF PYROXENES
+
+		self.px_data = self.read_csv(os.path.join(self.core_path, 'water_part', 'px_part.csv'), delim = ',')
+
+		self.d_px_items = []
+		self.d_px_type = []
+		self.d_px_function = []
+		self.d_px_function_2 = []
+		self.d_px_change = []
+		for i in range(4,len(self.px_data)):
+			self.d_px_items.append("Type " + self.px_data[i][1] + ' - ' + self.px_data[i][-1])
+			self.d_px_type.append(self.px_data[i][1])
+			if self.px_data[i][1] == '0' or self.px_data[i][1] == '1' or self.px_data[i][1] == '3':
+				self.d_px_function.append(self.px_data[i][2])
+				self.d_px_function_2.append(None)
+				self.d_px_change.append(None)
+			elif self.px_data[i][1] == '2':
+				self.d_px_function.append(self.px_data[i][2])
+				self.d_px_function_2.append(self.px_data[i][3])
+				self.d_px_change.append(self.px_data[i][4])
+			elif self.px_data[i][1] == '4':
+				self.d_px_function.append(self.px_data[i][2]) #In this case only a constant value
+				self.d_px_function_2.append(None) #In this case error rate
+				self.d_px_change.append(None)
+
+		self.px_part_select = 0
+
+		#WATER PARTITIONING PARAMETERS OF OPX
+
+		self.opx_data = self.read_csv(os.path.join(self.core_path, 'water_part', 'opx_part.csv'), delim = ',')
+
+		self.d_opx_items = []
+		self.d_opx_type = []
+		self.dopx_function = []
+		self.dopx_function_2 = []
+		self.dopx_change = []
+
+		for i in range(1,len(self.opx_data)):
+			self.d_opx_items.append("Type " + self.opx_data[i][1] + ' - ' + self.opx_data[i][-1])
+			self.d_opx_type.append(self.opx_data[i][1])
+			self.dopx_function.append(self.opx_data[i][2])
+			self.dopx_function_2.append(self.opx_data[i][3])
+			self.dopx_change.append(float(self.opx_data[i][4]))
+
+		self.opx_part_select = 0
+		self.opx_display = self.d_opx_items[self.opx_part_select]
+
+		#WATER PARTITIONIN PARAMETERS OF CPX
+
+		self.cpx_data = self.read_csv(os.path.join(self.core_path, 'water_part', 'cpx_part.csv'), delim = ',')
+
+		self.d_cpx_items = []
+		self.d_cpx_type = []
+		self.dcpx_function = []
+		self.dcpx_function_2 = []
+		self.dcpx_change = []
+
+		for i in range(1,len(self.cpx_data)):
+			self.d_cpx_items.append("Type " + self.cpx_data[i][1] + ' - ' +self.cpx_data[i][-1])
+			self.d_cpx_type.append(self.cpx_data[i][1])
+			self.dcpx_function.append(self.cpx_data[i][2])
+			self.dcpx_function_2.append(self.cpx_data[i][3])
+			self.dcpx_change.append(float(self.cpx_data[i][4]))
+
+		self.cpx_part_select = 0
+		self.cpx_display = self.d_cpx_items[self.cpx_part_select]
+
+		#WATER PARTITIONING PARAMETERS OF GT
+
+		self.gt_data = self.read_csv(os.path.join(self.core_path, 'water_part', 'gt_part.csv'), delim = ',')
+
+		self.d_gt_items = []
+		self.d_gt_type = []
+		self.d_gt_function = []
+		self.d_gt_function_2 = []
+
+		for i in range(1,len(self.gt_data)):
+
+			self.d_gt_items.append("Type " + self.gt_data[i][1] + ' - ' +self.gt_data[i][-1])
+			self.d_gt_type.append(self.gt_data[i][1])
+			self.d_gt_function.append(self.gt_data[i][2])
+			self.d_gt_function_2.append(self.gt_data[i][3])
+
+		self.gt_part_select = 0
+		self.gt_display = self.d_gt_items[self.gt_part_select]
+
+		#WATER PARTITIONING PARAMETERS OF AMP
+
+		self.amp_data = self.read_csv(os.path.join(self.core_path, 'water_part', 'amp_part.csv'), delim = ',')
+
+		self.d_amp_items = []
+		self.d_amp_type = []
+		self.d_amp_function = []
+		self.d_amp_function_2 = []
+
+		for i in range(1,len(self.amp_data)):
+
+			self.d_amp_items.append("Type " + self.amp_data[i][1] + ' - ' +self.amp_data[i][-1])
+			self.d_amp_type.append(self.amp_data[i][1])
+			self.d_amp_function.append(self.amp_data[i][2])
+			self.d_amp_function_2.append(self.amp_data[i][3])
+
+		self.amp_part_select = 0
+		self.amp_display = self.d_amp_items[self.amp_part_select]
+
+		#WATER PARTITIONING PARAMETERS OF PHLG
+
+		self.pl_data = self.read_csv(os.path.join(self.core_path, 'water_part', 'pl_part.csv'), delim = ',')
+
+		self.d_pl_items = []
+		self.d_pl_type = []
+		self.d_pl_function = []
+		self.d_pl_function_2 = []
+
+		for i in range(1,len(self.pl_data)):
+
+			self.d_pl_items.append("Type " + self.pl_data[i][1] + ' - ' +self.pl_data[i][-1])
+			self.d_pl_type.append(self.pl_data[i][1])
+			self.d_pl_function.append(self.pl_data[i][2])
+			self.d_pl_function_2.append(self.pl_data[i][3])
+
+		self.pl_part_select = 0
+		self.pl_display = self.d_pl_items[self.pl_part_select]
+
+		#WATER PARTITIONING PARAMETERS OF OLIVINE AND MELT
+
+		self.ol_melt_data = self.read_csv(os.path.join(self.core_path, 'water_part', 'ol_melt_part.csv'), delim = ',')
+
+		self.d_melt_ol_items = []
+		self.d_melt_ol_type = []
+		self.d_melt_ol_function = []
+		self.d_melt_ol_function_2 = []
+
+		for i in range(1,len(self.pl_data)):
+
+			self.d_melt_ol_items.append("Type " + self.ol_melt_data[i][1] + ' - ' +self.ol_melt_data[i][-1])
+			self.d_melt_ol_type.append(self.ol_melt_data[i][1])
+			self.d_melt_ol_function.append(self.ol_melt_data[i][2])
+			self.d_melt_ol_function_2.append(self.ol_melt_data[i][3])
+
+		self.ol_melt_part_select = 0
+		self.ol_melt_display = self.d_melt_ol_items[self.ol_melt_part_select]
+
+		#WATER PARTITIONING PARAMETERS OF ORTHOPYROXENE AND MELT
+
+		self.opx_melt_data = self.read_csv(os.path.join(self.core_path, 'water_part', 'opx_melt_part.csv'), delim = ',')
+
+		self.d_melt_opx_items = []
+		self.d_melt_opx_type = []
+		self.d_melt_opx_function = []
+		self.d_melt_opx_function_2 = []
+		self.d_melt_opx_change = []
+
+		for i in range(1,len(self.pl_data)):
+
+			self.d_melt_opx_items.append("Type " + self.opx_melt_data[i][1] + ' - ' +self.opx_melt_data[i][-1])
+			self.d_melt_opx_type.append(self.opx_melt_data[i][1])
+			self.d_melt_opx_function.append(self.opx_melt_data[i][2])
+			self.d_melt_opx_function_2.append(self.opx_melt_data[i][3])
+			self.d_melt_opx_change.append(self.opx_melt_data[i][4])
+
+		self.opx_melt_part_select = 0
+		self.opx_melt_display = self.d_melt_opx_items[self.opx_melt_part_select]
+
+		#WATER PARTITIONING PARAMETERS OF CLINOPYROXENE AND MELT
+
+		self.cpx_melt_data = self.read_csv(os.path.join(self.core_path, 'water_part', 'cpx_melt_part.csv'), delim = ',')
+
+		self.d_melt_cpx_items = []
+		self.d_melt_cpx_type = []
+		self.d_melt_cpx_function = []
+		self.d_melt_cpx_function_2 = []
+		self.d_melt_cpx_change = []
+
+		for i in range(1,len(self.pl_data)):
+
+			self.d_melt_cpx_items.append("Type " + self.cpx_melt_data[i][1] + ' - ' +self.cpx_melt_data[i][-1])
+			self.d_melt_cpx_type.append(self.cpx_melt_data[i][1])
+			self.d_melt_cpx_function.append(self.cpx_melt_data[i][2])
+			self.d_melt_cpx_function_2.append(self.cpx_melt_data[i][3])
+			self.d_melt_cpx_change.append(self.cpx_melt_data[i][4])
+
+		self.cpx_melt_part_select = 0
+		self.cpx_melt_display = self.d_melt_cpx_items[self.cpx_melt_part_select]
+
+		#WATER PARTITIONING PARAMETERS OF GARNET AND MELT
+
+		self.gt_melt_data = self.read_csv(os.path.join(self.core_path, 'water_part', 'gt_melt_part.csv'), delim = ',')
+
+		self.d_melt_gt_items = []
+		self.d_melt_gt_type = []
+		self.d_melt_gt_function = []
+		self.d_melt_gt_function_2 = []
+
+		for i in range(1,len(self.pl_data)):
+
+			self.d_melt_gt_items.append("Type " + self.gt_melt_data[i][1] + ' - ' +self.gt_melt_data[i][-1])
+			self.d_melt_gt_type.append(self.gt_melt_data[i][1])
+			self.d_melt_gt_function.append(self.gt_melt_data[i][2])
+			self.d_melt_gt_function_2.append(self.gt_melt_data[i][3])
+
+		self.gt_melt_part_select = 0
+		self.gt_melt_display = self.d_melt_gt_items[self.gt_melt_part_select]
+
+		#AL-opx solubility models from alopx.csv
+
+		self.al_model_data = self.read_csv(os.path.join(self.core_path, 'al_models', 'alopx.csv'),delim = ',')
+
+		self.al_opx_model_items = []
+		self.al_opx_model_function = []
+		self.al_opx_model_pcrit = []
+		self.al_opx_model_display = []
+
+		for i in range(1,len(self.al_model_data)):
+
+			self.al_opx_model_items.append(self.al_model_data[i][0])
+			self.al_opx_model_function.append(self.al_model_data[i][1])
+			self.al_opx_model_pcrit.append(float(self.al_model_data[i][2]))
+			self.al_opx_model_display.append(self.al_model_data[i][3])
+
+		#Amphibole stability fileds from amp_st.csv
+
+		self.amp_st_data = self.read_csv(os.path.join(self.core_path, 'min_stab', 'amp_st.csv'),delim = ',')
+
+		self.amph_stab_list = []
+		self.P_amph = []
+
+		for i in range(1,len(self.amp_st_data)):
+			self.amph_stab_list.append(self.amp_st_data[i][0])
+			self.P_amph.append(float(self.amp_st_data[i][1]))
+
+		#Reading ol_gb.csv where grainboundary diffusion of olivine resides.
+		self.ol_gb_data = self.read_csv(os.path.join(self.core_path, 'cond_models', 'ol_gb.csv'),delim = ',')
+
+		self.GB_ol_list = []
+		self.D_ol_GB = []
+		self.E_ol_GB = []
+		self.E_err_ol_GB = []
+		self.ol_calib_GB = []
+
+		for i in range(1,len(self.ol_gb_data)):
+			self.GB_ol_list.append(self.ol_gb_data[i][0])
+			self.D_ol_GB.append(float(self.ol_gb_data[i][1]))
+			self.E_ol_GB.append(float(self.ol_gb_data[i][2]))
+			self.E_err_ol_GB.append(float(self.ol_gb_data[i][3]))
+			self.ol_calib_GB.append(int(self.ol_gb_data[i][4]))
+
+		#Reading gt_gb.csv where grainboundary diffusion of garnet-spinel resides.
+		self.gt_gb_data = self.read_csv(os.path.join(self.core_path, 'cond_models', 'gt_gb.csv'),delim = ',')
+
+		self.GB_gt_list = []
+		self.D_gt_GB = []
+		self.E_gt_GB = []
+		self.E_err_gt_GB = []
+
+		for i in range(1,len(self.gt_gb_data)):
+			self.GB_gt_list.append(self.gt_gb_data[i][0])
+			self.D_gt_GB.append(float(self.gt_gb_data[i][1]))
+			self.E_gt_GB.append(float(self.gt_gb_data[i][2]))
+			self.E_err_gt_GB.append(float(self.gt_gb_data[i][3]))
+
+		#Reading ol_sol.csv to take solubility model information
+
+		self.ol_sol_data = self.read_csv(os.path.join(self.core_path, 'min_sol', 'ol_sol.csv'),delim = ',')
+
+		self.name_ol_sol = []
+		self.ol_sol_fug_dep = []
+		self.ol_sol_wcalib = []
+
+		for i in range(1,len(self.ol_sol_data)):
+			self.name_ol_sol.append(self.ol_sol_data[i][0])
+			self.ol_sol_fug_dep.append(self.ol_sol_data[i][1])
+			self.ol_sol_wcalib.append(self.ol_sol_data[i][2])
+			#RETURNHERE - add the other lists once you decide
+
+		#Reading calibration correction factors from the file.
+
+		correction_factor_dat = self.read_csv(os.path.join(self.core_path, 'water_calib.csv'), delim = ',')
+
+		self.pat2with = float(correction_factor_dat[0][1])
+		self.bell2with = float(correction_factor_dat[1][1])
+		self.pat2bell = float(correction_factor_dat[2][1])
+		self.with2bell = 1.0/self.bell2with
+		self.bell2path = 1.0/self.pat2bell
+		self.with2pat = 1.0/self.pat2with
+		self.pat2bell95 = float(correction_factor_dat[3][1])
+		self.bell952pat = 1.0/self.pat2bell95
 
 aaa = MATE_batch()
