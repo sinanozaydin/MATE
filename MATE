@@ -5860,13 +5860,13 @@ class MATE(QMainWindow):
 					self.pl_cond = self.pl_cond * -999.0
 
 				comp_lines = ['#\n']
-				comp_lines.append('Depth(Km),T(K),P(GPa),FO2(GPa),Ol,Opx,Cpx,Gt,Phlg,Amph,Cond,Ol_m,Opx_m,Cpx_m,Gt_m,Phlg_m,Amp_m,cond_m,Ol_gs(mm),XFe_Ol,XFe_Opx,XFe_Cpx,XFe_Gt,Al_Opx(%wt),Ti_Ol(%wt),F_phlg(ppm),t_k_cond(W/mK),heat_prod(mW/m^2),density(g/cm^3)\n')
+				comp_lines.append('Depth(Km),T(K),P(GPa),FO2(GPa),Ol,Opx,Cpx,Gt,Phlg,Amph,Cond,Melt,Ol_m,Opx_m,Cpx_m,Gt_m,Phlg_m,Amp_m,cond_m,melt_m,Ol_gs(mm),XFe_Ol,XFe_Opx,XFe_Cpx,XFe_Gt,Al_Opx(%wt),Ti_Ol(%wt),CO2_melt(ppm),Na2O_Melt(%wt),K2O_Melt(%wt),F_phlg(ppm),t_k_cond(W/mK),heat_prod(mW/m^2),density(g/cm^3)\n')
 
 				water_lines = ['#\n']
-				water_lines.append('Depth(Km),T(K),P(GPa),FH2O(GPa),H2O_bulk(ppm),H2O_Ol(ppm),H2O_Opx(ppm),H2O_Cpx(ppm),H2O_gt(ppm),H2O_Cap_ol(ppm),H2O_Cap_opx(ppm),H2O_Cap_cpx(ppm),H2O_Cap_gt(ppm)\n')
+				water_lines.append('Depth(Km),T(K),P(GPa),FH2O(GPa),H2O_bulk(ppm),H2O_Ol(ppm),H2O_Opx(ppm),H2O_Cpx(ppm),H2O_gt(ppm),H2O_melt(ppm),H2O_Cap_ol(ppm),H2O_Cap_opx(ppm),H2O_Cap_cpx(ppm),H2O_Cap_gt(ppm)\n')
 
 				cond_lines = ['#\n']
-				cond_lines.append('Depth(Km),T(K),P(GPa),sigma_ol,sigma_opx,sigma_cpx,sigma_gt,sigma_phlg,sigma_amp,sigma_cond,sigma_bulk,sigma_bulk_max,sigma_bulk_min\n')
+				cond_lines.append('Depth(Km),T(K),P(GPa),sigma_ol,sigma_opx,sigma_cpx,sigma_gt,sigma_phlg,sigma_amp,sigma_cond,sigma_melt,sigma_bulk,sigma_bulk_max,sigma_bulk_min\n')
 
 				for i in range(self.idx_moho,len(self.depth)):
 					comp_lines.append('  ' + str('%4.3f' %  float(self.depth[i] / 1000.0)) + ',' +\
@@ -5880,6 +5880,7 @@ class MATE(QMainWindow):
 					str('%4.3f' %  (self.pl_frac[i]*100.0)) + ',' +\
 					str('%4.3f' %  (self.amp_frac[i]*100.0)) + ',' +\
 					str('%4.3f' %  (self.cond_frac[i]*100.0)) + ',' +\
+					str('%4.3f' %  (self.melt_mass_frac[i]*100.0)) + ',' +\
 					str('%4.2f' %  self.ol_m[i]) + ',' +\
 					str('%4.2f' %  self.opx_m[i]) + ',' +\
 					str('%4.2f' %  self.cpx_m[i]) + ',' +\
@@ -5887,6 +5888,7 @@ class MATE(QMainWindow):
 					str('%4.2f' %  self.pl_m[i]) + ',' +\
 					str('%4.2f' %  self.amp_m[i]) + ',' +\
 					str('%4.2f' %  self.cond_m[i]) + ',' +\
+					str('%4.2f' %  self.melt_m[i]) + ',' +\
 					str('%4.2f' %  self.ol_gs[i]) + ',' +\
 					str('%4.2f' %  self.fe_ol[i]) + ',' +\
 					str('%4.2f' %  self.fe_opx[i]) + ',' +\
@@ -5894,6 +5896,9 @@ class MATE(QMainWindow):
 					str('%4.2f' %  self.fe_gt[i]) + ',' +\
 					str('%4.2f' %  self.al_opx[i]) + ',' +\
 					str('%4.2f' %  self.ti_ol[i]) + ',' +\
+					str('%4.2f' %  self.co2_melt[i]) + ',' +\
+					str('%4.2f' %  self.na2o_melt[i]) + ',' +\
+					str('%4.2f' %  self.k2o_melt[i]) + ',' +\
 					str('%1.5E' %  self.flu[i]) + ',' +\
 					str('%1.5E' %  self.cond_t_k[i]) + ',' +\
 					str('%1.5E' %  self.heat_prod_mantle[i]) + ',' +\
@@ -5909,6 +5914,7 @@ class MATE(QMainWindow):
 					str('%1.5E' %  self.opx_h2o[i]) + ',' +\
 					str('%1.5E' %  self.cpx_h2o[i]) + ',' +\
 					str('%1.5E' %  self.gt_h2o[i]) + ',' +\
+					str('%1.5E' %  self.melt_h2o[i]) + ',' +\
 					str('%1.5E' %  self.max_ol_h2o[i]) + ',' +\
 					str('%1.5E' %  self.max_opx_h2o[i]) + ',' +\
 					str('%1.5E' %  self.max_cpx_h2o[i]) + ',' +\
@@ -5924,6 +5930,7 @@ class MATE(QMainWindow):
 					str('%1.5E' %  self.pl_cond[i]) + ',' +\
 					str('%1.5E' %  self.amp_cond[i]) + ',' +\
 					str('%1.5E' %  self.cond_cond[i]) + ',' +\
+					str('%1.5E' %  self.melt_cond[i]) + ',' +\
 					str('%1.5E' %  self.bulk_cond[i]) + ',' +\
 					str('%1.5E' %  self.bulk_cond_max[i]) + ',' +\
 					str('%1.5E' %  self.bulk_cond_min[i]) + '\n')
@@ -6210,23 +6217,27 @@ class MATE(QMainWindow):
 				idx_water = int(idx_water)
 				self.h2o_comp[i] = self.h2o[idx_water]
 
-			MATE.text = "Depth(km),Cw_bulk(ppm),ol_frac,opx_frac,cpx_frac,gt_frac,sp_chr_frac,pl_frac,amp_frac,cond_frac,cond_cond(ohm_m),melt_mass_frac,XFe-ol,XFe-opx,XFe-cpx,XFe-gt,Al-opx(wt%),Ti-ol(wt%),Na2O_melt(wt%),m_ol,m_opx,m_cpx,m_gt,m_sp_chr,m_pl,m_amp,m_cond,t_k_cond(W/mK),fl_pl(wt%),ol_gs(mm),heat_prod(mW/m^2)\n"
+			MATE.text = "Depth(km),H2O_bulk(ppm),CO2_melt(ppm),ol_frac,opx_frac,cpx_frac,gt_frac,sp_chr_frac,pl_frac,amp_frac,cond_frac,cond_cond(ohm_m),melt_mass_frac,XFe-ol,XFe-opx,XFe-cpx,XFe-gt,m_ol,m_opx,m_cpx,m_gt,m_sp_chr,m_pl,m_amp,m_cond,m_melt,Al-opx(wt%),Ti-ol(wt%),NaO_melt(wt%),K2O_melt(wt%),t_k_cond(W/mK),fl_pl(wt%),ol_gs(mm),heat_prod(mW/m^2)\n"
 
 			for i in range(0,len(self.depth_comp)-1):
 				line = ','.join(('%4.2f' % (self.depth_comp[i]/1e3),'%4.2f' % self.h2o_comp[i],
+				'%4.2f' % self.co2_comp[i],
 				'%4.2f' % (self.ol_frac_comp[i]*100.0),'%4.2f' % (self.opx_frac_comp[i]*100.0),
 				'%4.2f' % (self.cpx_frac_comp[i]*100.0),'%4.2f' % (self.gt_frac_comp[i]*100.0),
 				'%4.2f' % (self.sp_chr_frac_comp[i]*100.0),
 				'%4.2f' % (self.pl_frac_comp[i]*100.0),'%4.2f' % (self.amp_frac_comp[i]*100.0),
 				'%4.2f' % (self.cond_frac_comp[i]*100.0),'%1.3E' % self.cond_cond_comp[i],
+				'%4.2f' % (self.melt_frac_comp[i]*100.0),
 				'%4.2f' % self.fe_ol_comp[i],'%4.2f' % self.fe_opx_comp[i],
 				'%4.2f' % self.fe_cpx_comp[i],'%4.2f' % self.fe_gt_comp[i],
-				'%4.2f' % self.al_opx_comp[i],'%4.2f' % self.ti_ol_comp[i],
 				'%4.2f' % self.ol_m_comp[i],'%4.2f' % self.opx_m_comp[i],
 				'%4.2f' % self.cpx_m_comp[i],'%4.2f' % self.gt_m_comp[i],
 				'%4.2f' % self.sp_chr_m_comp[i],
 				'%4.2f' % self.pl_m_comp[i],'%4.2f' % self.amp_m_comp[i],
-				'%4.2f' % self.cond_m_comp[i],'%4.2f' % self.cond_t_k_comp[i],
+				'%4.2f' % self.cond_m_comp[i], '%4.2f' % self.melt_m_comp[i],
+				'%4.2f' % self.al_opx_comp[i],'%4.2f' % self.ti_ol_comp[i],
+				'%4.2f' % self.na2o_melt_comp[i], '%4.2f' % self.k2o_melt_comp[i],
+				'%4.2f' % self.cond_t_k_comp[i],
 				'%4.2f' % self.flu_comp[i],'%4.2f' % self.ol_gs_comp[i],
 				(('%1.3E' % 4e-5)+'\n')))
 				MATE.text = MATE.text + line
