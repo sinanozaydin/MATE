@@ -5,7 +5,7 @@ import time
 
 core_path_ext = os.path.join(os.path.dirname(os.path.abspath(__file__)) , 'mate_src')
 
-import sys, csv, itertools, math, platform, random
+import sys, csv, itertools, math, platform, random, warnings
 import numpy as np
 from scipy.interpolate import interp1d, griddata
 from scipy import optimize
@@ -36,9 +36,155 @@ from min_sol.ol_sol import * #Olivine solubility models
 
 warnings.filterwarnings("ignore", category=RuntimeWarning) #ignoring many RuntimeWarning printouts that are useless
 
+class bcolors:
+	BLUE = '\033[94m'
+	GREEN = '\033[92m'
+	RED = '\033[91m'
+	B = '\033[0m'
+
+#Version 1.3, February. 2021.
+#MATE - (M)antle (A)nalysis (T)ools for (E)lectromagnetics
+#Program written by Sinan Ozaydin (Macquarie University Dept. of Earth and Planetary
+#sciences, Australia).
+
+#Indentation method: hard tabs ('\t')
+
+#Works with Python3
+#Required libraries: numpy,scipy,matplotlib,PyQt5
+
+#Installation of libraries:
+#In Linux (mac included) distros through terminal:
+#pip install numpy,scipy,matplotlib,PyQt5
+#In Windows skip sudo.
+
+print(bcolors.GREEN + '#############################################')
+print(' ')
+print(' ')
+print(' ')
+print(bcolors.GREEN + '                  MATE_BATCH 2.0')
+print(' ')
+print(bcolors.BLUE + '            Mantle Analysis Tools')
+print('                     for')
+print('               Electromagnetics')
+print(' ')
+print(' ')
+print(' ')
+print(bcolors.GREEN + '#############################################')
+print(bcolors.BLUE + 'developed by Sinan Ozaydin,' + bcolors.RED +  '(Department of Earth and Planetary Sciences, Core to Crust Fluid Systems(CCFS), Macquarie University)')
+
 
 class MATE_batch(object):
 
 	def __init__(self, core_path = core_path_ext):
 
-		pass
+		args_input = sys.argv
+
+		try:
+
+			self.setup_path = args_input[1]
+			self.comp_path = args_input[2]
+			self.rho_path = args_input[3]
+			self.dat_path = args_input[4]
+			self.T_path = args_input[5]
+
+		except IndexError:
+			print('Not enough inputs are entered, five input files are needed...')
+			print('1. Parameter setup file')
+			print('2. Composition file')
+			print('3. MT Model File (e.g. ModEM rho)')
+			print('4. MT Data File (e.g. ModEM dat)')
+			print('5. Thermal model')
+			print('Exiting the program try again with correct input format')
+			sys.exit()
+
+		self.read_batch_parameter_file()
+
+
+	def read_csv(self,filename,delim):
+
+		#Simple function for reading csv files and give out filtered output for given delimiter (delim)
+
+		file_obj = open(filename,'rt',encoding = "utf8") #Creating file object
+		file_csv = csv.reader(file_obj,delimiter = delim) #Reading the file object with csv module, delimiter assigned to ','
+		data = [] #Creating empty array to append data
+
+		#Appending data from csb object
+		for row in file_csv:
+			data.append(row)
+
+		#Filtering data for None elements read.
+		for j in range(0,len(data)):
+			data[j] = list(filter(None,data[j]))
+		data = list(filter(None,data))
+
+		return data
+
+	def read_batch_parameter_file(self):
+
+		self.setup_data = self.read_csv(self.setup_path, delim = ',')
+
+		self.moho = float(self.setup_data[1][1])
+		self.lab = float(self.setup_data[2][1])
+
+		self.part_px_method = str(self.setup_data[3][1])
+		self.opx_part_select = int(self.setup_data[4][1])
+		self.cpx_part_select = int(self.setup_data[5][1])
+		self.px_part_select = int(self.setup_data[6][1])
+		self.gt_part_select = int(self.setup_data[7][1])
+		self.amp_part_select = int(self.setup_data[8][1])
+		self.pl_part_select = int(self.setup_data[9][1])
+
+		self.ol_melt_part_select = int(self.setup_data[10][1])
+		self.opx_melt_part_select = int(self.setup_data[11][1])
+		self.cpx_melt_part_select = int(self.setup_data[12][1])
+		self.gt_melt_part_select = int(self.setup_data[13][1])
+
+		self.hydr_part_method = int(self.setup_data[14][1])
+		self.w_inp_method = str(self.setup_data[15][1])
+
+		self.sol_method = int(self.setup_data[16][1])
+		self.ol_sol_calib = int(self.setup_data[17][1])
+		self.ol_calib = int(self.setup_data[18][1])
+		self.px_calib = int(self.setup_data[19][1])
+
+		self.amph_stab_select = int(self.setup_data[20][1])
+
+		self.sol_model_pref_select = int(self.setup_data[21][1])
+
+		self.amp_method = str(self.setup_data[22][1])
+		self.pl_method = str(self.setup_data[23][1])
+		self.phs_mix_method = int(self.setup_data[24][1])
+		self.phs_melt_mix_method = int(self.setup_data[25][1])
+
+		self.ol_dry_selection = int(self.setup_data[26][1])
+		self.opx_dry_selection = int(self.setup_data[27][1])
+		self.cpx_dry_selection = int(self.setup_data[28][1])
+		self.gt_dry_selection = int(self.setup_data[29][1])
+
+		self.ol_cond_selection = int(self.setup_data[30][1])
+		self.opx_cond_selection = int(self.setup_data[31][1])
+		self.cpx_cond_selection = int(self.setup_data[32][1])
+		self.gt_cond_selection = int(self.setup_data[33][1])
+		self.amp_cond_selection = int(self.setup_data[34][1])
+		self.pl_cond_selection = int(self.setup_data[35][1])
+		self.sp_chr_cond_selection = int(self.setup_data[36][1])
+		self.melt_cond_selection = int(self.setup_data[37][1])
+
+		self.px_cond_method = int(self.setup_data[38][1])
+
+		self.D_gb = float(self.setup_data[39][1])
+		self.delta = float(self.setup_data[40][1])
+		self.GB_ol_select = int(self.setup_data[41][1])
+		self.GB_gt_select = int(self.setup_data[42][1])
+		self.o2_buffer = int(self.setup_data[43][1])
+		self.water_end = bool(self.setup_data[44][1])
+
+		self.model_method_list = ['Proton+Polaron+Ionic', 'Proton Only']
+		self.model_method_ol = int(self.setup_data[45][1])
+		self.model_method_opx = int(self.setup_data[46][1])
+		self.model_method_cpx = int(self.setup_data[47][1])
+		self.model_method_gt = int(self.setup_data[48][1])
+
+		self.model_method = [self.model_method_ol,self.model_method_opx,self.model_method_cpx,self.model_method_gt]
+
+aaa = MATE_batch()

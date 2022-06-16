@@ -76,7 +76,7 @@ print(' ')
 print(' ')
 print(' ')
 print(bcolors.GREEN + '#############################################')
-print(bcolors.BLUE + 'developed by Sinan Ozaydin,' + bcolors.RED +  '(Department of Earth and Planetary Sciences, Core to Crust Fluid Systems(CCFS), Macquarie University)')
+print(bcolors.BLUE + 'developed by Sinan Ozaydin,' + bcolors.RED +  '(School of Natural Sciences, Macquarie University)')
 
 class MATE(QMainWindow):
 
@@ -6303,6 +6303,8 @@ class MATE(QMainWindow):
 			lines_batch_file.append('sp_chr_cond_selection,' + str(MATE.sp_chr_cond_selection) + '\n')
 			lines_batch_file.append('melt_cond_selection,' + str(MATE.melt_cond_selection) + '\n')
 
+			lines_batch_file.append('px_cond_method,' + str(MATE.px_cond_method) + '\n')
+
 			lines_batch_file.append('D_gb,' + str(MATE.D_gb) + '\n')
 			lines_batch_file.append('delta,' + str(self.delta) + '\n')
 			lines_batch_file.append('GB_ol_select,' + str(MATE.GB_ol_select) + '\n')
@@ -6311,6 +6313,11 @@ class MATE(QMainWindow):
 			lines_batch_file.append('o2_buffer,' + str(MATE.o2_buffer) + '\n')
 
 			lines_batch_file.append('water_end,' + str(self.water_end) + '\n')
+
+			lines_batch_file.append('model_method_ol,' + str(MATE.model_method_ol) + '\n')
+			lines_batch_file.append('model_method_opx,' + str(MATE.model_method_opx) + '\n')
+			lines_batch_file.append('model_method_cpx,' + str(MATE.model_method_cpx) + '\n')
+			lines_batch_file.append('model_method_gt,' + str(MATE.model_method_gt) + '\n')
 
 			self.write_batch_file_save_name = str(self.write_batch_file_save_name[0])
 			self.dir_path_write = self.write_batch_file_save_name[:self.write_batch_file_save_name.rfind('/')+1]
