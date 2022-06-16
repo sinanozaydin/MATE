@@ -279,6 +279,10 @@ class MATE(QMainWindow):
 		solverMenu.addAction(solverSelection_2)
 		self.exported_model_pop = None
 
+		solverBatchOutput = QAction('Export batch process parameter selection file', self)
+		solverBatchOutput.triggered.connect(self.write_batch_process_output)
+		solverMenu.addAction(solverBatchOutput)
+
 		xenSolver = QAction('Geotherm solver properties', self)
 		xenSolver.triggered.connect(self.xen_solver_properties)
 		solverMenu.addAction(xenSolver)
@@ -374,10 +378,8 @@ class MATE(QMainWindow):
 		MATE.gt_dry_selection = 0
 
 		MATE.phs_mix_method = 0
-		MATE.phs_mix_type = 0
 
 		MATE.phs_melt_mix_method = 0
-		MATE.phs_mix_type = 0
 
 		MATE.mt_input_selection = 0
 		self.ModEM_dat_read = False
@@ -6247,6 +6249,76 @@ class MATE(QMainWindow):
 
 			QMessageBox.about(self, 'Warning!', "First you have to invert the water contents from an MT model...")
 
+	def write_batch_process_output(self):
+
+		self.write_batch_file_save_name = QFileDialog.getSaveFileName(self, 'Save File')
+
+		if self.write_batch_file_save_name[0] != '':
+
+			lines_batch_file = ['Parameter,Value\n']
+
+			lines_batch_file.append('moho,' + str(MATE.moho) + '\n')
+			lines_batch_file.append('max_depth,' + str(MATE.lab) + '\n')
+			lines_batch_file.append('part_px_method,' + str(MATE.part_px_method) + '\n')
+			lines_batch_file.append('opx_part_select,' + str(MATE.opx_part_select) + '\n')
+			lines_batch_file.append('cpx_part_select,' + str(MATE.cpx_part_select) + '\n')
+			lines_batch_file.append('px_part_select,' + str(MATE.px_part_select) + '\n')
+			lines_batch_file.append('gt_part_select,' + str(MATE.gt_part_select) + '\n')
+			lines_batch_file.append('amp_part_select,' + str(MATE.amp_part_select) + '\n')
+			lines_batch_file.append('pl_part_select,' + str(MATE.pl_part_select) + '\n')
+
+			lines_batch_file.append('ol_melt_part_select,' + str(MATE.ol_melt_part_select) + '\n')
+			lines_batch_file.append('opx_melt_part_select,' + str(MATE.opx_melt_part_select) + '\n')
+			lines_batch_file.append('cpx_melt_part_select,' + str(MATE.cpx_melt_part_select) + '\n')
+			lines_batch_file.append('gt_melt_part_select,' + str(MATE.gt_melt_part_select) + '\n')
+
+			lines_batch_file.append('hydr_part_method,' + str(MATE.hydr_part_method) + '\n')
+			lines_batch_file.append('w_inp_method,' + str(MATE.w_inp_method) + '\n')
+
+			lines_batch_file.append('sol_method,' + str(MATE.sol_method) + '\n')
+			lines_batch_file.append('ol_sol_calib,' + str(MATE.ol_sol_calib) + '\n')
+			lines_batch_file.append('ol_calib,' + str(MATE.ol_calib) + '\n')
+			lines_batch_file.append('px_calib,' + str(MATE.px_calib) + '\n')
+
+			lines_batch_file.append('amph_stab_select,' + str(MATE.amph_stab_select) + '\n')
+
+			lines_batch_file.append('sol_model_pref_select,' + str(MATE.sol_model_pref_select) + '\n')
+
+			lines_batch_file.append('amp_method,' + str(MATE.amp_method) + '\n')
+			lines_batch_file.append('pl_method,' + str(MATE.pl_method) + '\n')
+			lines_batch_file.append('phs_mix_method,' + str(MATE.phs_mix_method) + '\n')
+			lines_batch_file.append('phs_melt_mix_method,' + str(MATE.phs_melt_mix_method) + '\n')
+
+			lines_batch_file.append('ol_dry_selection,' + str(MATE.ol_dry_selection) + '\n')
+			lines_batch_file.append('opx_dry_selection,' + str(MATE.opx_dry_selection) + '\n')
+			lines_batch_file.append('cpx_dry_selection,' + str(MATE.cpx_dry_selection) + '\n')
+			lines_batch_file.append('gt_dry_selection,' + str(MATE.gt_dry_selection) + '\n')
+
+			lines_batch_file.append('ol_cond_selection,' + str(MATE.ol_cond_selection) + '\n')
+			lines_batch_file.append('opx_cond_selection,' + str(MATE.opx_cond_selection) + '\n')
+			lines_batch_file.append('cpx_cond_selection,' + str(MATE.cpx_cond_selection) + '\n')
+			lines_batch_file.append('gt_cond_selection,' + str(MATE.gt_cond_selection) + '\n')
+			lines_batch_file.append('amp_cond_selection,' + str(MATE.amp_cond_selection) + '\n')
+			lines_batch_file.append('pl_cond_selection,' + str(MATE.pl_cond_selection) + '\n')
+			lines_batch_file.append('sp_chr_cond_selection,' + str(MATE.sp_chr_cond_selection) + '\n')
+			lines_batch_file.append('melt_cond_selection,' + str(MATE.melt_cond_selection) + '\n')
+
+			lines_batch_file.append('D_gb,' + str(MATE.D_gb) + '\n')
+			lines_batch_file.append('delta,' + str(self.delta) + '\n')
+			lines_batch_file.append('GB_ol_select,' + str(MATE.GB_ol_select) + '\n')
+			lines_batch_file.append('GB_gt_select,' + str(MATE.GB_gt_select) + '\n')
+
+			lines_batch_file.append('o2_buffer,' + str(MATE.o2_buffer) + '\n')
+
+			lines_batch_file.append('water_end,' + str(self.water_end) + '\n')
+
+			self.write_batch_file_save_name = str(self.write_batch_file_save_name[0])
+			self.dir_path_write = self.write_batch_file_save_name[:self.write_batch_file_save_name.rfind('/')+1]
+			self.write_file_name = self.write_batch_file_save_name[self.write_batch_file_save_name.rfind('/')+1:]
+
+			filesave_batch = open(os.path.join(self.dir_path_write, (self.write_file_name+'_batch.csv')) ,'w')
+			filesave_batch.writelines(lines_batch_file)
+			filesave_batch.close()
 
 class COMP_EDITOR(QWidget):
 
@@ -8114,27 +8186,21 @@ class PHS_POP(QWidget):
 		if b.text() == "Generalized Archie's Law (Glover, 2010)":
 			if b.isChecked() == True:
 				MATE.phs_mix_method = 0
-				MATE.phs_mix_type = 0
 		if b.text() == "Hashin-Shtrikman Lower Bound (Berryman, 1995)":
 			if b.isChecked() == True:
 				MATE.phs_mix_method = 1
-				MATE.phs_mix_type = 1
 		if b.text() == "Hashin-Shtrikman Upper Bound (Berryman, 1995)":
 			if b.isChecked() == True:
 				MATE.phs_mix_method = 2
-				MATE.phs_mix_type = 1
 		if b.text() == "Parallel Model (Guegen and Palciauskas, 1994)":
 			if b.isChecked() == True:
 				MATE.phs_mix_method = 3
-				MATE.phs_mix_type = 1
 		if b.text() == "Perpendicular Model (Guegen and Palciauskas, 1994)":
 			if b.isChecked() == True:
 				MATE.phs_mix_method = 4
-				MATE.phs_mix_type = 1
 		if b.text() == "Random Model (Guegen and Palciauskas, 1994)":
 			if b.isChecked() == True:
 				MATE.phs_mix_method = 5
-				MATE.phs_mix_type = 1
 
 	def btnstate_phsmix_melt(self, b2):
 
