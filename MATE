@@ -364,6 +364,7 @@ class MATE(QMainWindow):
 		MATE.ol_sol_calib = 3
 
 		MATE.solidus_model_selection = 0
+		self.solidus_calculated = False
 
 		MATE.model_method_list = ['Proton+Polaron+Ionic', 'Proton Only']
 		MATE.model_method_ol = 0
@@ -1393,7 +1394,7 @@ class MATE(QMainWindow):
 
 		if self.melt_solidus_pop is None:
 			self.melt_solidus_pop = SELECT_SOLIDUS_POP()
-			self.melt_solidus_pop.setGeometry(QtCore.QRect(100, 100, 100, 100))
+			self.melt_solidus_pop.setGeometry(QtCore.QRect(200, 200, 300, 100))
 		self.melt_solidus_pop.show()
 
 	def px_calib_popup(self):
@@ -2598,6 +2599,10 @@ class MATE(QMainWindow):
 	def calculate_solidus(self):
 
 		self.T_solidus = eval(MATE.solidus_model_names[MATE.solidus_model_selection] + '(T = self.T, P = self.p, H2O = self.h2o, Melt_H2O = self.melt_h2o)')
+
+		self.solidus_calculated = True
+
+		self.plot_geotherm(method = 'draw')
 
 	def solubility_ol(self):
 
@@ -4807,6 +4812,10 @@ class MATE(QMainWindow):
 
 		self.ax3.plot([649.890,1734.60],self.graphite_depth,color = '#2f9172',linewidth = 2.5,label = 'Graphite-Diamond')
 
+		if self.solidus_calculated == True:
+
+			self.ax3.plot(self.T_solidus - 273.15, self.depth/1e3, color = '#b51e1e',linewidth = 2,label = 'Mantle Solidus')
+
 		if method == 'draw':
 			self.canvas.draw()
 		elif method == 'save':
@@ -5833,6 +5842,8 @@ class MATE(QMainWindow):
 		self.upper_bound_load = False
 		self.lower_bound_load = False
 		self.xenolith_existence = False
+
+		self.solidus_calculated = False
 
 		self.act_comp_btn.setStyleSheet("QPushButton {min-width: 10em; font: bold; font-size: 9pt;background-color: #93db88}")
 		self.geot_btn.setStyleSheet("QPushButton {min-width: 10em; font: bold; font-size: 9pt;background-color: #93db88}")

@@ -15,4 +15,6 @@ def Hirschmann2009_Dry(T,P,H2O,Melt_H2O):
             T_solidus[i] = (-1.092*(P[i]-10)**2.0) +\
                 (32.39 * (P[i]-10)) + 1395.0
 
+    T_solidus = T_solidus + 273.15 #Converting to Kelvin
+
     return T_solidus
