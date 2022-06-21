@@ -5947,7 +5947,7 @@ class MATE(QMainWindow):
 					str('%4.2f' %  self.fe_gt[i]) + ',' +\
 					str('%4.2f' %  self.al_opx[i]) + ',' +\
 					str('%4.2f' %  self.ti_ol[i]) + ',' +\
-					str('%4.2f' %  self.co2_melt[i]) + ',' +\
+					str('%4.2f' %  self.co2[i]) + ',' +\
 					str('%4.2f' %  self.na2o_melt[i]) + ',' +\
 					str('%4.2f' %  self.k2o_melt[i]) + ',' +\
 					str('%1.5E' %  self.flu[i]) + ',' +\
