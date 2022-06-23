@@ -6128,7 +6128,10 @@ class MATE(QMainWindow):
 				#Actual solution loop.
 				for i in range(self.idx_moho,len(self.depth)):
 
-					_solve_(sol_index = i, water_search_start = solution_water_init[i - self.idx_moho -1], water_search_end = self.h2o_from_sol,  water_search_increment = 4)
+					sol_start = solution_water_init[i - self.idx_moho - 1] - (4*2)
+					if sol_start < 0:
+						sol_start = 0
+					_solve_(sol_index = i, water_search_start = sol_start, water_search_end = self.h2o_from_sol,  water_search_increment = 4)
 					self.progressBar.setValue(i+1)
 
 				self.progressBar.setValue(self.idx_moho)
