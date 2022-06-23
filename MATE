@@ -1906,6 +1906,8 @@ class MATE(QMainWindow):
 
 			self.p = np.cumsum(self.p) / 1e12 #Converting to GPA
 
+			self.dT_dF = (-40 * self.p) + 450.0 #melt_fraction estimation gradient.
+
 	def calculate_geotherm(self):
 
 		#Creating the depth array for calculating the 1-d steady state geotherm
@@ -2269,8 +2271,6 @@ class MATE(QMainWindow):
 
 			self.h2o_solid = self.h2o
 
-
-
 		#CALCULATING AL-DEPENDENT PARTITION COEFF
 		if MATE.part_px_method == '1':
 			#OPX/OL if they are handled independently.
@@ -2401,13 +2401,14 @@ class MATE(QMainWindow):
 					else:
 						self.pl_h2o[i] = 0.0
 
-		all_h2o = [self.h2o,self.h2o_solid,self.ol_h2o,self.opx_h2o,self.cpx_h2o,self.gt_h2o,self.px_h2o]
+		all_h2o = [self.h2o[self.idx_moho:],self.h2o_solid[self.idx_moho:],self.ol_h2o[self.idx_moho:],
+		self.opx_h2o[self.idx_moho:],self.cpx_h2o[self.idx_moho:],self.gt_h2o[self.idx_moho:],self.px_h2o[self.idx_moho:]]
 		if self.amp_method == 0:
-			all_h2o.append(self.amp_h2o)
+			all_h2o.append(self.amp_h2o[self.idx_moho:])
 		if self.pl_method == 0:
-			all_h2o.append(self.pl_h2o)
+			all_h2o.append(self.pl_h2o[self.idx_moho:])
 		if MATE.melt_method == '0':
-			all_h2o.append(self.melt_h2o)
+			all_h2o.append(self.melt_h2o[self.idx_moho:])
 		all_h2o = np.asarray(list(itertools.chain(*all_h2o)))
 		self.maxwater = np.amax(all_h2o) + (np.amax(all_h2o) / 5.0)
 
@@ -2610,7 +2611,7 @@ class MATE(QMainWindow):
 	def calculate_solidus(self):
 
 		if MATE.solidus_model_type[MATE.solidus_model_selection] == 1:
-			self.T_solidus, self.melt_mass_frac  = eval(MATE.solidus_model_names[MATE.solidus_model_selection] + '(T = self.T, P = self.p, H2O = self.h2o, D_per_melt = self.d_per_melt, cpx_frac = self.cpx_frac)')
+			self.T_solidus, self.melt_mass_frac  = eval(MATE.solidus_model_names[MATE.solidus_model_selection] + '(T = self.T, P = self.p, Melt_Mass_Frac = self.melt_mass_frac, H2O = self.h2o, D_per_melt = self.d_per_melt, cpx_frac = self.cpx_frac)')
 			self.solidus_calculated = True
 			if np.mean(self.melt_mass_frac[self.idx_moho:]) > 0:
 				MATE.melt_method = '0'
@@ -2618,18 +2619,13 @@ class MATE(QMainWindow):
 				for i in range(self.idx_moho, len(self.melt_mass_frac)):
 					if self.melt_mass_frac[i] == 0.0:
 						self.idx_melt_zero.append(i)
-				self.plot_composition(method = 'draw')
-				self.plot_melt_frac(method = 'draw')
 			else:
 				MATE.melt_method = '1'
-				self.plot_composition(method = 'draw')
 			self.plot_melt_frac
 		else:
-			self.T_solidus = eval(MATE.solidus_model_names[MATE.solidus_model_selection] + '(T = self.T, P = self.p, H2O = self.h2o, D_per_melt = self.d_per_melt, cpx_frac = self.cpx_frac)')
+			self.T_solidus = eval(MATE.solidus_model_names[MATE.solidus_model_selection] + '(T = self.T, P = self.p, Melt_Mass_Frac = self.melt_mass_frac, H2O = self.h2o, D_per_melt = self.d_per_melt, cpx_frac = self.cpx_frac)')
 			self.solidus_calculated = True
-
-		self.plot_geotherm(method = 'draw')
-
+			print(self.T_solidus)
 	def solubility_ol(self):
 
 		#Def that calculates olivine storage capacities with different sources, sol_method.
@@ -3858,6 +3854,12 @@ class MATE(QMainWindow):
 			self.melt_cond_max = cond_melt_max
 			self.melt_cond_min = cond_melt_min
 			self.melt_cond = cond_melt_max
+
+	def calculate_melt_fraction(self):
+
+		#After Blatter2022
+
+		self.melt_mass_frac = (self.T - self.T_solidus) / self.dT_dF
 
 	def phase_mixing_function(self,method = None, melt_method = None):
 
@@ -5699,6 +5701,11 @@ class MATE(QMainWindow):
 			if MATE.sol_plot == True:
 				self.solubility_ol()
 				self.solubility_partitioning()
+			if np.mean(self.melt_mass_frac[self.idx_moho:]) > 0:
+				MATE.melt_method = '0'
+				self.plot_composition(method = 'draw')
+				self.plot_melt_frac(method = 'draw')
+				self.plot_geotherm_button()
 			self.plot_water(method = 'draw')
 			self.water_existence = True
 			self.plt_water_btn.setStyleSheet("QPushButton {min-width: 10em; font: bold; font-size: 9pt;background-color: #679c5f}")

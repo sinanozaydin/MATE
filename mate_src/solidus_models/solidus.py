@@ -2,7 +2,9 @@
 
 import numpy as np
 
-def Hirschmann2009_Dry(T, P, H2O, D_per_melt, cpx_frac):
+R_const = 8.3144621
+
+def Hirschmann2009_Dry(T, P, Melt_Mass_Frac, H2O, D_per_melt, cpx_frac):
 
     T_solidus = np.zeros(len(P))
 
@@ -16,6 +18,33 @@ def Hirschmann2009_Dry(T, P, H2O, D_per_melt, cpx_frac):
                 (32.39 * (P[i]-10)) + 1395.0
 
     T_solidus = T_solidus + 273.15 #Converting to Kelvin
+
+    return T_solidus
+
+def Hirschmann2009_Wet(T, P, Melt_Mass_Frac, H2O, D_per_melt, cpx_frac):
+
+    H2O = H2O / 1e4
+
+    Melt_H2O = H2O / (Melt_Mass_Frac + ((1.0 - Melt_Mass_Frac) * D_per_melt))
+
+    T_solidus = np.zeros(len(P))
+
+    for i in range(0,len(P)):
+
+        if P[i] <= 10.0:
+            T_solidus[i] = (-5.1404654*(P[i]**2.0)) +\
+                (132.899012 * P[i]) + 1124.123
+        elif P[i] > 10.0:
+            T_solidus[i] = (-1.092*(P[i]-10)**2.0) +\
+                (32.39 * (P[i]-10)) + 1395.0
+
+    M = 59.0
+    dS = 0.4
+
+    X_h2o_melt = (2 * M * (Melt_H2O / 1e2)) /\
+        (18.02 + (Melt_H2O / 1e2) * ((2 * M) - 18.02))
+
+    T_solidus = T_solidus / (1 - (R_const / M * dS)) * np.log(1 - X_h2o_melt)
 
     return T_solidus
 
