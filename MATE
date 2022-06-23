@@ -93,6 +93,17 @@ class MATE(QMainWindow):
 		else:
 			self.commandmv = 'mv'
 
+		args_input = sys.argv
+		if len(args_input) == 1:
+			MATE.arguments_load = False
+			MATE.composition_args_path = False
+		else:
+			MATE.arguments_load = True
+			try:
+				MATE.composition_args_path = args_input[1]
+			except IndexError:
+				pass
+
 		self.setMinimumSize(1800,1000)
 		self.setStyleSheet("QMainWindow{background-color: #c1ccc1;border: 1px solid black}")
 		self.setWindowTitle("MATE")
@@ -1252,7 +1263,7 @@ class MATE(QMainWindow):
 
 		for i in range(1,len(self.solidus_model_data)):
 			MATE.solidus_model_names.append(self.solidus_model_data[i][0])
-			MATE.solidus_model_type.append(self.solidus_model_data[i][1])
+			MATE.solidus_model_type.append(int(self.solidus_model_data[i][1]))
 
 	def read_xen_pt(self):
 
@@ -2237,13 +2248,13 @@ class MATE(QMainWindow):
 
 				MATE.d_melt_gt = np.ones(len(self.p)) * float(self.d_melt_gt_function[MATE.gt_melt_part_select])
 
-			self.calculate_solidus()
-
 			#Calculating partition coeff of water between per and melt from Hirschmann et al. (2009)
 			self.d_per_melt = (self.ol_frac_wt * MATE.d_melt_ol) +\
 				(self.opx_frac_wt * MATE.d_melt_opx) +\
 				(self.cpx_frac_wt * MATE.d_melt_cpx) +\
 				(self.gt_frac_wt * MATE.d_melt_gt)
+
+			self.calculate_solidus()
 
 			#Calculating the h2o content of melt that is in equilibrium with the entered solid-mixture, from Sifre et al. (2014)
 			self.melt_h2o = self.h2o / (self.melt_mass_frac + ((1.0 - self.melt_mass_frac) * self.d_per_melt))
@@ -2598,9 +2609,24 @@ class MATE(QMainWindow):
 
 	def calculate_solidus(self):
 
-		self.T_solidus = eval(MATE.solidus_model_names[MATE.solidus_model_selection] + '(T = self.T, P = self.p, H2O = self.h2o, Melt_H2O = self.melt_h2o)')
-
-		self.solidus_calculated = True
+		if MATE.solidus_model_type[MATE.solidus_model_selection] == 1:
+			self.T_solidus, self.melt_mass_frac  = eval(MATE.solidus_model_names[MATE.solidus_model_selection] + '(T = self.T, P = self.p, H2O = self.h2o, D_per_melt = self.d_per_melt, cpx_frac = self.cpx_frac)')
+			self.solidus_calculated = True
+			if np.mean(self.melt_mass_frac[self.idx_moho:]) > 0:
+				MATE.melt_method = '0'
+				self.idx_melt_zero = []
+				for i in range(self.idx_moho, len(self.melt_mass_frac)):
+					if self.melt_mass_frac[i] == 0.0:
+						self.idx_melt_zero.append(i)
+				self.plot_composition(method = 'draw')
+				self.plot_melt_frac(method = 'draw')
+			else:
+				MATE.melt_method = '1'
+				self.plot_composition(method = 'draw')
+			self.plot_melt_frac
+		else:
+			self.T_solidus = eval(MATE.solidus_model_names[MATE.solidus_model_selection] + '(T = self.T, P = self.p, H2O = self.h2o, D_per_melt = self.d_per_melt, cpx_frac = self.cpx_frac)')
+			self.solidus_calculated = True
 
 		self.plot_geotherm(method = 'draw')
 
@@ -6387,7 +6413,7 @@ class COMP_EDITOR(QWidget):
 
 		editor_layout = QVBoxLayout(self)
 
-		MATE.text = MATE.text
+
 
 		self.read_button = QPushButton('Read File')
 		self.read_button.clicked.connect(self.opentextfile)
@@ -6400,6 +6426,12 @@ class COMP_EDITOR(QWidget):
 		self.textEdit = QTextEdit()
 		self.textEdit.setText(MATE.text)
 		editor_layout.addWidget(self.textEdit)
+
+		if MATE.arguments_load == False:
+			MATE.text = MATE.text
+		else:
+			self.opentextfile()
+			self.lodge()
 
 		self.lodge_button = QPushButton('Submit Data')
 		self.lodge_button.clicked.connect(self.lodge)
@@ -6415,12 +6447,20 @@ class COMP_EDITOR(QWidget):
 
 	def opentextfile(self):
 
-		self.text_name = QFileDialog.getOpenFileName(self, 'Open File')
+		if MATE.arguments_load == True:
+			self.text_name = MATE.composition_args_path
+			MATE.arguments_load = False
+		else:
+			self.text_name = QFileDialog.getOpenFileName(self, 'Open File')
 
 		if self.text_name[0] != '':
 
 			MATE.loaded_file = True
-			text_file = open(str(self.text_name[0]),'rt',encoding = "utf8")
+			if MATE.composition_args_path == False:
+				text_file = open(str(self.text_name[0]),'rt',encoding = "utf8")
+			else:
+				text_file = open(str(self.text_name),'rt',encoding = "utf8")
+				MATE.composition_args_path = False
 			text_csv = csv.reader(text_file,delimiter = '~')
 			self.text_data = ''
 			data_text = []

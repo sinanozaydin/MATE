@@ -2,7 +2,7 @@
 
 import numpy as np
 
-def Hirschmann2009_Dry(T,P,H2O,Melt_H2O):
+def Hirschmann2009_Dry(T, P, H2O, D_per_melt, cpx_frac):
 
     T_solidus = np.zeros(len(P))
 
@@ -19,15 +19,14 @@ def Hirschmann2009_Dry(T,P,H2O,Melt_H2O):
 
     return T_solidus
 
-def Katz2003(T, P, H2O, D_per_melt, cpx_frac):
+def Katz2003_Wet(T, P, H2O, D_per_melt, cpx_frac):
 
     import warnings
+    from scipy.optimize import root
 
+    def X_H2O(h2obulk, F):
 
-
-    def X_H2O(X, F):
-
-        return X/(0.01 + F*(1.0 - 0.01))
+        return h2obulk/(D_per_melt + F*(1.0 - D_per_melt))
 
     def delta_T(X):
 
@@ -36,7 +35,7 @@ def Katz2003(T, P, H2O, D_per_melt, cpx_frac):
     def F_dry():
 
         F_cpx_out = cpx_frac/R_cpx
-        T_cpx_out = F_cpx_out**(1.0/1.5) * (T_lh - T_s) + T_s
+        T_cpx_out = F_cpx_out**(1.0/1.5) * (T_liquidus_lherz - T_solidus) + T_solidus
 
         with warnings.catch_warnings():
             warnings.simplefilter('ignore', RuntimeWarning)
@@ -47,23 +46,20 @@ def Katz2003(T, P, H2O, D_per_melt, cpx_frac):
         F[F > F_cpx_out] = F_opx[F > F_cpx_out]
         return F
 
-    def F_wet():
-
-        # make sure arrays are the same size
-
+    def F_wet(T_solidus, T_liquidus, T_liquidus_lherz):
 
         # Evaluate anhydrous melting
-        F_cpx_out = cpx_frac/R
+        F_cpx_out = cpx_frac/R_cpx
         F_opx = F_dry()
 
-        delT_sat = delta_T(X_s)
+        delT_sat = delta_T(X_h2o_sat_melt)
 
         def F_iter(F):
 
             F[np.isnan(F)] = 0.0
-            Xi = X_H2O(X, F)
+            h2o_i = X_H2O(H2O, F)
 
-            delT = delta_T(Xi)
+            delT = delta_T(h2o_i)
             delT = np.minimum(delT, delT_sat)
             delT = np.clip(delT, 0, 1e99)
 
@@ -78,9 +74,9 @@ def Katz2003(T, P, H2O, D_per_melt, cpx_frac):
         sol = root(F_iter, x0=F_opx, method='anderson')
         F = sol.x
 
-        Xi = X_H2O(X, F)
+        h2o_i = X_H2O(H2O, F)
 
-        delT = delta_T(Xi)
+        delT = delta_T(h2o_i)
         delT = np.minimum(delT, delT_sat)
         delT = np.clip(delT, 0, 1e99)
 
@@ -95,10 +91,9 @@ def Katz2003(T, P, H2O, D_per_melt, cpx_frac):
             F_opx = F_cpx_out + (1.0 - F_cpx_out)*((T - T_cpx_out)/(T_liquidus - T_cpx_out))**1.5
 
         F[F > F_cpx_out] = F_opx[F > F_cpx_out]
-        return F
+        return F, T_solidus
 
     H2O = H2O * 1e-4
-    
 
     T_solidus = 1085.7 + (132.9*P) - (5.1*P**2)
     T_liquidus_lherz = 1475.0 + (80.0*P) - (3.2*P**2)
@@ -108,14 +103,9 @@ def Katz2003(T, P, H2O, D_per_melt, cpx_frac):
 
     X_h2o_sat_melt = (12.0*P**0.6) + (1.0*P)
 
-    if H2O == 0.0:
+    if np.mean(H2O) == 0.0:
         F = F_dry()
     else:
-        F = F_wet()
+        F, T_solidus = F_wet(T_solidus,T_liquidus,T_liquidus_lherz)
 
-
-
-
-    dT = delta_T(Melt_H2O)
-
-    return T_solidus, melt_mass_frac
+    return T_solidus, F
