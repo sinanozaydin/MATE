@@ -38,9 +38,11 @@ from cond_models.melt_odd import * #Conductivity functions of melts
 from cond_models.sp_chr_odd import * #Conductivity functions of spinel-chromites
 from min_sol.ol_sol import * #Olivine solubility models
 from thermal.adiabat import * #Adiabat models
-from solidus_models.solidus import * #Peridotite solidus models
+from solidus_models.solidus import * #Dry solidus models
+from solidus_models.wet_solidus import * #Wet solidus models
+from solidus_models.carbon_solidus import * #Carbon solidus models
 
-warnings.filterwarnings("ignore", category=RuntimeWarning) #ignoring many RuntimeWarning printouts that are useless
+warnings.filterwarnings("ignore", category=RuntimeWarning) #ignoring many RuntimeWarning printouts that are utterly useless
 
 #Color coding class for fancy-colored print-outs.
 class bcolors:
@@ -374,8 +376,12 @@ class MATE(QMainWindow):
 		MATE.px_calib = 2
 		MATE.ol_sol_calib = 3
 
-		MATE.solidus_model_selection = 0
-		self.solidus_calculated = False
+		MATE.solidus_dry_model_selection = 0
+		MATE.solidus_wet_model_selection = 0
+		MATE.solidus_carbon_model_selection = 0
+		self.solidus_dry_calculated = False
+		self.solidus_wet_calculated = False
+		self.solidus_carbon_calculated = False
 
 		MATE.model_method_list = ['Proton+Polaron+Ionic', 'Proton Only']
 		MATE.model_method_ol = 0
@@ -1256,14 +1262,38 @@ class MATE(QMainWindow):
 
 		#Reading the solidus models from the file.
 
-		self.solidus_model_data = self.read_csv(os.path.join(self.core_path, 'solidus_models', 'solidus.csv'), delim = ',')
+		self.solidus_dry_model_data = self.read_csv(os.path.join(self.core_path, 'solidus_models', 'solidus.csv'), delim = ',')
 
-		MATE.solidus_model_names = []
-		MATE.solidus_model_type = []
+		MATE.solidus_dry_model_names = []
+		MATE.solidus_dry_model_type = []
 
-		for i in range(1,len(self.solidus_model_data)):
-			MATE.solidus_model_names.append(self.solidus_model_data[i][0])
-			MATE.solidus_model_type.append(int(self.solidus_model_data[i][1]))
+		for i in range(1,len(self.solidus_dry_model_data)):
+
+			MATE.solidus_dry_model_names.append(self.solidus_dry_model_data[i][0])
+			MATE.solidus_dry_model_type.append(int(self.solidus_dry_model_data[i][1]))
+
+		#Reading the solidus models from the file.
+
+		self.solidus_wet_model_data = self.read_csv(os.path.join(self.core_path, 'solidus_models', 'wet_solidus.csv'), delim = ',')
+
+		MATE.solidus_wet_model_names = []
+		MATE.solidus_wet_model_type = []
+
+		for i in range(1,len(self.solidus_wet_model_data)):
+
+			MATE.solidus_wet_model_names.append(self.solidus_wet_model_data[i][0])
+			MATE.solidus_wet_model_type.append(int(self.solidus_wet_model_data[i][1]))
+
+		#Reading the solidus models from the file.
+
+		self.solidus_carbon_model_data = self.read_csv(os.path.join(self.core_path, 'solidus_models', 'carbon_solidus.csv'), delim = ',')
+
+		MATE.solidus_carbon_model_names = []
+		MATE.solidus_carbon_model_type = []
+
+		for i in range(1,len(self.solidus_carbon_model_data)):
+			MATE.solidus_carbon_model_names.append(self.solidus_carbon_model_data[i][0])
+			MATE.solidus_carbon_model_type.append(int(self.solidus_carbon_model_data[i][1]))
 
 	def read_xen_pt(self):
 
@@ -2137,6 +2167,9 @@ class MATE(QMainWindow):
 			if MATE.al_opx_model_select != 0:
 				self.recalculate_al()
 
+		#Calculating Dry Solidus
+		self.calculate_dry_solidus()
+
 	def load_input_geotherm(self):
 
 		#Interpolating the T for each depth in the mantle...
@@ -2256,7 +2289,7 @@ class MATE(QMainWindow):
 				(self.cpx_frac_wt * MATE.d_melt_cpx) +\
 				(self.gt_frac_wt * MATE.d_melt_gt)
 
-			self.calculate_solidus()
+			self.calculate_wet_solidus()
 
 			#Calculating the h2o content of melt that is in equilibrium with the entered solid-mixture, from Sifre et al. (2014)
 			self.melt_h2o = self.h2o / (self.melt_mass_frac + ((1.0 - self.melt_mass_frac) * self.d_per_melt))
@@ -2608,24 +2641,24 @@ class MATE(QMainWindow):
 
 			self.h2o_fug[i] = PSfugacity(self.p[i]*1e4,self.T[i]) / 1e4 #in GPa
 
-	def calculate_solidus(self):
+	def calculate_dry_solidus(self):
 
-		if MATE.solidus_model_type[MATE.solidus_model_selection] == 1:
-			self.T_solidus, self.melt_mass_frac  = eval(MATE.solidus_model_names[MATE.solidus_model_selection] + '(T = self.T, P = self.p, Melt_Mass_Frac = self.melt_mass_frac, H2O = self.h2o, D_per_melt = self.d_per_melt, cpx_frac = self.cpx_frac)')
-			self.solidus_calculated = True
-			if np.mean(self.melt_mass_frac[self.idx_moho:]) > 0:
-				MATE.melt_method = '0'
-				self.idx_melt_zero = []
-				for i in range(self.idx_moho, len(self.melt_mass_frac)):
-					if self.melt_mass_frac[i] == 0.0:
-						self.idx_melt_zero.append(i)
-			else:
-				MATE.melt_method = '1'
-			self.plot_melt_frac
-		else:
-			self.T_solidus = eval(MATE.solidus_model_names[MATE.solidus_model_selection] + '(T = self.T, P = self.p, Melt_Mass_Frac = self.melt_mass_frac, H2O = self.h2o, D_per_melt = self.d_per_melt, cpx_frac = self.cpx_frac)')
-			self.solidus_calculated = True
-			print(self.T_solidus)
+		if MATE.solidus_dry_model_type[MATE.solidus_dry_model_selection] == 0:
+			self.T_dry_solidus = eval(MATE.solidus_dry_model_names[MATE.solidus_dry_model_selection] + '(T = self.T, P = self.p)')
+			self.solidus_dry_calculated = True
+
+	def calculate_wet_solidus(self):
+
+		if MATE.solidus_wet_model_type[MATE.solidus_wet_model_selection] == 0:
+			self.T_wet_solidus = eval(MATE.solidus_wet_model_names[MATE.solidus_wet_model_selection] + '(T = self.T, T_solidus = self.T_dry_solidus, P = self.p, Melt_Mass_Frac = self.melt_mass_frac, H2O = self.h2o, D_per_melt = self.d_per_melt, cpx_frac = self.cpx_frac)')
+			self.solidus_wet_calculated = True
+
+	def calculate_carbonated_solidus(self):
+
+		if MATE.solidus_carbon_model_type[MATE.solidus_carbon_model_selection] == 0:
+			self.T_solidus = eval(MATE.solidus_carbon_model_names[MATE.solidus_carbon_model_selection] + '(T = self.T, T_solidus = self.T_solidus, P = self.p, Melt_Mass_Frac = self.melt_mass_frac, H2O = self.h2o, D_per_melt = self.d_per_melt, cpx_frac = self.cpx_frac)')
+			self.solidus_carbon_calculated = True
+
 	def solubility_ol(self):
 
 		#Def that calculates olivine storage capacities with different sources, sol_method.
@@ -4761,9 +4794,9 @@ class MATE(QMainWindow):
 			self.ax3.set_yticks([])
 			for tick in self.ax3.xaxis.get_major_ticks():
 				tick.label.set_fontsize(fontsize_labels)
-		crust_obj = patches.Rectangle((0,0) ,np.amax(self.T) - 273.0 + 50.0,MATE.moho / 1000.0, color = '#b76314', alpha = 0.6,hatch = 'xxxx')
+		crust_obj = patches.Rectangle((0,0) ,3000,MATE.moho / 1000.0, color = '#b76314', alpha = 0.6,hatch = 'xxxx')
 		self.ax3.add_patch(crust_obj)
-		ast_obj = patches.Rectangle((0,MATE.lab / 1000.0),np.amax(self.T) - 273.0 + 50.0,1e5, color = '#b73114', alpha = 0.6,hatch = 'xx')
+		ast_obj = patches.Rectangle((0,MATE.lab / 1000.0),3000,1e5, color = '#b73114', alpha = 0.6,hatch = 'xx')
 		self.ax3.add_patch(ast_obj)
 
 		for i in range(0,len(self.depth_comp_plot)):
@@ -4840,9 +4873,13 @@ class MATE(QMainWindow):
 
 		self.ax3.plot([649.890,1734.60],self.graphite_depth,color = '#2f9172',linewidth = 2.5,label = 'Graphite-Diamond')
 
-		if self.solidus_calculated == True:
+		if self.solidus_dry_calculated == True:
 
-			self.ax3.plot(self.T_solidus - 273.15, self.depth/1e3, color = '#b51e1e',linewidth = 2,label = 'Mantle Solidus')
+			self.ax3.plot(self.T_dry_solidus - 273.15, self.depth/1e3, color = '#b51e1e',linewidth = 2, linestyle = '--', label = 'Dry Mantle Solidus')
+
+		if self.solidus_wet_calculated == True:
+
+			self.ax3.plot(self.T_wet_solidus - 273.15, self.depth/1e3, color = '#1e7ab5',linewidth = 2, linestyle = '--', label = 'Wet Mantle Solidus')
 
 		if method == 'draw':
 			self.canvas.draw()
@@ -5701,11 +5738,8 @@ class MATE(QMainWindow):
 			if MATE.sol_plot == True:
 				self.solubility_ol()
 				self.solubility_partitioning()
-			if np.mean(self.melt_mass_frac[self.idx_moho:]) > 0:
-				MATE.melt_method = '0'
-				self.plot_composition(method = 'draw')
-				self.plot_melt_frac(method = 'draw')
-				self.plot_geotherm_button()
+			if self.solidus_wet_calculated == True:
+				self.plot_geotherm(method = 'draw')
 			self.plot_water(method = 'draw')
 			self.water_existence = True
 			self.plt_water_btn.setStyleSheet("QPushButton {min-width: 10em; font: bold; font-size: 9pt;background-color: #679c5f}")
@@ -5876,7 +5910,9 @@ class MATE(QMainWindow):
 		self.lower_bound_load = False
 		self.xenolith_existence = False
 
-		self.solidus_calculated = False
+		self.solidus_dry_calculated = False
+		self.solidus_wet_calculated = False
+		self.solidus_carbon_calculated = False
 
 		self.act_comp_btn.setStyleSheet("QPushButton {min-width: 10em; font: bold; font-size: 9pt;background-color: #93db88}")
 		self.geot_btn.setStyleSheet("QPushButton {min-width: 10em; font: bold; font-size: 9pt;background-color: #93db88}")
@@ -9118,22 +9154,54 @@ class SELECT_SOLIDUS_POP(QWidget):
 
 		solidus_layout = QFormLayout(self)
 
-		self.solidus_selection_btn = QPushButton('Solidus Model')
-		self.solidus_selection_text_box = QLineEdit(MATE.solidus_model_names[MATE.solidus_model_selection])
-		self.solidus_selection_text_box.setEnabled(False)
-		self.solidus_selection_btn.clicked.connect(self.solidus_model_get)
+		self.solidus_dry_selection_btn = QPushButton('Dry Solidus Model')
+		self.solidus_dry_selection_text_box = QLineEdit(MATE.solidus_dry_model_names[MATE.solidus_dry_model_selection])
+		self.solidus_dry_selection_text_box.setEnabled(False)
+		self.solidus_dry_selection_btn.clicked.connect(self.dry_solidus_model_get)
 
-		solidus_layout.addRow(self.solidus_selection_btn,self.solidus_selection_text_box)
+		self.solidus_wet_selection_btn = QPushButton('wet Solidus Model')
+		self.solidus_wet_selection_text_box = QLineEdit(MATE.solidus_wet_model_names[MATE.solidus_wet_model_selection])
+		self.solidus_wet_selection_text_box.setEnabled(False)
+		self.solidus_wet_selection_btn.clicked.connect(self.wet_solidus_model_get)
 
-	def solidus_model_get(self):
+		self.solidus_carbon_selection_btn = QPushButton('carbon Solidus Model')
+		self.solidus_carbon_selection_text_box = QLineEdit(MATE.solidus_carbon_model_names[MATE.solidus_carbon_model_selection])
+		self.solidus_carbon_selection_text_box.setEnabled(False)
+		self.solidus_carbon_selection_btn.clicked.connect(self.carbon_solidus_model_get)
+
+		solidus_layout.addRow(self.solidus_dry_selection_btn,self.solidus_dry_selection_text_box)
+		solidus_layout.addRow(self.solidus_wet_selection_btn,self.solidus_wet_selection_text_box)
+		solidus_layout.addRow(self.solidus_carbon_selection_btn,self.solidus_carbon_selection_text_box)
+
+	def dry_solidus_model_get(self):
 
 		item, ok = QInputDialog.getItem(self, "select input dialog",
-			"Conductivity model", MATE.solidus_model_names, 0, False)
+			"Dry Solidus Model", MATE.solidus_dry_model_selection, 0, False)
 
 		if ok and item:
 			self.solidus_selection_text_box.setText(item)
 
-		MATE.solidus_model_selection = MATE.solidus_model_names.index(item)
+		MATE.solidus_dry_model_selection = MATE.solidus_dry_model_selection.index(item)
+
+	def wet_solidus_model_get(self):
+
+		item, ok = QInputDialog.getItem(self, "select input dialog",
+			"Wet Solidus Model", MATE.solidus_wet_model_selection, 0, False)
+
+		if ok and item:
+			self.solidus_selection_text_box.setText(item)
+
+		MATE.solidus_wet_model_selection = MATE.solidus_wet_model_selection.index(item)
+
+	def carbon_solidus_model_get(self):
+
+		item, ok = QInputDialog.getItem(self, "select input dialog",
+			"Carbon Solidus Model", MATE.solidus_carbon_model_selection, 0, False)
+
+		if ok and item:
+			self.solidus_selection_text_box.setText(item)
+
+		MATE.solidus_carbon_model_selection = MATE.solidus_carbon_model_selection.index(item)
 
 class FIGPROP_POP(QWidget):
 
