@@ -2290,6 +2290,7 @@ class MATE(QMainWindow):
 				(self.gt_frac_wt * MATE.d_melt_gt)
 
 			self.calculate_wet_solidus()
+			self.calculate_carbonated_solidus()
 
 			#Calculating the h2o content of melt that is in equilibrium with the entered solid-mixture, from Sifre et al. (2014)
 			self.melt_h2o = self.h2o / (self.melt_mass_frac + ((1.0 - self.melt_mass_frac) * self.d_per_melt))
@@ -2649,15 +2650,17 @@ class MATE(QMainWindow):
 
 	def calculate_wet_solidus(self):
 
-		if MATE.solidus_wet_model_type[MATE.solidus_wet_model_selection] == 0:
-			self.T_wet_solidus = eval(MATE.solidus_wet_model_names[MATE.solidus_wet_model_selection] + '(T = self.T, T_solidus = self.T_dry_solidus, P = self.p, Melt_Mass_Frac = self.melt_mass_frac, H2O = self.h2o, D_per_melt = self.d_per_melt, cpx_frac = self.cpx_frac)')
-			self.solidus_wet_calculated = True
+		if np.mean(self.h2o[self.idx_moho:]) != 0.0:
+			if MATE.solidus_wet_model_type[MATE.solidus_wet_model_selection] == 0:
+				self.T_wet_solidus = eval(MATE.solidus_wet_model_names[MATE.solidus_wet_model_selection] + '(T = self.T, T_solidus = self.T_dry_solidus, P = self.p, Melt_Mass_Frac = self.melt_mass_frac, H2O = self.h2o, D_per_melt = self.d_per_melt, cpx_frac = self.cpx_frac)')
+				self.solidus_wet_calculated = True
 
 	def calculate_carbonated_solidus(self):
 
-		if MATE.solidus_carbon_model_type[MATE.solidus_carbon_model_selection] == 0:
-			self.T_solidus = eval(MATE.solidus_carbon_model_names[MATE.solidus_carbon_model_selection] + '(T = self.T, T_solidus = self.T_solidus, P = self.p, Melt_Mass_Frac = self.melt_mass_frac, H2O = self.h2o, D_per_melt = self.d_per_melt, cpx_frac = self.cpx_frac)')
-			self.solidus_carbon_calculated = True
+		if np.mean(self.co2[self.idx_moho:]) != 0.0:
+			if MATE.solidus_carbon_model_type[MATE.solidus_carbon_model_selection] == 0:
+				self.T_carbon_solidus = eval(MATE.solidus_carbon_model_names[MATE.solidus_carbon_model_selection] + '(T = self.T, T_solidus = self.T_wet_solidus, P = self.p, CO2_Melt = self.co2)')
+				self.solidus_carbon_calculated = True
 
 	def solubility_ol(self):
 
@@ -4880,6 +4883,10 @@ class MATE(QMainWindow):
 		if self.solidus_wet_calculated == True:
 
 			self.ax3.plot(self.T_wet_solidus - 273.15, self.depth/1e3, color = '#1e7ab5',linewidth = 2, linestyle = '--', label = 'Wet Mantle Solidus')
+
+		if self.solidus_carbon_calculated == True:
+
+			self.ax3.plot(self.T_carbon_solidus - 273.15, self.depth/1e3, color = '#1d9a29',linewidth = 2, linestyle = '--', label = 'Carbonated-Wet Mantle Solidus')
 
 		if method == 'draw':
 			self.canvas.draw()
