@@ -2662,6 +2662,18 @@ class MATE(QMainWindow):
 				self.T_carbon_solidus = eval(MATE.solidus_carbon_model_names[MATE.solidus_carbon_model_selection] + '(T = self.T, T_solidus = self.T_wet_solidus, P = self.p, CO2_Melt = self.co2)')
 				self.solidus_carbon_calculated = True
 
+	def calculate_melt_fraction(self):
+
+		#After Blatter2022
+
+		if self.solidus_wet_calculated == True:
+			if self.solidus_carbon_calculated == True:
+				self.melt_mass_frac = (self.T - self.T_carbon_solidus) / self.dT_dF
+			else:
+				self.melt_mass_frac = (self.T - self.T_wet_solidus) / self.dT_dF
+		else:
+			self.melt_mass_frac = (self.T - self.T_dry_solidus) / self.dT_dF
+
 	def solubility_ol(self):
 
 		#Def that calculates olivine storage capacities with different sources, sol_method.
@@ -3890,12 +3902,6 @@ class MATE(QMainWindow):
 			self.melt_cond_max = cond_melt_max
 			self.melt_cond_min = cond_melt_min
 			self.melt_cond = cond_melt_max
-
-	def calculate_melt_fraction(self):
-
-		#After Blatter2022
-
-		self.melt_mass_frac = (self.T - self.T_solidus) / self.dT_dF
 
 	def phase_mixing_function(self,method = None, melt_method = None):
 
@@ -9162,17 +9168,17 @@ class SELECT_SOLIDUS_POP(QWidget):
 		solidus_layout = QFormLayout(self)
 
 		self.solidus_dry_selection_btn = QPushButton('Dry Solidus Model')
-		self.solidus_dry_selection_text_box = QLineEdit(MATE.solidus_dry_model_names[MATE.solidus_dry_model_selection])
+		self.solidus_dry_selection_text_box = QLineEdit(str(MATE.solidus_dry_model_names[MATE.solidus_dry_model_selection]))
 		self.solidus_dry_selection_text_box.setEnabled(False)
 		self.solidus_dry_selection_btn.clicked.connect(self.dry_solidus_model_get)
 
-		self.solidus_wet_selection_btn = QPushButton('wet Solidus Model')
-		self.solidus_wet_selection_text_box = QLineEdit(MATE.solidus_wet_model_names[MATE.solidus_wet_model_selection])
+		self.solidus_wet_selection_btn = QPushButton('Wet Solidus Model')
+		self.solidus_wet_selection_text_box = QLineEdit(str(MATE.solidus_wet_model_names[MATE.solidus_wet_model_selection]))
 		self.solidus_wet_selection_text_box.setEnabled(False)
 		self.solidus_wet_selection_btn.clicked.connect(self.wet_solidus_model_get)
 
-		self.solidus_carbon_selection_btn = QPushButton('carbon Solidus Model')
-		self.solidus_carbon_selection_text_box = QLineEdit(MATE.solidus_carbon_model_names[MATE.solidus_carbon_model_selection])
+		self.solidus_carbon_selection_btn = QPushButton('Carbon Solidus Model')
+		self.solidus_carbon_selection_text_box = QLineEdit(str(MATE.solidus_carbon_model_names[MATE.solidus_carbon_model_selection]))
 		self.solidus_carbon_selection_text_box.setEnabled(False)
 		self.solidus_carbon_selection_btn.clicked.connect(self.carbon_solidus_model_get)
 
@@ -9183,32 +9189,32 @@ class SELECT_SOLIDUS_POP(QWidget):
 	def dry_solidus_model_get(self):
 
 		item, ok = QInputDialog.getItem(self, "select input dialog",
-			"Dry Solidus Model", MATE.solidus_dry_model_selection, 0, False)
+			"Dry Solidus Model", MATE.solidus_dry_model_names, 0, False)
 
 		if ok and item:
-			self.solidus_selection_text_box.setText(item)
+			self.solidus_dry_selection_text_box.setText(item)
 
-		MATE.solidus_dry_model_selection = MATE.solidus_dry_model_selection.index(item)
+		MATE.solidus_dry_model_selection = MATE.solidus_dry_model_names.index(item)
 
 	def wet_solidus_model_get(self):
 
 		item, ok = QInputDialog.getItem(self, "select input dialog",
-			"Wet Solidus Model", MATE.solidus_wet_model_selection, 0, False)
+			"Wet Solidus Model", MATE.solidus_wet_model_names, 0, False)
 
 		if ok and item:
-			self.solidus_selection_text_box.setText(item)
+			self.solidus_wet_selection_text_box.setText(item)
 
-		MATE.solidus_wet_model_selection = MATE.solidus_wet_model_selection.index(item)
+		MATE.solidus_wet_model_selection = MATE.solidus_wet_model_names.index(item)
 
 	def carbon_solidus_model_get(self):
 
 		item, ok = QInputDialog.getItem(self, "select input dialog",
-			"Carbon Solidus Model", MATE.solidus_carbon_model_selection, 0, False)
+			"Carbon Solidus Model", MATE.solidus_carbon_model_names, 0, False)
 
 		if ok and item:
-			self.solidus_selection_text_box.setText(item)
+			self.solidus_carbon_selection_text_box.setText(item)
 
-		MATE.solidus_carbon_model_selection = MATE.solidus_carbon_model_selection.index(item)
+		MATE.solidus_carbon_model_selection = MATE.solidus_carbon_model_names.index(item)
 
 class FIGPROP_POP(QWidget):
 

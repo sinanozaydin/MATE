@@ -20,3 +20,11 @@ def Hirschmann2009_DryPeridotite(T, P):
     T_solidus = T_solidus + 273.15 #Converting to Kelvin
 
     return T_solidus
+
+def Sarafian2017_DryPeridotite(T,P):
+
+    T_solidus = Hirschmann2009_DryPeridotite(T,P)
+
+    T_solidus = T_solidus + 60
+
+    return T_solidus
