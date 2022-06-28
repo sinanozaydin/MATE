@@ -312,6 +312,11 @@ class MATE(QMainWindow):
 		solverMenu.addAction(xenSolver)
 		self.xen_solver = None
 
+		meltSolver = QAction('Melt fraction solver properties', self)
+		meltSolver.triggered.connect(self.melt_fraction_solver_properties)
+		solverMenu.addAction(meltSolver)
+		self.melt_frac_solver = None
+
 		#Write FILE BUTTON
 
 		WriteDataButton = QAction('Write Data', self)
@@ -359,6 +364,8 @@ class MATE(QMainWindow):
 		MATE.amp_method = '1' #1 default: entering amph invalid
 		MATE.melt_method = '1' #1 default: entring melt invalid.
 		MATE.part_px_method = '1' #1 defualt:
+
+		self.melt_calc_from_zero_melt = True
 
 		MATE.comp_handling = '0'
 		MATE.comp_type = '0'
@@ -667,18 +674,23 @@ class MATE(QMainWindow):
 		solve_geotherm_butn.setStyleSheet("QPushButton {min-width: 10em; font: bold; font-size: 9pt;background-color: #bf490f}")
 		solve_geotherm_butn.clicked.connect(self.solve_for_geotherm)
 
+		solve_melt_fraction_butn = QPushButton('Solve Melt Fraction',self)
+		solve_melt_fraction_butn.move(10,765)
+		solve_melt_fraction_butn.setStyleSheet("QPushButton {min-width: 10em; font: bold; font-size: 9pt;background-color: #870000}")
+		solve_melt_fraction_butn.clicked.connect(self.solve_for_melt_fraction)
+
 		solve_butn = QPushButton('Solve Water',self)
-		solve_butn.move(10,765)
+		solve_butn.move(10,800)
 		solve_butn.setStyleSheet("QPushButton {min-width: 10em; font: bold; font-size: 9pt;background-color: #663794}")
 		solve_butn.clicked.connect(self.solve_for_water)
 
 		plt_reset_btn = QPushButton('Clear All',self)
-		plt_reset_btn.move(10,800)
+		plt_reset_btn.move(10,835)
 		plt_reset_btn.setStyleSheet("QPushButton {min-width: 10em; font: bold; font-size: 9pt;background-color: #de5d5d}")
 		plt_reset_btn.clicked.connect(self.reset_all_plot)
 
 		plt_legend_btn = QPushButton('Plot Legend',self)
-		plt_legend_btn.move(10,835)
+		plt_legend_btn.move(10,870)
 		plt_legend_btn.setStyleSheet("QPushButton {min-width: 10em; font: bold; font-size: 9pt;background-color: #ddb62b}")
 		plt_legend_btn.clicked.connect(self.plot_legend)
 
@@ -2292,11 +2304,10 @@ class MATE(QMainWindow):
 			self.calculate_wet_solidus()
 			self.calculate_carbonated_solidus()
 
-			#Calculating the h2o content of melt that is in equilibrium with the entered solid-mixture, from Sifre et al. (2014)
-			self.melt_h2o = self.h2o / (self.melt_mass_frac + ((1.0 - self.melt_mass_frac) * self.d_per_melt))
+			self.melt_h2o = self.calculate_melt_water(h2o_bulk = self.h2o, melt_mass_frac = self.melt_mass_frac)
 
 			#reassigning the zero mass frac melt layers using pre-mapped indexing array.
-			self.melt_h2o[self.idx_melt_zero] = 0.0
+			self.melt_h2o[self.melt_mass_frac<= 0.0] = 0.0
 
 			#Recalculating the self.h2o as peridotite (solid) water content
 			self.h2o_solid = (self.h2o * self.d_per_melt) /\
@@ -2662,6 +2673,13 @@ class MATE(QMainWindow):
 				self.T_carbon_solidus = eval(MATE.solidus_carbon_model_names[MATE.solidus_carbon_model_selection] + '(T = self.T, T_solidus = self.T_wet_solidus, P = self.p, CO2_Melt = self.co2)')
 				self.solidus_carbon_calculated = True
 
+	def calculate_melt_water(self, h2o_bulk, melt_mass_frac):
+
+		#Calculating the h2o content of melt that is in equilibrium with the entered solid-mixture, from Sifre et al. (2014)
+		melt_water = h2o_bulk / (melt_mass_frac + ((1.0 - melt_mass_frac) * self.d_per_melt))
+
+		return melt_water
+
 	def calculate_melt_fraction(self):
 
 		#After Blatter2022
@@ -2673,6 +2691,39 @@ class MATE(QMainWindow):
 				self.melt_mass_frac = (self.T - self.T_wet_solidus) / self.dT_dF
 		else:
 			self.melt_mass_frac = (self.T - self.T_dry_solidus) / self.dT_dF
+
+	def calculate_melt_fraction_minimise(self,F):
+
+		self.calculate_wet_solidus()
+		self.calculate_carbonated_solidus()
+
+		if self.solidus_wet_calculated == True:
+			if self.solidus_carbon_calculated == True:
+				H = F - ((self.T[self.idx_moho:] - self.T_carbon_solidus[self.idx_moho:]) / self.dT_dF[self.idx_moho:])
+			else:
+				H = F - ((self.T[self.idx_moho:] - self.T_wet_solidus[self.idx_moho:]) / self.dT_dF[self.idx_moho:])
+		else:
+			H = F - ((self.T[self.idx_moho:] - self.T_dry_solidus[self.idx_moho:]) / self.dT_dF[self.idx_moho:])
+
+		return H
+
+	def calculate_melt_fraction_iterative(self):
+
+		if MATE.melt_method != '0':
+
+			MATE.melt_method = '0'
+			self.calculate_water()
+			self.melt_calc_from_zero_melt = True
+
+		else:
+
+			pass
+
+		sol = optimize.root(self.calculate_melt_fraction_minimise, x0= self.melt_mass_frac[self.idx_moho:], method='lm')
+		F = sol.x
+		F[F <= 0.0] = 0
+
+		return F
 
 	def solubility_ol(self):
 
@@ -4713,7 +4764,9 @@ class MATE(QMainWindow):
 		self.ax0.add_patch(crust_obj)
 		self.ax0.add_patch(ast_obj)
 
-		self.fig.tight_layout()
+		with warnings.catch_warnings():
+			warnings.simplefilter('ignore', UserWarning)
+			self.fig.tight_layout()
 
 		if method == 'draw':
 
@@ -4742,7 +4795,17 @@ class MATE(QMainWindow):
 			self.ax_melt_frac.axhline(self.depth_comp_plot[i]/1000.0,linewidth = 0.75, alpha = 0.5, color = 'k',linestyle = '-.')
 
 		self.ax_melt_frac.plot(self.melt_mass_frac[self.idx_moho:]*100, self.depth[self.idx_moho:]/1e3, linestyle = '-', color = 'k', linewidth = 1.25)
-		self.ax_melt_frac.set_xlim((0,int(np.amax(self.melt_mass_frac[self.idx_moho:])*200)))
+		maxfrac = (np.amax(self.melt_mass_frac[self.idx_moho:]) < 50.0)
+		if maxfrac >= 50.0:
+			max_melt_frac_plot = 100.0
+		elif (maxfrac < 50.0) and (maxfrac >= 30.0):
+			max_melt_frac_plot = 50
+		elif maxfrac <= 0.05:
+			max_melt_frac_plot = 0.1
+		else:
+			max_melt_frac_plot = int(np.amax(self.melt_mass_frac[self.idx_moho:])*200)
+
+		self.ax_melt_frac.set_xlim((0,max_melt_frac_plot))
 		self.ax_melt_frac.set_ylim((MATE.lab / 1000.0) + 25.0, 0.0)
 
 		if method == 'save':
@@ -5927,6 +5990,8 @@ class MATE(QMainWindow):
 		self.solidus_wet_calculated = False
 		self.solidus_carbon_calculated = False
 
+		self.melt_calc_from_zero_melt = False
+
 		self.act_comp_btn.setStyleSheet("QPushButton {min-width: 10em; font: bold; font-size: 9pt;background-color: #93db88}")
 		self.geot_btn.setStyleSheet("QPushButton {min-width: 10em; font: bold; font-size: 9pt;background-color: #93db88}")
 		self.plt_water_btn.setStyleSheet("QPushButton {min-width: 10em; font: bold; font-size: 9pt;background-color: #93db88}")
@@ -6233,7 +6298,9 @@ class MATE(QMainWindow):
 					self.calculate_melt_conductivity()
 
 				self.phase_mixing_function(method = MATE.phs_mix_method, melt_method = MATE.phs_melt_mix_method)
+				self.plot_water_reset()
 				self.plot_water(method = 'draw')
+				self.plt_water_btn.setStyleSheet("QPushButton {min-width: 10em; font: bold; font-size: 9pt;background-color: #679c5f}")
 				self.plot_conductivity(method = 'draw', boundaries = False)
 
 				QMessageBox.about(self, 'Info', "The calculation has finished in " + str(total_time) + " seconds.")
@@ -6323,12 +6390,40 @@ class MATE(QMainWindow):
 
 			QMessageBox.about(self, 'Warning!', "Thermobarometry data has to be imported for this function to work.")
 
+	def solve_for_melt_fraction(self):
+
+		if self.water_existence == True:
+
+			self.melt_mass_frac = self.calculate_melt_fraction_iterative()
+			#Adding the non-nan sections into the array(crust)
+
+			for i in range(0,self.idx_moho):
+				self.melt_mass_frac = np.insert(self.melt_mass_frac,0,-999)
+
+			if self.melt_calc_from_zero_melt == True:
+				self.plot_composition(method = 'draw')
+			self.plot_melt_frac(method = 'draw')
+			self.calculate_water()
+			self.plot_water_reset()
+			self.plot_water(method = 'draw')
+
+		else:
+
+			QMessageBox.about(self, 'Warning!', "Water calculation has to be made at least once before using this functionality.")
+
 	def xen_solver_properties(self):
 
 		if self.xen_solver is None:
 			self.xen_solver_pop = XEN_SOLV_POP()
 			self.xen_solver_pop.setGeometry(QtCore.QRect(1000, 100, 100, 100))
 		self.xen_solver_pop.show()
+
+	def melt_fraction_solver_properties(self):
+
+		if self.melt_frac_solver is None:
+			self.melt_frac_solver_pop = MELT_FRAC_POP()
+			self.melt_frac_solver_pop.setGeometry(QtCore.QRect(1000, 100, 100, 100))
+		self.melt_frac_solver_pop.show()
 
 	def forward_model_selection(self):
 
@@ -9540,6 +9635,16 @@ class XEN_SOLV_POP(QWidget):
 				MATE.heat_flow_search_incr = float(text)
 			except ValueError:
 				QMessageBox.about(self,"Warning!","Please enter a value that can be converted to floating number.")
+
+class MELT_FRAC_POP(QWidget):
+
+	def __init__(self):
+
+		QWidget.__init__(self)
+
+		melt_frac_solv_layout = QFormLayout(self)
+
+
 
 def main():
 
