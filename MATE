@@ -2399,33 +2399,22 @@ class MATE(QMainWindow):
 			else:
 				self.ol_h2o = self.h2o_solid / (self.ol_frac + ((self.opx_frac * MATE.d_opx_ol) + (self.cpx_frac * MATE.d_cpx_ol) + (self.gt_frac * MATE.d_gt_ol)))
 
-			for i in range(self.idx_moho,len(self.ol_h2o)):
-					if self.opx_frac[i] != 0:
-						self.opx_h2o[i] = self.ol_h2o[i] * MATE.d_opx_ol[i]
-					else:
-						self.opx_h2o[i] = 0.0
+			self.opx_h2o = self.ol_h2o * MATE.d_opx_ol
+			self.opx_h2o[self.opx_frac == 0] = 0.0
 
-					if self.cpx_frac[i] != 0.0:
-						self.cpx_h2o[i] = self.ol_h2o[i] * MATE.d_cpx_ol[i]
-					else:
-						self.cpx_h2o[i] = 0.0
+			self.cpx_h2o = self.ol_h2o * MATE.d_cpx_ol
+			self.cpx_h2o[self.cpx_frac == 0] = 0.0
 
-					if self.gt_frac[i] != 0:
-						self.gt_h2o[i] = self.ol_h2o[i] * MATE.d_gt_ol[i]
-					else:
-						self.gt_h2o[i] = 0.0
+			self.gt_h2o = self.ol_h2o * MATE.d_gt_ol
+			self.gt_h2o[self.gt_frac == 0] = 0.0
 
-					if MATE.hydr_part_method == 0:
+			if MATE.hydr_part_method == 0:
 
-						if self.amp_frac[i] != 0.0:
-							self.amp_h2o[i] = self.ol_h2o[i] * MATE.d_amp_ol[i]
-						else:
-							self.amp_h2o[i] = 0.0
+				self.amp_h2o = self.ol_h2o * MATE.d_amp_ol
+				self.amp_h2o[self.amp_frac == 0] = 0.0
 
-						if self.pl_frac[i] != 0.0:
-							self.pl_h2o[i] = self.ol_h2o[i] * MATE.d_pl_ol[i]
-						else:
-							self.pl_h2o[i] = 0.0
+				self.pl_h2o = self.ol_h2o * MATE.d_pl_ol
+				self.pl_h2o[self.pl_frac == 0] = 0.0
 
 		elif MATE.part_px_method == '0':
 
@@ -2436,28 +2425,19 @@ class MATE(QMainWindow):
 			else:
 				self.ol_h2o = self.h2o_solid / (self.ol_frac + ((self.px_frac * MATE.d_opx_ol) + (self.gt_frac * MATE.d_gt_ol)))
 
-			for i in range(self.idx_moho,len(self.ol_h2o)):
-				if self.px_frac[i] != 0:
-					self.px_h2o[i] = self.ol_h2o[i] * MATE.d_opx_ol[i]  #Here opx is the same as cpx so equivalent to px
-				else:
-					self.px_h2o[i] = 0.0
+			self.px_h2o = self.ol_h2o * MATE.d_opx_ol
+			self.px_h2o[self.opx_frac == 0] = 0.0
 
-				if self.gt_frac[i] != 0:
-					self.gt_h2o[i] = self.ol_h2o[i] * MATE.d_gt_ol[i]  #Here opx is the same as cpx so equivalent to px
-				else:
-					self.gt_h2o[i] = 0.0
+			self.gt_h2o = self.ol_h2o * MATE.d_gt_ol
+			self.gt_h2o[self.gt_frac == 0] = 0.0
 
-				if MATE.hydr_part_method == 0:
+			if MATE.hydr_part_method == 0:
 
-					if self.amp_frac[i] != 0.0:
-						self.amp_h2o[i] = self.ol_h2o[i] * MATE.d_amp_ol[i]
-					else:
-						self.amp_h2o[i] = 0.0
+				self.amp_h2o = self.ol_h2o * MATE.d_amp_ol
+				self.amp_h2o[self.amp_frac == 0] = 0.0
 
-					if self.pl_frac[i] != 0.0:
-						self.pl_h2o[i] = self.ol_h2o[i] * MATE.d_pl_ol[i]
-					else:
-						self.pl_h2o[i] = 0.0
+				self.pl_h2o = self.ol_h2o * MATE.d_pl_ol
+				self.pl_h2o[self.pl_frac == 0] = 0.0
 
 		all_h2o = [self.h2o[self.idx_moho:],self.h2o_solid[self.idx_moho:],self.ol_h2o[self.idx_moho:],
 		self.opx_h2o[self.idx_moho:],self.cpx_h2o[self.idx_moho:],self.gt_h2o[self.idx_moho:],self.px_h2o[self.idx_moho:]]
