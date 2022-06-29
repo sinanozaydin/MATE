@@ -406,6 +406,9 @@ class MATE(QMainWindow):
 		MATE.sp_chr_cond_selection = 0
 		MATE.melt_cond_selection = 0
 
+		MATE.melt_partitions_calculated = False
+		MATE.mineral_partitions_calculated = False
+
 		MATE.px_display_item = 0
 
 		MATE.al_opx_model_select = 0
@@ -1624,6 +1627,9 @@ class MATE(QMainWindow):
 
 		self.h2o_fugacity_calculated = False
 
+		MATE.mineral_partitions_calculated = False
+		MATE.melt_partitions_calculated = False
+
 		comp_text_data = str(MATE.text).splitlines()
 		self.layer_data = []
 
@@ -2243,63 +2249,67 @@ class MATE(QMainWindow):
 
 		if MATE.melt_method == '0':
 
-			#Converting fractions to water holding species that has an exchange with coexisting melt.
-			self.ol_frac_wt = self.ol_frac / (self.ol_frac + self.opx_frac + self.cpx_frac + self.gt_frac)
-			self.opx_frac_wt = self.opx_frac / (self.ol_frac + self.opx_frac + self.cpx_frac + self.gt_frac)
-			self.cpx_frac_wt = self.cpx_frac / (self.ol_frac + self.opx_frac + self.cpx_frac + self.gt_frac)
-			self.gt_frac_wt = self.gt_frac / (self.ol_frac + self.opx_frac + self.cpx_frac + self.gt_frac)
+			if MATE.melt_partitions_calculated == False:
 
-			if (MATE.d_melt_opx_type[MATE.opx_melt_part_select] == '1') or (MATE.d_melt_opx_type[MATE.opx_melt_part_select] == '3'):
+				#Converting fractions to water holding species that has an exchange with coexisting melt.
+				self.ol_frac_wt = self.ol_frac / (self.ol_frac + self.opx_frac + self.cpx_frac + self.gt_frac)
+				self.opx_frac_wt = self.opx_frac / (self.ol_frac + self.opx_frac + self.cpx_frac + self.gt_frac)
+				self.cpx_frac_wt = self.cpx_frac / (self.ol_frac + self.opx_frac + self.cpx_frac + self.gt_frac)
+				self.gt_frac_wt = self.gt_frac / (self.ol_frac + self.opx_frac + self.cpx_frac + self.gt_frac)
 
-				MATE.d_melt_opx = eval(self.d_melt_opx_function[MATE.opx_part_select])
+				if (MATE.d_melt_opx_type[MATE.opx_melt_part_select] == '1') or (MATE.d_melt_opx_type[MATE.opx_melt_part_select] == '3'):
 
-			elif (MATE.d_melt_opx_type[MATE.opx_melt_part_select] == '2'):
+					MATE.d_melt_opx = eval(self.d_melt_opx_function[MATE.opx_part_select])
 
-				MATE.d_melt_opx = np.zeros(len(self.p))
+				elif (MATE.d_melt_opx_type[MATE.opx_melt_part_select] == '2'):
 
-				for i in range(0,len(self.p)):
-					if self.p[i] < self.d_melt_opx_change[MATE.opx_melt_part_select]:
-						MATE.d_melt_opx[i] = eval(self.d_melt_opx_function[MATE.opx_melt_part_select])
-					else:
-						MATE.d_melt_opx[i] = eval(self.d_melt_opx_function[MATE.opx_melt_part_select])
+					MATE.d_melt_opx = np.zeros(len(self.p))
 
-			elif (MATE.d_melt_opx_type[MATE.opx_melt_part_select] == '4'):
+					for i in range(0,len(self.p)):
+						if self.p[i] < self.d_melt_opx_change[MATE.opx_melt_part_select]:
+							MATE.d_melt_opx[i] = eval(self.d_melt_opx_function[MATE.opx_melt_part_select])
+						else:
+							MATE.d_melt_opx[i] = eval(self.d_melt_opx_function[MATE.opx_melt_part_select])
 
-				MATE.d_melt_opx = np.ones(len(self.p)) * float(self.d_melt_opx_function[MATE.opx_melt_part_select])
+				elif (MATE.d_melt_opx_type[MATE.opx_melt_part_select] == '4'):
 
-
-			if (MATE.d_melt_cpx_type[MATE.cpx_melt_part_select] == '1') or (MATE.d_melt_cpx_type[MATE.cpx_melt_part_select] == '3'):
-
-				MATE.d_melt_cpx = eval(self.d_melt_cpx_function[MATE.cpx_part_select])
-
-			elif (MATE.d_melt_cpx_type[MATE.cpx_melt_part_select] == '2'):
-
-				MATE.d_melt_cpx = np.zeros(len(self.p))
-
-				for i in range(0,len(self.p)):
-					if self.p[i] < self.d_melt_cpx_change[MATE.cpx_melt_part_select]:
-						MATE.d_melt_cpx[i] = eval(self.d_melt_cpx_function[MATE.cpx_melt_part_select])
-					else:
-						MATE.d_melt_cpx[i] = eval(self.d_melt_cpx_function[MATE.cpx_melt_part_select])
-
-			elif (MATE.d_melt_cpx_type[MATE.cpx_melt_part_select] == '4'):
-
-				MATE.d_melt_cpx = np.ones(len(self.p)) * float(self.d_melt_cpx_function[MATE.cpx_melt_part_select])
+					MATE.d_melt_opx = np.ones(len(self.p)) * float(self.d_melt_opx_function[MATE.opx_melt_part_select])
 
 
-			if (MATE.d_melt_ol_type[MATE.ol_melt_part_select] == '4'):
+				if (MATE.d_melt_cpx_type[MATE.cpx_melt_part_select] == '1') or (MATE.d_melt_cpx_type[MATE.cpx_melt_part_select] == '3'):
 
-				MATE.d_melt_ol = np.ones(len(self.p)) * float(self.d_melt_ol_function[MATE.ol_melt_part_select])
+					MATE.d_melt_cpx = eval(self.d_melt_cpx_function[MATE.cpx_part_select])
 
-			if (MATE.d_melt_gt_type[MATE.gt_melt_part_select] == '4'):
+				elif (MATE.d_melt_cpx_type[MATE.cpx_melt_part_select] == '2'):
 
-				MATE.d_melt_gt = np.ones(len(self.p)) * float(self.d_melt_gt_function[MATE.gt_melt_part_select])
+					MATE.d_melt_cpx = np.zeros(len(self.p))
 
-			#Calculating partition coeff of water between per and melt from Hirschmann et al. (2009)
-			self.d_per_melt = (self.ol_frac_wt * MATE.d_melt_ol) +\
-				(self.opx_frac_wt * MATE.d_melt_opx) +\
-				(self.cpx_frac_wt * MATE.d_melt_cpx) +\
-				(self.gt_frac_wt * MATE.d_melt_gt)
+					for i in range(0,len(self.p)):
+						if self.p[i] < self.d_melt_cpx_change[MATE.cpx_melt_part_select]:
+							MATE.d_melt_cpx[i] = eval(self.d_melt_cpx_function[MATE.cpx_melt_part_select])
+						else:
+							MATE.d_melt_cpx[i] = eval(self.d_melt_cpx_function[MATE.cpx_melt_part_select])
+
+				elif (MATE.d_melt_cpx_type[MATE.cpx_melt_part_select] == '4'):
+
+					MATE.d_melt_cpx = np.ones(len(self.p)) * float(self.d_melt_cpx_function[MATE.cpx_melt_part_select])
+
+
+				if (MATE.d_melt_ol_type[MATE.ol_melt_part_select] == '4'):
+
+					MATE.d_melt_ol = np.ones(len(self.p)) * float(self.d_melt_ol_function[MATE.ol_melt_part_select])
+
+				if (MATE.d_melt_gt_type[MATE.gt_melt_part_select] == '4'):
+
+					MATE.d_melt_gt = np.ones(len(self.p)) * float(self.d_melt_gt_function[MATE.gt_melt_part_select])
+
+				#Calculating partition coeff of water between per and melt from Hirschmann et al. (2009)
+				self.d_per_melt = (self.ol_frac_wt * MATE.d_melt_ol) +\
+					(self.opx_frac_wt * MATE.d_melt_opx) +\
+					(self.cpx_frac_wt * MATE.d_melt_cpx) +\
+					(self.gt_frac_wt * MATE.d_melt_gt)
+
+				MATE.melt_partitions_calculated = True
 
 			self.calculate_wet_solidus()
 			self.calculate_carbonated_solidus()
@@ -2316,63 +2326,66 @@ class MATE(QMainWindow):
 
 			self.h2o_solid = self.h2o
 
-		#CALCULATING AL-DEPENDENT PARTITION COEFF
-		if MATE.part_px_method == '1':
-			#OPX/OL if they are handled independently.
-			if (MATE.d_opx_type[MATE.opx_part_select] == '1') or (MATE.d_opx_type[MATE.opx_part_select] == '3'):
-				#Evaluating function that are stored in str form in csv files.
+		if MATE.mineral_partitions_calculated == False:
+			#CALCULATING AL-DEPENDENT PARTITION COEFF
+			if MATE.part_px_method == '1':
+				#OPX/OL if they are handled independently.
+				if (MATE.d_opx_type[MATE.opx_part_select] == '1') or (MATE.d_opx_type[MATE.opx_part_select] == '3'):
+					#Evaluating function that are stored in str form in csv files.
 
-				MATE.d_opx_ol = eval(self.dopx_function[MATE.opx_part_select])
-			elif (MATE.d_opx_type[MATE.opx_part_select] == '2'):
-				MATE.d_opx_ol = np.zeros(len(self.p))
-				for i in range(0,len(self.p)):
-					if self.p[i] < self.dopx_change[MATE.opx_part_select]:
-						MATE.d_opx_ol[i] = eval(self.dopx_function[MATE.opx_part_select])
-					else:
-						MATE.d_opx_ol[i] = eval(self.dopx_function_2[MATE.opx_part_select])
-			elif (MATE.d_opx_type[MATE.opx_part_select] == '4'):
-				MATE.d_opx_ol = np.ones(len(self.p)) * float(self.dopx_function[MATE.opx_part_select])
+					MATE.d_opx_ol = eval(self.dopx_function[MATE.opx_part_select])
+				elif (MATE.d_opx_type[MATE.opx_part_select] == '2'):
+					MATE.d_opx_ol = np.zeros(len(self.p))
+					for i in range(0,len(self.p)):
+						if self.p[i] < self.dopx_change[MATE.opx_part_select]:
+							MATE.d_opx_ol[i] = eval(self.dopx_function[MATE.opx_part_select])
+						else:
+							MATE.d_opx_ol[i] = eval(self.dopx_function_2[MATE.opx_part_select])
+				elif (MATE.d_opx_type[MATE.opx_part_select] == '4'):
+					MATE.d_opx_ol = np.ones(len(self.p)) * float(self.dopx_function[MATE.opx_part_select])
 
-			#If tree for handling CPX/OL
+				#If tree for handling CPX/OL
 
-			if (MATE.d_cpx_type[MATE.cpx_part_select] == '1') or (MATE.d_cpx_type[MATE.cpx_part_select] == '3') or (MATE.d_cpx_type[MATE.cpx_part_select] == '5') :
-				#Evaluating function that are stored in str form in csv files.
-				MATE.d_cpx_ol = eval(self.dcpx_function[MATE.cpx_part_select])
-			elif (MATE.d_cpx_type[MATE.cpx_part_select] == '2'):
-				MATE.d_cpx_ol = np.zeros(len(self.p))
-				for i in range(0,len(self.p)):
-					if self.p[i] < self.dcpx_change[MATE.cpx_part_select]:
-						MATE.d_cpx_ol[i] = eval(self.dcpx_function[MATE.cpx_part_select])
-					else:
-						MATE.d_cpx_ol[i] = eval(self.dcpx_function_2[MATE.cpx_part_select])
-			elif (MATE.d_cpx_type[MATE.cpx_part_select] == '4'):
-				MATE.d_cpx_ol = np.ones(len(self.p)) * float(self.dcpx_function[MATE.cpx_part_select])
+				if (MATE.d_cpx_type[MATE.cpx_part_select] == '1') or (MATE.d_cpx_type[MATE.cpx_part_select] == '3') or (MATE.d_cpx_type[MATE.cpx_part_select] == '5') :
+					#Evaluating function that are stored in str form in csv files.
+					MATE.d_cpx_ol = eval(self.dcpx_function[MATE.cpx_part_select])
+				elif (MATE.d_cpx_type[MATE.cpx_part_select] == '2'):
+					MATE.d_cpx_ol = np.zeros(len(self.p))
+					for i in range(0,len(self.p)):
+						if self.p[i] < self.dcpx_change[MATE.cpx_part_select]:
+							MATE.d_cpx_ol[i] = eval(self.dcpx_function[MATE.cpx_part_select])
+						else:
+							MATE.d_cpx_ol[i] = eval(self.dcpx_function_2[MATE.cpx_part_select])
+				elif (MATE.d_cpx_type[MATE.cpx_part_select] == '4'):
+					MATE.d_cpx_ol = np.ones(len(self.p)) * float(self.dcpx_function[MATE.cpx_part_select])
 
-		else:
+			else:
 
-			if (MATE.d_opx_type[MATE.opx_part_select] == '0') or (MATE.d_opx_type[MATE.opx_part_select] == '1') or (MATE.d_opx_type[MATE.opx_part_select] == '3'):
+				if (MATE.d_opx_type[MATE.opx_part_select] == '0') or (MATE.d_opx_type[MATE.opx_part_select] == '1') or (MATE.d_opx_type[MATE.opx_part_select] == '3'):
 
-				MATE.d_opx_ol =  eval(self.d_px_function[MATE.px_part_select])
-				MATE.d_cpx_ol =  eval(self.d_px_function[MATE.px_part_select])
+					MATE.d_opx_ol =  eval(self.d_px_function[MATE.px_part_select])
+					MATE.d_cpx_ol =  eval(self.d_px_function[MATE.px_part_select])
 
-			elif (MATE.d_px_type[MATE.px_part_select] == '4'):
+				elif (MATE.d_px_type[MATE.px_part_select] == '4'):
 
-				MATE.d_opx_ol = np.ones(len(self.p)) * float(self.d_px_function[MATE.px_part_select])
-				MATE.d_cpx_ol = np.ones(len(self.p)) * float(self.d_px_function[MATE.px_part_select])
+					MATE.d_opx_ol = np.ones(len(self.p)) * float(self.d_px_function[MATE.px_part_select])
+					MATE.d_cpx_ol = np.ones(len(self.p)) * float(self.d_px_function[MATE.px_part_select])
 
-		#IF TREE FOR GT/OL
+			#IF TREE FOR GT/OL
 
-		if MATE.d_gt_type[MATE.gt_part_select] == '4':
+			if MATE.d_gt_type[MATE.gt_part_select] == '4':
 
-			MATE.d_gt_ol = np.ones(len(self.p)) * float(self.d_gt_function[MATE.gt_part_select])
+				MATE.d_gt_ol = np.ones(len(self.p)) * float(self.d_gt_function[MATE.gt_part_select])
 
-		if MATE.d_amp_type[MATE.amp_part_select] == '4':
+			if MATE.d_amp_type[MATE.amp_part_select] == '4':
 
-			MATE.d_amp_ol = np.ones(len(self.p)) * float(self.d_amp_function[MATE.amp_part_select])
+				MATE.d_amp_ol = np.ones(len(self.p)) * float(self.d_amp_function[MATE.amp_part_select])
 
-		if MATE.d_pl_type[MATE.pl_part_select] == '4':
+			if MATE.d_pl_type[MATE.pl_part_select] == '4':
 
-			MATE.d_pl_ol = np.ones(len(self.p)) * float(self.d_pl_function[MATE.pl_part_select])
+				MATE.d_pl_ol = np.ones(len(self.p)) * float(self.d_pl_function[MATE.pl_part_select])
+
+			MATE.mineral_partitions_calculated = True
 
 		#DISTRIBUTING THE BULK WATER TO THE PHASES
 
@@ -5715,6 +5728,9 @@ class MATE(QMainWindow):
 		ok_to_plot_geotherm = True
 		self.geotherm_existence = False
 
+		MATE.mineral_partitions_calculated = False
+		MATE.melt_partitions_calculated = False
+
 		if self.drawn_3 != 0:
 
 			self.ax3.remove()
@@ -5985,6 +6001,9 @@ class MATE(QMainWindow):
 		self.upper_bound_load = False
 		self.lower_bound_load = False
 		self.xenolith_existence = False
+
+		MATE.melt_partitions_calculated = False
+		MATE.mineral_partitions_calculated = False
 
 		self.solidus_dry_calculated = False
 		self.solidus_wet_calculated = False
@@ -7281,6 +7300,8 @@ class PART_POP(QWidget):
 
 		MATE.gt_part_select = int(MATE.d_gt_items.index(item))
 
+		MATE.mineral_partitions_calculated = False
+
 	def get_ampol(self):
 
 		if MATE.amp_method == '0':
@@ -7294,6 +7315,8 @@ class PART_POP(QWidget):
 			MATE.amp_display = item
 
 			MATE.amp_part_select = int(MATE.d_amp_items.index(item))
+
+			MATE.mineral_partitions_calculated = False
 
 		else:
 			QMessageBox.about(self, "Info on this","In order to select amphibole conductivity model you first have to activate its entry from Composition Setup section")
@@ -7311,6 +7334,9 @@ class PART_POP(QWidget):
 			MATE.pl_display = item
 
 			MATE.pl_part_select = int(MATE.d_pl_items.index(item))
+
+			MATE.mineral_partitions_calculated = False
+
 		else:
 			QMessageBox.about(self, "Info on this","In order to select phlogopite water partitoning model you first have to enter some phlogopites!")
 
@@ -7327,6 +7353,9 @@ class PART_POP(QWidget):
 			MATE.ol_melt_display = item
 
 			MATE.ol_melt_part_select = int(MATE.d_melt_ol_items.index(item))
+
+			MATE.melt_partitions_calculated = False
+
 		else:
 			QMessageBox.about(self, "Info on this","In order to select melt water partitoning models you first have to enter some melt!")
 
@@ -7343,6 +7372,9 @@ class PART_POP(QWidget):
 			MATE.opx_melt_display = item
 
 			MATE.opx_melt_part_select = int(MATE.d_melt_opx_items.index(item))
+
+			MATE.melt_partitions_calculated = False
+
 		else:
 			QMessageBox.about(self, "Info on this","In order to select melt water partitoning models you first have to enter some melt!")
 
@@ -7359,6 +7391,9 @@ class PART_POP(QWidget):
 			MATE.cpx_melt_display = item
 
 			MATE.cpx_melt_part_select = int(MATE.d_melt_cpx_items.index(item))
+
+			MATE.melt_partitions_calculated = False
+
 		else:
 			QMessageBox.about(self, "Info on this","In order to select melt water partitoning models you first have to enter some melt!")
 
@@ -7375,6 +7410,9 @@ class PART_POP(QWidget):
 			MATE.gt_melt_display = item
 
 			MATE.gt_melt_part_select = int(MATE.d_melt_gt_items.index(item))
+
+			MATE.melt_partitions_calculated = False
+
 		else:
 			QMessageBox.about(self, "Info on this","In order to select melt water partitoning models you first have to enter some melt!")
 
@@ -7488,6 +7526,8 @@ class PYROXENE_POP(QWidget):
 		MATE.cpx_part_select = int(MATE.d_px_items.index(item)) * -1
 		MATE.opx_part_select = int(MATE.d_px_items.index(item)) * -1
 
+		MATE.mineral_partitions_calculated = False
+
 	def get_opxol(self):
 
 		item, ok = QInputDialog.getItem(self, "select input dialog",
@@ -7499,6 +7539,8 @@ class PYROXENE_POP(QWidget):
 		MATE.opx_display = item
 
 		MATE.opx_part_select = int(MATE.d_opx_items.index(item))
+
+		MATE.mineral_partitions_calculated = False
 
 	def get_cpxol(self):
 
@@ -7512,6 +7554,7 @@ class PYROXENE_POP(QWidget):
 
 		MATE.cpx_part_select = int(MATE.d_cpx_items.index(item))
 
+		MATE.mineral_partitions_calculated = False
 
 class XEN_POP(QWidget):
 
