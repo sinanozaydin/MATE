@@ -13,15 +13,15 @@ def Novella2017(T,ol_h2o):
 
 	EH_err = [18000.0,19000.0,8000.0]
 
-	DH_0 = np.zeros((3,len(T)))
-	DH_1 = np.zeros((3,len(T)))
-	DH_2 = np.zeros((3,len(T)))
+	DH_0 = np.zeros((3,len(T[0])))
+	DH_1 = np.zeros((3,len(T[0])))
+	DH_2 = np.zeros((3,len(T[0])))
 
 	for i in range(0,3):
 
-		DH_0[i] = 10**(A_H[i]) * np.exp(-EH[i] / (R_const * T))
-		DH_1[i] = 10**(A_H[i] + A_H_err[i]) * np.exp(-(EH[i]-EH_err[i]) / (R_const * T))
-		DH_2[i] = 10**(A_H[i] - A_H_err[i]) * np.exp(-(EH[i]+EH_err[i]) / (R_const * T))
+		DH_0[i] = 10**(A_H[i]) * np.exp(-EH[i] / (R_const * T[0]))
+		DH_1[i] = 10**(A_H[i] + A_H_err[i]) * np.exp(-(EH[i]-EH_err[i]) / (R_const * T[0]))
+		DH_2[i] = 10**(A_H[i] - A_H_err[i]) * np.exp(-(EH[i]+EH_err[i]) / (R_const * T[0]))
 
 	DH = (DH_0[0] * DH_0[1] * DH_0[2])**(1.0/3.0)
 	DH_max = (DH_1[0] * DH_1[1] * DH_1[2])**(1.0/3.0)
@@ -51,14 +51,14 @@ def DuFrane2012(T,ol_h2o):
 	EH = [140000.0,170000.0,100000.0]
 	EH_err = [30000.0,0,0]
 
-	DH_0 = np.zeros((3,len(T)))
-	DH_1 = np.zeros((3,len(T)))
-	DH_2 = np.zeros((3,len(T)))
+	DH_0 = np.zeros((3,len(T[0])))
+	DH_1 = np.zeros((3,len(T[0])))
+	DH_2 = np.zeros((3,len(T[0])))
 	for i in range(0,3):
 
-		DH_0[i] = 10**(A_H[i]) * np.exp(-EH[i] / (R_const * T))
-		DH_1[i] = 10**(A_H[i] + A_H_err[i]) * np.exp(-(EH[i]-EH_err[i]) / (R_const * T))
-		DH_2[i] = 10**(A_H[i] - A_H_err[i]) * np.exp(-(EH[i]+EH_err[i]) / (R_const * T))
+		DH_0[i] = 10**(A_H[i]) * np.exp(-EH[i] / (R_const * T[0]))
+		DH_1[i] = 10**(A_H[i] + A_H_err[i]) * np.exp(-(EH[i]-EH_err[i]) / (R_const * T[0]))
+		DH_2[i] = 10**(A_H[i] - A_H_err[i]) * np.exp(-(EH[i]+EH_err[i]) / (R_const * T[0]))
 
 	DH = (DH_0[0] * DH_0[1] * DH_0[2])**(1.0/3.0)
 	DH_max = (DH_1[0] * DH_1[1] * DH_1[2])**(1.0/3.0)
@@ -72,10 +72,10 @@ def Kohlstedt1998(T,ol_h2o):
 
 	EH = [145000.0,180000.0,110000.0]
 
-	DH_0 = np.zeros((3,len(T)))
+	DH_0 = np.zeros((3,len(T[0])))
 
 	for i in range(0,3):
-		DH_0[i] = 10**(A_H[i]) * np.exp(-EH[i] / (R_const * T))
+		DH_0[i] = 10**(A_H[i]) * np.exp(-EH[i] / (R_const * T[0]))
 
 	DH = (DH_0[0] * DH_0[1] * DH_0[2])**(1.0/3.0)
 	DH_max = DH
@@ -91,14 +91,14 @@ def Demouchy2006(T,ol_h2o):
 	EH = [204000.0,204000.0,258000.0]
 	EH_err = [94000.0,94000.0,11000.0]
 
-	DH_0 = np.zeros((3,len(T)))
-	DH_0_max = np.zeros((3,len(T)))
-	DH_0_min = np.zeros((3,len(T)))
+	DH_0 = np.zeros((3,len(T[0])))
+	DH_0_max = np.zeros((3,len(T[0])))
+	DH_0_min = np.zeros((3,len(T[0])))
 
 	for i in range(0,3):
-		DH_0[i] = 10**(A_H[i]) * np.exp(-EH[i] / (R_const * T))
-		DH_0_max[i] = 10**(A_H[i] + A_H_err[i]) * np.exp(-(EH[i] - EH_err[i]) / (R_const * T))
-		DH_0_min[i] = 10**(A_H[i] - A_H_err[i]) * np.exp(-(EH[i] + EH_err[i]) / (R_const * T))
+		DH_0[i] = 10**(A_H[i]) * np.exp(-EH[i] / (R_const * T[0]))
+		DH_0_max[i] = 10**(A_H[i] + A_H_err[i]) * np.exp(-(EH[i] - EH_err[i]) / (R_const * T[0]))
+		DH_0_min[i] = 10**(A_H[i] - A_H_err[i]) * np.exp(-(EH[i] + EH_err[i]) / (R_const * T[0]))
 
 	DH = (DH_0[0] * DH_0[1] * DH_0[2])**(1.0/3.0)
 	DH_max = (DH_0_max[0] * DH_0_max[1] * DH_0_max[2])**(1.0/3.0)

@@ -2439,17 +2439,6 @@ class MATE(QMainWindow):
 				self.pl_h2o = self.ol_h2o * MATE.d_pl_ol
 				self.pl_h2o[self.pl_frac == 0] = 0.0
 
-		all_h2o = [self.h2o[self.idx_moho:],self.h2o_solid[self.idx_moho:],self.ol_h2o[self.idx_moho:],
-		self.opx_h2o[self.idx_moho:],self.cpx_h2o[self.idx_moho:],self.gt_h2o[self.idx_moho:],self.px_h2o[self.idx_moho:]]
-		if self.amp_method == 0:
-			all_h2o.append(self.amp_h2o[self.idx_moho:])
-		if self.pl_method == 0:
-			all_h2o.append(self.pl_h2o[self.idx_moho:])
-		if MATE.melt_method == '0':
-			all_h2o.append(self.melt_h2o[self.idx_moho:])
-		all_h2o = np.asarray(list(itertools.chain(*all_h2o)))
-		self.maxwater = np.amax(all_h2o) + (np.amax(all_h2o) / 5.0)
-
 		if self.water_end == True:
 			if MATE.w_inp_method == '0':
 				if self.coun == 0:
@@ -4966,6 +4955,17 @@ class MATE(QMainWindow):
 			self.figure_water_save = plt.figure(figsize = (2,7))
 			self.ax4 = plt.subplot(111)
 			fontsize_labels = 10
+
+		all_h2o = [self.h2o[self.idx_moho:],self.h2o_solid[self.idx_moho:],self.ol_h2o[self.idx_moho:],
+		self.opx_h2o[self.idx_moho:],self.cpx_h2o[self.idx_moho:],self.gt_h2o[self.idx_moho:],self.px_h2o[self.idx_moho:]]
+		if self.amp_method == 0:
+			all_h2o.append(self.amp_h2o[self.idx_moho:])
+		if self.pl_method == 0:
+			all_h2o.append(self.pl_h2o[self.idx_moho:])
+		if MATE.melt_method == '0':
+			all_h2o.append(self.melt_h2o[self.idx_moho:])
+		all_h2o = np.asarray(list(itertools.chain(*all_h2o)))
+		self.maxwater = np.amax(all_h2o) + (np.amax(all_h2o) / 5.0)
 
 		if MATE.sol_model_pref_select == 0:
 			self.h2o_list.append(self.h2o_from_sol)
