@@ -216,6 +216,10 @@ class MATE(QMainWindow):
 		meltsolidusMenu.addAction(solidusSelectionButton)
 		self.melt_solidus_pop = None
 
+		meltFracSelectionButton = QAction("&Melt Fraction Gradient",self)
+		meltFracSelectionButton.triggered.connect(self.select_melt_fraction_gradient)
+		meltsolidusMenu.addAction(meltFracSelectionButton)
+		self.melt_frac_pop = None
 
 		#MINERAL STABILITIES MENU
 		amphiboleButton = QAction("&Amphibole Stability",self)
@@ -389,6 +393,10 @@ class MATE(QMainWindow):
 		self.solidus_dry_calculated = False
 		self.solidus_wet_calculated = False
 		self.solidus_carbon_calculated = False
+
+		MATE.melt_fraction_function_names = ['Hirschmann2009 dF/dT = -40P + 450']
+		MATE.melt_fraction_functions = ['(-40 * self.p) + 450.0']
+		MATE.melt_fraction_function_selection = 0
 
 		MATE.model_method_list = ['Proton+Polaron+Ionic', 'Proton Only']
 		MATE.model_method_ol = 0
@@ -1453,6 +1461,13 @@ class MATE(QMainWindow):
 			self.melt_solidus_pop.setGeometry(QtCore.QRect(200, 200, 300, 100))
 		self.melt_solidus_pop.show()
 
+	def select_melt_fraction_gradient(self):
+
+		if self.melt_frac_pop is None:
+			self.melt_frac_pop = SELECT_MELT_FRAC_POP()
+			self.melt_frac_pop.setGeometry(QtCore.QRect(200, 200, 300, 100))
+		self.melt_frac_pop.show()
+
 	def px_calib_popup(self):
 
 		if self.px_calib_pop is None:
@@ -1951,7 +1966,7 @@ class MATE(QMainWindow):
 
 			self.p = np.cumsum(self.p) / 1e12 #Converting to GPA
 
-			self.dT_dF = (-40 * self.p) + 450.0 #melt_fraction estimation gradient.
+			self.dT_dF = eval(MATE.melt_fraction_functions[MATE.melt_fraction_function_selection]) #melt_fraction estimation gradient.
 
 	def calculate_geotherm(self):
 
@@ -5127,7 +5142,7 @@ class MATE(QMainWindow):
 			self.ax_melt_frac.axhline(self.depth_comp_plot[i]/1000.0,linewidth = 0.75, alpha = 0.5, color = 'k',linestyle = '-.')
 
 		self.ax_melt_frac.plot(self.melt_mass_frac[self.idx_moho:]*100, self.depth[self.idx_moho:]/1e3, linestyle = '-', color = 'k', linewidth = 1.25)
-		maxfrac = (np.amax(self.melt_mass_frac[self.idx_moho:]) < 50.0)
+		maxfrac = (np.amax(self.melt_mass_frac[self.idx_moho:]))
 		if maxfrac >= 50.0:
 			max_melt_frac_plot = 100.0
 		elif (maxfrac < 50.0) and (maxfrac >= 30.0):
@@ -9711,6 +9726,31 @@ class SELECT_SOLIDUS_POP(QWidget):
 			self.solidus_carbon_selection_text_box.setText(item)
 
 		MATE.solidus_carbon_model_selection = MATE.solidus_carbon_model_names.index(item)
+
+class SELECT_MELT_FRAC_POP(QWidget):
+
+	def __init__(self):
+
+		QWidget.__init__(self)
+
+		figureprop_layout = QFormLayout(self)
+
+		self.melt_frac_eq_btn = QPushButton('Melt Fraction Estimate Function')
+		self.melt_frac_eq_btn_txt = QLineEdit(str(MATE.melt_fraction_function_names[MATE.melt_fraction_function_selection]))
+		self.melt_frac_eq_btn_txt.setEnabled(False)
+		self.melt_frac_eq_btn.clicked.connect(self.get_melt_frac_eq)
+
+		figureprop_layout.addRow(self.melt_frac_eq_btn,self.melt_frac_eq_btn_txt)
+
+	def get_melt_frac_eq(self):
+
+		item, ok = QInputDialog.getItem(self, "select input dialog",
+			"Melt Fraction Function", MATE.melt_fraction_function_names, 0, False)
+
+		if ok and item:
+			self.melt_frac_eq_btn_txt.setText(item)
+
+		MATE.melt_fraction_function_selection = MATE.melt_fraction_function_names.index(item)
 
 class FIGPROP_POP(QWidget):
 
