@@ -50,7 +50,7 @@ class bcolors:
 	GREEN = '\033[92m'
 	RED = '\033[91m'
 	B = '\033[0m'
-
+	NC ='\x1b[0m'
 #Version 1.3, February. 2021.
 #MATE - (M)antle (A)nalysis (T)ools for (E)lectromagnetics
 #Program written by Sinan Ozaydin (Macquarie University Dept. of Earth and Planetary
@@ -80,6 +80,7 @@ print(' ')
 print(' ')
 print(bcolors.GREEN + '#############################################')
 print(bcolors.BLUE + 'developed by Sinan Ozaydin,' + bcolors.RED +  '(School of Natural Sciences, Macquarie University)')
+print(bcolors.NC + 'Initializing the software...')
 
 class MATE(QMainWindow):
 
@@ -339,6 +340,10 @@ class MATE(QMainWindow):
 		self.composition_readfile = False
 		self.xenolith_existence = False
 		MATE.loaded_file = False
+
+		MATE.plot_style_list = ['ggplot', 'default', 'classic','bmh', 'fast', 'seaborn', 'seaborn-colorblind',
+		'seaborn-deep','seaborn-pastel', 'seaborn-dark','fivethirtyeight','grayscale']
+		MATE.plot_style_selection = 0
 
 		self.drawn = 0
 		self.drawn_1 = 0
@@ -5102,7 +5107,7 @@ class MATE(QMainWindow):
 			tick.label.set_fontsize(fontsize_labels)
 
 		self.ax0.set_ylabel(r'$Depth \, (km)$', fontsize = 9)
-		self.ax0.set_xlabel(r'Fraction (%)', fontsize = 9)
+		self.ax0.set_xlabel(r'$Fraction \, (\%)$', fontsize = 9)
 		self.ax0.set_xlim((0,100.0))
 		self.ax0.set_ylim((MATE.lab / 1000.0) + 25.0, 0.0)
 
@@ -5591,7 +5596,7 @@ class MATE(QMainWindow):
 		else:
 			self.ax4.set_xlim((0,MATE.waterplotlim_up))
 
-		self.ax4.set_xlabel(r'$C_w \, (ppm)$', fontsize = fontsize_labels)
+		self.ax4.set_xlabel(r'$C_w \, (H_2O \, ppm \, wt)$', fontsize = fontsize_labels)
 		self.ax4.set_ylim((MATE.lab / 1000.0) + 25.0, 0.0)
 		crust_obj = patches.Rectangle((0,0) ,1e10,MATE.moho / 1000.0, color = '#b76314', alpha = 0.6,hatch = 'xxxx')
 		ast_obj = patches.Rectangle((0,MATE.lab / 1000.0),1e10,1e5, color = '#b73114', alpha = 0.6,hatch = 'xx')
@@ -6321,6 +6326,7 @@ class MATE(QMainWindow):
 	def reset_all_plot(self):
 
 		self.fig.clear()
+		plt.style.use(MATE.plot_style_list[MATE.plot_style_selection])
 		self.canvas.draw()
 
 		self.drawn = 0
@@ -9760,6 +9766,11 @@ class FIGPROP_POP(QWidget):
 
 		figureprop_layout = QFormLayout(self)
 
+		self.plot_style_btn = QPushButton('Plot Style')
+		self.plot_style_btn_txt = QLineEdit(str(MATE.plot_style_list[MATE.plot_style_selection]))
+		self.plot_style_btn_txt.setEnabled(False)
+		self.plot_style_btn.clicked.connect(self.get_plot_style)
+
 		self.trange_btn = QPushButton('T-Ranges')
 		self.trange_btn_txt = QLineEdit(str(MATE.trange_list[MATE.trange_method]))
 		self.trange_btn_txt.setEnabled(False)
@@ -9815,6 +9826,7 @@ class FIGPROP_POP(QWidget):
 		self.boundsbackgr_btn_txt.setEnabled(False)
 		self.boundsbackgr_btn.clicked.connect(self.get_boundsbackgr)
 
+		figureprop_layout.addRow(self.plot_style_btn,self.plot_style_btn_txt)
 		figureprop_layout.addRow(self.trange_btn,self.trange_btn_txt)
 		figureprop_layout.addRow(self.sol_plot_type_btn,self.sol_plot_type_btn_txt)
 		figureprop_layout.addRow(self.sol_plot_scale_type_btn,self.sol_plot_scale_type_btn_txt)
@@ -9825,6 +9837,16 @@ class FIGPROP_POP(QWidget):
 		figureprop_layout.addRow(self.condplotlim_up_btn,self.condplotlim_up_btn_txt)
 		figureprop_layout.addRow(self.condplotlim_down_btn,self.condplotlim_down_btn_txt)
 		figureprop_layout.addRow(self.boundsbackgr_btn,self.boundsbackgr_btn_txt)
+
+	def get_plot_style(self):
+
+		item, ok = QInputDialog.getItem(self, "select input dialog",
+		"Plot style selection", MATE.plot_style_list, 0, False)
+
+		if ok and item:
+			self.plot_style_btn_txt.setText(item)
+
+		MATE.plot_style_selection = MATE.plot_style_list.index(item)
 
 	def get_trange(self):
 
