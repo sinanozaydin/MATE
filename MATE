@@ -259,12 +259,12 @@ class MATE(QMainWindow):
 		figureMenu.addAction(figureProp)
 		figureMenu.addAction(saveFigure)
 
-		ModelPrefButton = QAction('Preferences', self)
-		ModelPrefButton.triggered.connect(self.model_pref_open)
-		modelMenu.addAction(ModelPrefButton)
-		self.mt_input_popup = None
-
 		#ModEM-Model FILE BUTTON
+
+		#csv-mt file
+		csvMTButton = QAction('Open csv MT profile', self)
+		csvMTButton.triggered.connect(self.csvMt_open)
+		modelMenu.addAction(csvMTButton)
 
 		ModEMButton = QAction('Open ModEM Model', self)
 		ModEMButton.setStatusTip('Open ModEM file')
@@ -282,10 +282,10 @@ class MATE(QMainWindow):
 		ModelCurve.triggered.connect(self.model_curve_select_open)
 		modelMenu.addAction(ModelCurve)
 
-		#csv-mt file
-		csvMTButton = QAction('Open csv MT profile', self)
-		csvMTButton.triggered.connect(self.csvMt_open)
-		modelMenu.addAction(csvMTButton)
+		ModelPrefButton = QAction('Preferences', self)
+		ModelPrefButton.triggered.connect(self.model_pref_open)
+		modelMenu.addAction(ModelPrefButton)
+		self.mt_input_popup = None
 
 		#info-box_model
 		infoBoxMTinputButton = QAction('Info', self)
@@ -10076,16 +10076,6 @@ class XEN_SOLV_POP(QWidget):
 				MATE.heat_flow_search_incr = float(text)
 			except ValueError:
 				QMessageBox.about(self,"Warning!","Please enter a value that can be converted to floating number.")
-
-class MELT_FRAC_POP(QWidget):
-
-	def __init__(self):
-
-		QWidget.__init__(self)
-
-		melt_frac_solv_layout = QFormLayout(self)
-
-
 
 def main():
 
