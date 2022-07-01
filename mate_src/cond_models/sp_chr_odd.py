@@ -4,7 +4,7 @@ import numpy as np
 
 R_const = 8.3144621
 
-def Sun2021(T):
+def Sun2021(T,method):
 
 	#Hydrogenated metstable part at 2GPa
 

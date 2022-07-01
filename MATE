@@ -3325,18 +3325,20 @@ class MATE(QMainWindow):
 
 			if MATE.type[0][idx] == '10':
 				for i in range(0,3):
-					self.ol_cond_max_dum = self.conductivity_dry(0,MATE.ol_dry_selection,method,sol_idx)[0] + self.conductivity_proton(0,0,idx+i,method,sol_idx)
+					if method == 'array':
 
-					self.ol_cond_min_dum = self.conductivity_dry(0,MATE.ol_dry_selection,method,sol_idx)[1] + self.conductivity_proton(1,0,idx+i,method,sol_idx)
+						self.ol_cond_max_dum = self.conductivity_dry(0,MATE.ol_dry_selection,method,sol_idx)[0] + self.conductivity_proton(0,0,idx+i,method,sol_idx)
+						self.ol_cond_min_dum = self.conductivity_dry(0,MATE.ol_dry_selection,method,sol_idx)[1] + self.conductivity_proton(1,0,idx+i,method,sol_idx)
+
+						ol_cond_max_array.append(self.ol_cond_max_dum)
+						ol_cond_min_array.append(self.ol_cond_min_dum)
 
 					self.ol_cond_dum = self.conductivity_dry(0,MATE.ol_dry_selection,method,sol_idx)[2] + self.conductivity_proton(2,0,idx+i,method,sol_idx)
-
-					ol_cond_max_array.append(self.ol_cond_max_dum)
-					ol_cond_min_array.append(self.ol_cond_min_dum)
 					ol_cond_array.append(self.ol_cond_dum)
 
-				self.ol_cond_max[idx_node] = (ol_cond_max_array[0] * ol_cond_max_array[1] * ol_cond_max_array[2])**(1.0/3.0)
-				self.ol_cond_min[idx_node] = (ol_cond_min_array[0] * ol_cond_min_array[1] * ol_cond_min_array[2])**(1.0/3.0)
+				if method == 'array':
+					self.ol_cond_max[idx_node] = (ol_cond_max_array[0] * ol_cond_max_array[1] * ol_cond_max_array[2])**(1.0/3.0)
+					self.ol_cond_min[idx_node] = (ol_cond_min_array[0] * ol_cond_min_array[1] * ol_cond_min_array[2])**(1.0/3.0)
 				self.ol_cond[idx_node] = (ol_cond_array[0] * ol_cond_array[1] * ol_cond_array[2])**(1.0/3.0)
 
 			elif MATE.type[0][idx] == '20':
@@ -3347,45 +3349,72 @@ class MATE(QMainWindow):
 
 				for i in range(0,3):
 
-					self.ol_cond_max_dum = self.conductivity_proton(0,0,idx+i,method,sol_idx)
-					self.ol_cond_min_dum = self.conductivity_proton(1,0,idx+i,method,sol_idx)
+					if method == 'array':
+						self.ol_cond_max_dum = self.conductivity_proton(0,0,idx+i,method,sol_idx)
+						self.ol_cond_min_dum = self.conductivity_proton(1,0,idx+i,method,sol_idx)
+
+						self.ol_cond_max_dum_pol = self.conductivity_polaron(0,0,idx+i,method,sol_idx)
+						self.ol_cond_min_dum_pol = self.conductivity_polaron(1,0,idx+i,method,sol_idx)
+
+						ol_cond_max_dry_array.append(self.ol_cond_max_dum_pol)
+						ol_cond_min_dry_array.append(self.ol_cond_min_dum_pol)
+
+						ol_cond_max_array.append(self.ol_cond_max_dum)
+						ol_cond_min_array.append(self.ol_cond_min_dum)
+
 					self.ol_cond_dum = self.conductivity_proton(2,0,idx+i,method,sol_idx)
-					self.ol_cond_max_dum_pol = self.conductivity_polaron(0,0,idx+i,method,sol_idx)
-					self.ol_cond_min_dum_pol = self.conductivity_polaron(1,0,idx+i,method,sol_idx)
 					self.ol_cond_dum_pol = self.conductivity_polaron(2,0,idx+i,method,sol_idx)
 
-					ol_cond_max_array.append(self.ol_cond_max_dum)
-					ol_cond_min_array.append(self.ol_cond_min_dum)
 					ol_cond_array.append(self.ol_cond_dum)
-					ol_cond_max_dry_array.append(self.ol_cond_max_dum_pol)
-					ol_cond_min_dry_array.append(self.ol_cond_min_dum_pol)
+
 					ol_cond_dry_array.append(self.ol_cond_dum_pol)
 
-				self.ol_cond_max[idx_node] = (ol_cond_max_dry_array[0] * ol_cond_max_dry_array[1] * ol_cond_max_dry_array[2])**(1.0/3.0) +\
-				(ol_cond_max_array[0] * ol_cond_max_array[1] * ol_cond_max_array[2])**(1.0/3.0)
-				self.ol_cond_min[idx_node] = (ol_cond_min_dry_array[0] * ol_cond_min_dry_array[1] * ol_cond_min_dry_array[2])**(1.0/3.0) +\
-				(ol_cond_min_array[0] * ol_cond_min_array[1] * ol_cond_min_array[2])**(1.0/3.0)
+
 				self.ol_cond[idx_node] = (ol_cond_dry_array[0] * ol_cond_dry_array[1] * ol_cond_dry_array[2])**(1.0/3.0) +\
 				(ol_cond_array[0] * ol_cond_array[1] * ol_cond_array[2])**(1.0/3.0)
+
+				if method == 'array':
+					self.ol_cond_max[idx_node] = (ol_cond_max_dry_array[0] * ol_cond_max_dry_array[1] * ol_cond_max_dry_array[2])**(1.0/3.0) +\
+					(ol_cond_max_array[0] * ol_cond_max_array[1] * ol_cond_max_array[2])**(1.0/3.0)
+					self.ol_cond_min[idx_node] = (ol_cond_min_dry_array[0] * ol_cond_min_dry_array[1] * ol_cond_min_dry_array[2])**(1.0/3.0) +\
+					(ol_cond_min_array[0] * ol_cond_min_array[1] * ol_cond_min_array[2])**(1.0/3.0)
+				else:
+					self.ol_cond_max[idx_node] = self.ol_cond[idx_node]
 
 			return self.ol_cond_max, self.ol_cond_min,self.ol_cond
 
 		if MATE.type[0][MATE.ol_cond_selection] == '0':
 
-			self.ol_cond_max[idx_node] = self.conductivity_ionic(0,0,MATE.ol_cond_selection,method,sol_idx) + self.conductivity_polaron(0,0,MATE.ol_cond_selection,method,sol_idx) +\
-			self.conductivity_proton(0,0,MATE.ol_cond_selection,method,sol_idx)
-
-			self.ol_cond_min[idx_node] = self.conductivity_ionic(1,0,MATE.ol_cond_selection,method,sol_idx) + self.conductivity_polaron(1,0,MATE.ol_cond_selection,method,sol_idx) +\
-			self.conductivity_proton(1,0,MATE.ol_cond_selection,method,sol_idx)
-
 			self.ol_cond[idx_node] = self.conductivity_ionic(2,0,MATE.ol_cond_selection,method,sol_idx) + self.conductivity_polaron(2,0,MATE.ol_cond_selection,method,sol_idx) +\
 			self.conductivity_proton(2,0,MATE.ol_cond_selection,method,sol_idx)
 
+			if method == 'array':
+
+				self.ol_cond_max[idx_node] = self.conductivity_ionic(0,0,MATE.ol_cond_selection,method,sol_idx) + self.conductivity_polaron(0,0,MATE.ol_cond_selection,method,sol_idx) +\
+				self.conductivity_proton(0,0,MATE.ol_cond_selection,method,sol_idx)
+
+				self.ol_cond_min[idx_node] = self.conductivity_ionic(1,0,MATE.ol_cond_selection,method,sol_idx) + self.conductivity_polaron(1,0,MATE.ol_cond_selection,method,sol_idx) +\
+				self.conductivity_proton(1,0,MATE.ol_cond_selection,method,sol_idx)
+
+			else:
+
+				self.ol_cond_max[idx_node] = self.ol_cond[idx_node]
+				self.ol_cond_min[idx_node] = self.ol_cond[idx_node]
+
 		elif MATE.type[0][MATE.ol_cond_selection] == '1':
 
-			self.ol_cond_max[idx_node] = self.conductivity_dry(0,MATE.ol_dry_selection,method,sol_idx)[0] + self.conductivity_proton(0,0,MATE.ol_cond_selection,method,sol_idx)
-			self.ol_cond_min[idx_node] = self.conductivity_dry(0,MATE.ol_dry_selection,method,sol_idx)[1] + self.conductivity_proton(1,0,MATE.ol_cond_selection,method,sol_idx)
+
 			self.ol_cond[idx_node] = self.conductivity_dry(0,MATE.ol_dry_selection,method,sol_idx)[2] + self.conductivity_proton(2,0,MATE.ol_cond_selection,method,sol_idx)
+
+			if method == 'array':
+
+				self.ol_cond_max[idx_node] = self.conductivity_dry(0,MATE.ol_dry_selection,method,sol_idx)[0] + self.conductivity_proton(0,0,MATE.ol_cond_selection,method,sol_idx)
+				self.ol_cond_min[idx_node] = self.conductivity_dry(0,MATE.ol_dry_selection,method,sol_idx)[1] + self.conductivity_proton(1,0,MATE.ol_cond_selection,method,sol_idx)
+
+			else:
+
+				self.ol_cond_max[idx_node] = self.ol_cond[idx_node]
+				self.ol_cond_min[idx_node] = self.ol_cond[idx_node]
 
 		elif (MATE.type[0][MATE.ol_cond_selection] == '11') or (MATE.type[0][MATE.ol_cond_selection] == '21'):
 
@@ -3409,19 +3438,28 @@ class MATE(QMainWindow):
 
 				ol_wet_odd_function = MATE.name[0][MATE.ol_cond_selection]
 
-			cond_ol_max,cond_ol_min,cond_ol,cond_dry,cond_wet = eval(ol_wet_odd_function + '(model_method = MATE.model_method[0],T = self.T[idx_node],P = self.p[idx_node],corr_factor = self.correction_factor_ol,fo2 = self.calculate_fugacity(MATE.o2_buffer)[idx_node],fo2_ref = self.calculate_fugacity(3)[idx_node],wt_err = self.FTIR_calibration_error(0,self.w_calib[0][MATE.ol_cond_selection]),ol_h2o = self.ol_h2o[idx_node])')
+			cond_ol_max,cond_ol_min,cond_ol,cond_dry,cond_wet = eval(ol_wet_odd_function + '(model_method = MATE.model_method[0],T = self.T[idx_node],P = self.p[idx_node],corr_factor = self.correction_factor_ol,fo2 = self.calculate_fugacity(MATE.o2_buffer)[idx_node],fo2_ref = self.calculate_fugacity(3)[idx_node],wt_err = self.FTIR_calibration_error(0,self.w_calib[0][MATE.ol_cond_selection]),ol_h2o = self.ol_h2o[idx_node], method = method)')
 
 			if MATE.model_method[0] == 0:
 
-				self.ol_cond_max[idx_node] = cond_ol_max
-				self.ol_cond_min[idx_node] = cond_ol_min
 				self.ol_cond[idx_node] = cond_ol
+				if method == 'array':
+					self.ol_cond_max[idx_node] = cond_ol_max
+					self.ol_cond_min[idx_node] = cond_ol_min
+				else:
+					self.ol_cond_max[idx_node] = self.ol_cond[idx_node]
+					self.ol_cond_min[idx_node] = self.ol_cond[idx_node]
 
 			elif MATE.model_method[0] == 1:
 
-				self.ol_cond_max[idx_node] = self.conductivity_dry(0,MATE.ol_dry_selection,method,sol_idx)[0] + cond_ol_max
-				self.ol_cond_min[idx_node] = self.conductivity_dry(0,MATE.ol_dry_selection,method,sol_idx)[1] + cond_ol_min
 				self.ol_cond[idx_node] = self.conductivity_dry(0,MATE.ol_dry_selection,method,sol_idx)[2] + cond_ol
+				if method == 'array':
+					self.ol_cond_max[idx_node] = self.conductivity_dry(0,MATE.ol_dry_selection,method,sol_idx)[0] + cond_ol_max
+					self.ol_cond_min[idx_node] = self.conductivity_dry(0,MATE.ol_dry_selection,method,sol_idx)[1] + cond_ol_min
+				else:
+					self.ol_cond_max[idx_node] = self.ol_cond[idx_node]
+					self.ol_cond_min[idx_node] = self.ol_cond[idx_node]
+
 
 		elif (MATE.type[0][MATE.ol_cond_selection] == '4') or (MATE.type[0][MATE.ol_cond_selection] == '5'):
 
@@ -3430,8 +3468,9 @@ class MATE(QMainWindow):
 			if (MATE.type[0][MATE.ol_cond_selection] == '5'):
 
 				D_GB_ol = (10.0**self.D_ol_GB[MATE.GB_ol_select]) * np.exp(-self.E_ol_GB[MATE.GB_ol_select] / (self.R*self.T[idx_node]))
-				D_GB_ol_max = (10.0**self.D_ol_GB[MATE.GB_ol_select]) * np.exp(-(self.E_ol_GB[MATE.GB_ol_select]-self.E_err_ol_GB[MATE.GB_ol_select]) / (self.R*self.T[idx_node]))
-				D_GB_ol_min = (10.0**self.D_ol_GB[MATE.GB_ol_select]) * np.exp(-(self.E_ol_GB[MATE.GB_ol_select]+self.E_err_ol_GB[MATE.GB_ol_select]) / (self.R*self.T[idx_node]))
+				if method == 'array':
+					D_GB_ol_max = (10.0**self.D_ol_GB[MATE.GB_ol_select]) * np.exp(-(self.E_ol_GB[MATE.GB_ol_select]-self.E_err_ol_GB[MATE.GB_ol_select]) / (self.R*self.T[idx_node]))
+					D_GB_ol_min = (10.0**self.D_ol_GB[MATE.GB_ol_select]) * np.exp(-(self.E_ol_GB[MATE.GB_ol_select]+self.E_err_ol_GB[MATE.GB_ol_select]) / (self.R*self.T[idx_node]))
 
 			if ('*' in MATE.name[0][MATE.ol_cond_selection]) == True:
 
@@ -3450,18 +3489,22 @@ class MATE(QMainWindow):
 					ol_wet_diff_function = MATE.name[0][MATE.ol_cond_selection][MATE.name[0][MATE.ol_cond_selection].rfind('+')+1:]
 
 			if (MATE.type[0][MATE.ol_cond_selection] == '4'):
-				DH_max,DH_min,DH = eval(ol_wet_diff_function + '(T = self.T[idx_node],ol_h2o = ((self.ol_h2o[idx_node])/self.correction_factor_ol))')
+				DH_max,DH_min,DH = eval(ol_wet_diff_function + '(T = self.T[idx_node],ol_h2o = ((self.ol_h2o[idx_node])/self.correction_factor_ol),method = method)')
 			elif (MATE.type[0][MATE.ol_cond_selection] == '5'):
-				DH_max,DH_min,DH = eval(ol_wet_diff_function + '(T = self.T[idx_node],ol_h2o = ((self.ol_h2o[idx_node]*(1-MATE.D_gb))/self.correction_factor_ol))')
+				DH_max,DH_min,DH = eval(ol_wet_diff_function + '(T = self.T[idx_node],ol_h2o = ((self.ol_h2o[idx_node]*(1-MATE.D_gb))/self.correction_factor_ol),method = method)')
 			#Dry conductivity + Nernst-Einstein equation
 			if (MATE.type[0][MATE.ol_cond_selection] == '4'):
 
-				self.ol_cond_max[idx_node] = self.conductivity_dry(0,MATE.ol_dry_selection,method,sol_idx)[0] +\
-				((DH_max * (h2o_h_ol/self.correction_factor_ol) * (self.el_q**2.0)) / (self.boltz*self.T[idx_node]))
-				self.ol_cond_min[idx_node] = self.conductivity_dry(0,MATE.ol_dry_selection,method,sol_idx)[1] +\
-				((DH_min * (h2o_h_ol/self.correction_factor_ol)  * (self.el_q**2.0)) / (self.boltz*self.T[idx_node]))
 				self.ol_cond[idx_node] = self.conductivity_dry(0,MATE.ol_dry_selection,method,sol_idx)[2] +\
 				((DH * (h2o_h_ol/self.correction_factor_ol) * (self.el_q**2.0)) / (self.boltz*self.T[idx_node]))
+				if method == 'array':
+					self.ol_cond_max[idx_node] = self.conductivity_dry(0,MATE.ol_dry_selection,method,sol_idx)[0] +\
+					((DH_max * (h2o_h_ol/self.correction_factor_ol) * (self.el_q**2.0)) / (self.boltz*self.T[idx_node]))
+					self.ol_cond_min[idx_node] = self.conductivity_dry(0,MATE.ol_dry_selection,method,sol_idx)[1] +\
+					((DH_min * (h2o_h_ol/self.correction_factor_ol)  * (self.el_q**2.0)) / (self.boltz*self.T[idx_node]))
+				else:
+					self.ol_cond_max[idx_node] = self.ol_cond[idx_node]
+					self.ol_cond_min[idx_node] = self.ol_cond[idx_node]
 
 			elif (MATE.type[0][MATE.ol_cond_selection] == '5'):
 				if MATE.ol_calib != 3:
@@ -3469,12 +3512,16 @@ class MATE(QMainWindow):
 				else:
 					self.correction_factor_GB = 1.0
 					self.correction_factor_ol = 1.0
-				self.ol_cond_max[idx_node] = self.conductivity_dry(0,MATE.ol_dry_selection,method,sol_idx)[0] +\
-				(((DH_max/self.correction_factor_ol) + (MATE.D_gb * (1.0/self.correction_factor_GB) * (3*self.delta/self.ol_gs[idx_node]) * D_GB_ol_max)) * h2o_h_ol * (self.el_q**2.0)) / (self.boltz*self.T[idx_node])
-				self.ol_cond_min[idx_node] = self.conductivity_dry(0,MATE.ol_dry_selection,method,sol_idx)[1] +\
-				 (((DH_min/self.correction_factor_ol) + (MATE.D_gb * (1.0/self.correction_factor_GB) * (3*self.delta/self.ol_gs[idx_node]) * D_GB_ol_min)) * h2o_h_ol * (self.el_q**2.0)) / (self.boltz*self.T[idx_node])
 				self.ol_cond[idx_node] = self.conductivity_dry(0,MATE.ol_dry_selection,method,sol_idx)[2] +\
 				(((DH/self.correction_factor_ol) + (MATE.D_gb * (1.0/self.correction_factor_GB) * (3*self.delta/self.ol_gs[idx_node]) * D_GB_ol)) * h2o_h_ol * (self.el_q**2.0)) / (self.boltz*self.T[idx_node])
+				if method == 'array':
+					self.ol_cond_max[idx_node] = self.conductivity_dry(0,MATE.ol_dry_selection,method,sol_idx)[0] +\
+					(((DH_max/self.correction_factor_ol) + (MATE.D_gb * (1.0/self.correction_factor_GB) * (3*self.delta/self.ol_gs[idx_node]) * D_GB_ol_max)) * h2o_h_ol * (self.el_q**2.0)) / (self.boltz*self.T[idx_node])
+					self.ol_cond_min[idx_node] = self.conductivity_dry(0,MATE.ol_dry_selection,method,sol_idx)[1] +\
+					 (((DH_min/self.correction_factor_ol) + (MATE.D_gb * (1.0/self.correction_factor_GB) * (3*self.delta/self.ol_gs[idx_node]) * D_GB_ol_min)) * h2o_h_ol * (self.el_q**2.0)) / (self.boltz*self.T[idx_node])
+				else:
+					self.ol_cond_max[idx_node] = self.ol_cond[idx_node]
+					self.ol_cond_min[idx_node] = self.ol_cond[idx_node]
 
 	def calculate_opx_conductivity(self,method,sol_idx = None):
 
@@ -3506,19 +3553,24 @@ class MATE(QMainWindow):
 			if MATE.type[1][idx] == '10':
 
 				for i in range(0,3):
-					self.opx_cond_max_dum = self.conductivity_dry(1,self.opx_dry_selection,method,sol_idx)[0] + self.conductivity_proton(0,1,idx+i,method,sol_idx)
-
-					self.opx_cond_min_dum = self.conductivity_dry(1,self.opx_dry_selection,method,sol_idx)[1] + self.conductivity_proton(1,1,idx+i,method,sol_idx)
 
 					self.opx_cond_dum = self.conductivity_dry(1,self.opx_dry_selection,method,sol_idx)[2] + self.conductivity_proton(2,1,idx+i,method,sol_idx)
-
-					opx_cond_max_array.append(self.opx_cond_max_dum)
-					opx_cond_min_array.append(self.opx_cond_min_dum)
 					opx_cond_array.append(self.opx_cond_dum)
 
-				self.opx_cond_max[idx_node] = (opx_cond_max_array[0] * opx_cond_max_array[1] * opx_cond_max_array[2])**(1.0/3.0)
-				self.opx_cond_min[idx_node] = (opx_cond_min_array[0] * opx_cond_min_array[1] * opx_cond_min_array[2])**(1.0/3.0)
+					if method == 'array':
+						self.opx_cond_max_dum = self.conductivity_dry(1,self.opx_dry_selection,method,sol_idx)[0] + self.conductivity_proton(0,1,idx+i,method,sol_idx)
+						self.opx_cond_min_dum = self.conductivity_dry(1,self.opx_dry_selection,method,sol_idx)[1] + self.conductivity_proton(1,1,idx+i,method,sol_idx)
+
+						opx_cond_max_array.append(self.opx_cond_max_dum)
+						opx_cond_min_array.append(self.opx_cond_min_dum)
+
 				self.opx_cond[idx_node] = (opx_cond_array[0] * opx_cond_array[1] * opx_cond_array[2])**(1.0/3.0)
+				if method == 'array':
+					self.opx_cond_max[idx_node] = (opx_cond_max_array[0] * opx_cond_max_array[1] * opx_cond_max_array[2])**(1.0/3.0)
+					self.opx_cond_min[idx_node] = (opx_cond_min_array[0] * opx_cond_min_array[1] * opx_cond_min_array[2])**(1.0/3.0)
+				else:
+					self.opx_cond_max[idx_node] = self.opx_cond[idx_node]
+					self.opx_cond_min[idx_node] = self.opx_cond[idx_node]
 
 			elif MATE.type[1][idx] == '20':
 
@@ -3528,26 +3580,35 @@ class MATE(QMainWindow):
 
 				for i in range(0,3):
 
-					self.opx_cond_max_dum = self.conductivity_proton(0,1,idx+i,method,sol_idx)
-					self.opx_cond_min_dum = self.conductivity_proton(1,1,idx+i,method,sol_idx)
 					self.opx_cond_dum = self.conductivity_proton(2,1,idx+i,method,sol_idx)
-					self.opx_cond_max_dum_pol = self.conductivity_polaron(0,1,idx+i,method,sol_idx)
-					self.opx_cond_min_dum_pol = self.conductivity_polaron(1,1,idx+i,method,sol_idx)
 					self.opx_cond_dum_pol = self.conductivity_polaron(2,1,idx+i,method,sol_idx)
-
-					opx_cond_max_array.append(self.opx_cond_max_dum)
-					opx_cond_min_array.append(self.opx_cond_min_dum)
 					opx_cond_array.append(self.opx_cond_dum)
-					opx_cond_max_dry_array.append(self.opx_cond_max_dum_pol)
-					opx_cond_min_dry_array.append(self.opx_cond_min_dum_pol)
 					opx_cond_dry_array.append(self.opx_cond_dum_pol)
 
-				self.opx_cond_max[idx_node] = (opx_cond_max_dry_array[0] * opx_cond_max_dry_array[1] * opx_cond_max_dry_array[2])**(1.0/3.0) +\
-				(opx_cond_max_array[0] * opx_cond_max_array[1] * opx_cond_max_array[2])**(1.0/3.0)
-				self.opx_cond_min[idx_node] = (opx_cond_min_dry_array[0] * opx_cond_min_dry_array[1] * opx_cond_min_dry_array[2])**(1.0/3.0) +\
-				(opx_cond_min_array[0] * opx_cond_min_array[1] * opx_cond_min_array[2])**(1.0/3.0)
+					if method == 'array':
+						self.opx_cond_max_dum = self.conductivity_proton(0,1,idx+i,method,sol_idx)
+						self.opx_cond_min_dum = self.conductivity_proton(1,1,idx+i,method,sol_idx)
+
+						self.opx_cond_max_dum_pol = self.conductivity_polaron(0,1,idx+i,method,sol_idx)
+						self.opx_cond_min_dum_pol = self.conductivity_polaron(1,1,idx+i,method,sol_idx)
+
+						opx_cond_max_array.append(self.opx_cond_max_dum)
+						opx_cond_min_array.append(self.opx_cond_min_dum)
+						opx_cond_max_dry_array.append(self.opx_cond_max_dum_pol)
+						opx_cond_min_dry_array.append(self.opx_cond_min_dum_pol)
+
+
 				self.opx_cond[idx_node] = (opx_cond_dry_array[0] * opx_cond_dry_array[1] * opx_cond_dry_array[2])**(1.0/3.0) +\
 				(opx_cond_array[0] * opx_cond_array[1] * opx_cond_array[2])**(1.0/3.0)
+
+				if method == 'array':
+					self.opx_cond_max[idx_node] = (opx_cond_max_dry_array[0] * opx_cond_max_dry_array[1] * opx_cond_max_dry_array[2])**(1.0/3.0) +\
+					(opx_cond_max_array[0] * opx_cond_max_array[1] * opx_cond_max_array[2])**(1.0/3.0)
+					self.opx_cond_min[idx_node] = (opx_cond_min_dry_array[0] * opx_cond_min_dry_array[1] * opx_cond_min_dry_array[2])**(1.0/3.0) +\
+					(opx_cond_min_array[0] * opx_cond_min_array[1] * opx_cond_min_array[2])**(1.0/3.0)
+				else:
+					self.opx_cond_max[idx_node] = self.opx_cond[idx_node]
+					self.opx_cond_min[idx_node] = self.opx_cond[idx_node]
 
 			return self.opx_cond_max, self.opx_cond_min, self.opx_cond
 
@@ -3556,20 +3617,30 @@ class MATE(QMainWindow):
 
 			if MATE.type[1][MATE.opx_cond_selection] == '0':
 
-				self.opx_cond_max[idx_node] = self.conductivity_ionic(0,1,MATE.opx_cond_selection,method,sol_idx) + self.conductivity_polaron(0,1,MATE.opx_cond_selection,method,sol_idx) +\
-				self.conductivity_proton(0,1,MATE.opx_cond_selection,method,sol_idx)
-
-				self.opx_cond_min[idx_node] = self.conductivity_ionic(1,1,MATE.opx_cond_selection,method,sol_idx) + self.conductivity_polaron(1,1,MATE.opx_cond_selection,method,sol_idx) +\
-				self.conductivity_proton(1,1,MATE.opx_cond_selection,method,sol_idx)
-
 				self.opx_cond[idx_node] = self.conductivity_ionic(2,1,MATE.opx_cond_selection,method,sol_idx) + self.conductivity_polaron(2,1,MATE.opx_cond_selection,method,sol_idx) +\
 				self.conductivity_proton(2,1,MATE.opx_cond_selection,method,sol_idx)
 
+				if method == 'array':
+					self.opx_cond_max[idx_node] = self.conductivity_ionic(0,1,MATE.opx_cond_selection,method,sol_idx) + self.conductivity_polaron(0,1,MATE.opx_cond_selection,method,sol_idx) +\
+					self.conductivity_proton(0,1,MATE.opx_cond_selection,method,sol_idx)
+
+					self.opx_cond_min[idx_node] = self.conductivity_ionic(1,1,MATE.opx_cond_selection,method,sol_idx) + self.conductivity_polaron(1,1,MATE.opx_cond_selection,method,sol_idx) +\
+					self.conductivity_proton(1,1,MATE.opx_cond_selection,method,sol_idx)
+				else:
+					self.opx_cond_max[idx_node] = self.opx_cond[idx_node]
+					self.opx_cond_min[idx_node] = self.opx_cond[idx_node]
+
 			elif MATE.type[1][MATE.opx_cond_selection] == '1':
 
-				self.opx_cond_max[idx_node] = self.conductivity_dry(1,MATE.opx_dry_selection,method,sol_idx)[0] + self.conductivity_proton(0,1,MATE.opx_cond_selection,method,sol_idx)
-				self.opx_cond_min[idx_node] = self.conductivity_dry(1,MATE.opx_dry_selection,method,sol_idx)[1] + self.conductivity_proton(1,1,MATE.opx_cond_selection,method,sol_idx)
+
 				self.opx_cond[idx_node] = self.conductivity_dry(1,MATE.opx_dry_selection,method,sol_idx)[2] + self.conductivity_proton(2,1,MATE.opx_cond_selection,method,sol_idx)
+
+				if method == 'array':
+					self.opx_cond_max[idx_node] = self.conductivity_dry(1,MATE.opx_dry_selection,method,sol_idx)[0] + self.conductivity_proton(0,1,MATE.opx_cond_selection,method,sol_idx)
+					self.opx_cond_min[idx_node] = self.conductivity_dry(1,MATE.opx_dry_selection,method,sol_idx)[1] + self.conductivity_proton(1,1,MATE.opx_cond_selection,method,sol_idx)
+				else:
+					self.opx_cond_max[idx_node] = self.opx_cond[idx_node]
+					self.opx_cond_min[idx_node] = self.opx_cond[idx_node]
 
 			elif (MATE.type[1][MATE.opx_cond_selection] == '11') or (MATE.type[1][MATE.opx_cond_selection] == '21'):
 
@@ -3593,19 +3664,30 @@ class MATE(QMainWindow):
 
 					opx_wet_odd_function = MATE.name[1][MATE.opx_cond_selection]
 
-				cond_opx_max,cond_opx_min,cond_opx = eval(opx_wet_odd_function + '(model_method = MATE.model_method[1],T = self.T[idx_node],P = self.p[idx_node],corr_factor = self.correction_factor_pxgt,fo2 = self.calculate_fugacity(MATE.o2_buffer)[idx_node],fo2_ref = self.calculate_fugacity(3)[idx_node],wt_err = self.FTIR_calibration_error(1,self.w_calib[1][MATE.opx_cond_selection]),opx_h2o = self.opx_h2o[idx_node])')
+				cond_opx_max,cond_opx_min,cond_opx = eval(opx_wet_odd_function + '(model_method = MATE.model_method[1],T = self.T[idx_node],P = self.p[idx_node],corr_factor = self.correction_factor_pxgt,fo2 = self.calculate_fugacity(MATE.o2_buffer)[idx_node],fo2_ref = self.calculate_fugacity(3)[idx_node],wt_err = self.FTIR_calibration_error(1,self.w_calib[1][MATE.opx_cond_selection]),opx_h2o = self.opx_h2o[idx_node],method = method)')
 
 				if MATE.model_method[1] == 0:
 
-					self.opx_cond_max[idx_node] = cond_opx_max
-					self.opx_cond_min[idx_node] = cond_opx_min
 					self.opx_cond[idx_node] = cond_opx
+
+					if method == 'array':
+						self.opx_cond_max[idx_node] = cond_opx_max
+						self.opx_cond_min[idx_node] = cond_opx_min
+					else:
+						self.opx_cond_max[idx_node] = cond_opx
+						self.opx_cond_min[idx_node] = cond_opx
+
 
 				elif MATE.model_method[1] == 1:
 
-					self.opx_cond_max[idx_node] = self.conductivity_dry(1,MATE.opx_dry_selection,method,sol_idx)[0] + cond_opx_max
-					self.opx_cond_min[idx_node] = self.conductivity_dry(1,MATE.opx_dry_selection,method,sol_idx)[1] + cond_opx_min
 					self.opx_cond[idx_node] = self.conductivity_dry(1,MATE.opx_dry_selection,method,sol_idx)[2] + cond_opx
+					if method == 'array':
+						self.opx_cond_max[idx_node] = self.conductivity_dry(1,MATE.opx_dry_selection,method,sol_idx)[0] + cond_opx_max
+						self.opx_cond_min[idx_node] = self.conductivity_dry(1,MATE.opx_dry_selection,method,sol_idx)[1] + cond_opx_min
+					else:
+						self.opx_cond_max[idx_node] = self.opx_cond[idx_node]
+						self.opx_cond_min[idx_node] = self.opx_cond[idx_node]
+
 
 			elif (MATE.type[0][MATE.opx_cond_selection] == '4'):
 
@@ -3619,15 +3701,20 @@ class MATE(QMainWindow):
 
 					opx_wet_diff_function = MATE.name[1][MATE.opx_cond_selection]
 
-				DH_max,DH_min,DH = eval(opx_wet_diff_function + '(T = self.T[idx_node],opx_h2o = self.opx_h2o[idx_node])')
+				DH_max,DH_min,DH = eval(opx_wet_diff_function + '(T = self.T[idx_node],opx_h2o = self.opx_h2o[idx_node],method = method)')
 
 				#Dry conductivity + Nernst-Einstein equation
-				self.opx_cond_max[idx_node] = self.conductivity_dry(1,MATE.opx_dry_selection)[0] +\
-				((DH_max * h2o_h_opx * (self.el_q**2.0)) / (self.boltz*self.T[idx_node]))
-				self.opx_cond_min[idx_node] = self.conductivity_dry(1,MATE.opx_dry_selection)[1] +\
-				((DH_min * h2o_h_opx * (self.el_q**2.0)) / (self.boltz*self.T[idx_node]))
 				self.opx_cond[idx_node] = self.conductivity_dry(1,MATE.opx_dry_selection)[2] +\
 				((DH * h2o_h_opx * (self.el_q**2.0)) / (self.boltz*self.T[idx_node]))
+
+				if method == 'array':
+					self.opx_cond_max[idx_node] = self.conductivity_dry(1,MATE.opx_dry_selection)[0] +\
+					((DH_max * h2o_h_opx * (self.el_q**2.0)) / (self.boltz*self.T[idx_node]))
+					self.opx_cond_min[idx_node] = self.conductivity_dry(1,MATE.opx_dry_selection)[1] +\
+					((DH_min * h2o_h_opx * (self.el_q**2.0)) / (self.boltz*self.T[idx_node]))
+				else:
+					self.opx_cond_max[idx_node] = self.opx_cond[idx_node]
+					self.opx_cond_min[idx_node] = self.opx_cond[idx_node]
 
 		if MATE.px_cond_method == 1:
 
@@ -3666,19 +3753,22 @@ class MATE(QMainWindow):
 			if MATE.type[2][idx] == '10':
 
 				for i in range(0,3):
-					self.cpx_cond_max_dum = self.conductivity_dry(2,self.cpx_dry_selection,method,sol_idx)[0] + self.conductivity_proton(0,2,idx+i,method,sol_idx)
-
-					self.cpx_cond_min_dum = self.conductivity_dry(2,self.cpx_dry_selection,method,sol_idx)[1] + self.conductivity_proton(1,2,idx+i,method,sol_idx)
-
 					self.cpx_cond_dum = self.conductivity_dry(2,self.cpx_dry_selection,method,sol_idx)[2] + self.conductivity_proton(2,2,idx+i,method,sol_idx)
-
-					cpx_cond_max_array.append(self.cpx_cond_max_dum)
-					cpx_cond_min_array.append(self.cpx_cond_min_dum)
 					cpx_cond_array.append(self.cpx_cond_dum)
 
-				self.cpx_cond_max[idx_node] = (cpx_cond_max_array[0] * cpx_cond_max_array[1] * cpx_cond_max_array[2])**(1.0/3.0)
-				self.cpx_cond_min[idx_node] = (cpx_cond_min_array[0] * cpx_cond_min_array[1] * cpx_cond_min_array[2])**(1.0/3.0)
+					if method == 'array':
+						self.cpx_cond_max_dum = self.conductivity_dry(2,self.cpx_dry_selection,method,sol_idx)[0] + self.conductivity_proton(0,2,idx+i,method,sol_idx)
+						self.cpx_cond_min_dum = self.conductivity_dry(2,self.cpx_dry_selection,method,sol_idx)[1] + self.conductivity_proton(1,2,idx+i,method,sol_idx)
+						cpx_cond_max_array.append(self.cpx_cond_max_dum)
+						cpx_cond_min_array.append(self.cpx_cond_min_dum)
+
 				self.cpx_cond[idx_node] = (cpx_cond_array[0] * cpx_cond_array[1] * cpx_cond_array[2])**(1.0/3.0)
+				if method == 'array':
+					self.cpx_cond_max[idx_node] = (cpx_cond_max_array[0] * cpx_cond_max_array[1] * cpx_cond_max_array[2])**(1.0/3.0)
+					self.cpx_cond_min[idx_node] = (cpx_cond_min_array[0] * cpx_cond_min_array[1] * cpx_cond_min_array[2])**(1.0/3.0)
+				else:
+					self.cpx_cond_max[idx_node] = self.cpx_cond[idx_node]
+					self.cpx_cond_min[idx_node] = self.cpx_cond[idx_node]
 
 			elif MATE.type[2][idx] == '20':
 
@@ -3688,26 +3778,32 @@ class MATE(QMainWindow):
 
 				for i in range(0,3):
 
-					self.cpx_cond_max_dum = self.conductivity_proton(0,2,idx+i,method,sol_idx)
-					self.cpx_cond_min_dum = self.conductivity_proton(1,2,idx+i,method,sol_idx)
-					self.cpx_cond_dum = self.conductivity_proton(2,2,idx+i,method,sol_idx)
-					self.cpx_cond_max_dum_pol = self.conductivity_polaron(0,2,idx+i,method,sol_idx)
-					self.cpx_cond_min_dum_pol = self.conductivity_polaron(1,2,idx+i,method,sol_idx)
-					self.cpx_cond_dum_pol = self.conductivity_polaron(2,2,idx+i,method,sol_idx)
+					if method == 'array':
+						self.cpx_cond_max_dum = self.conductivity_proton(0,2,idx+i,method,sol_idx)
+						self.cpx_cond_min_dum = self.conductivity_proton(1,2,idx+i,method,sol_idx)
+						self.cpx_cond_max_dum_pol = self.conductivity_polaron(0,2,idx+i,method,sol_idx)
+						self.cpx_cond_min_dum_pol = self.conductivity_polaron(1,2,idx+i,method,sol_idx)
+						cpx_cond_max_array.append(self.cpx_cond_max_dum)
+						cpx_cond_min_array.append(self.cpx_cond_min_dum)
+						cpx_cond_max_dry_array.append(self.cpx_cond_max_dum_pol)
+						cpx_cond_min_dry_array.append(self.cpx_cond_min_dum_pol)
 
-					cpx_cond_max_array.append(self.cpx_cond_max_dum)
-					cpx_cond_min_array.append(self.cpx_cond_min_dum)
+					self.cpx_cond_dum = self.conductivity_proton(2,2,idx+i,method,sol_idx)
+					self.cpx_cond_dum_pol = self.conductivity_polaron(2,2,idx+i,method,sol_idx)
 					cpx_cond_array.append(self.cpx_cond_dum)
-					cpx_cond_max_dry_array.append(self.cpx_cond_max_dum_pol)
-					cpx_cond_min_dry_array.append(self.cpx_cond_min_dum_pol)
 					cpx_cond_dry_array.append(self.cpx_cond_dum_pol)
 
-				self.cpx_cond_max[idx_node] = (cpx_cond_max_dry_array[0] * cpx_cond_max_dry_array[1] * cpx_cond_max_dry_array[2])**(1.0/3.0) +\
-				(cpx_cond_max_array[0] * cpx_cond_max_array[1] * cpx_cond_max_array[2])**(1.0/3.0)
-				self.cpx_cond_min[idx_node] = (cpx_cond_min_dry_array[0] * cpx_cond_min_dry_array[1] * cpx_cond_min_dry_array[2])**(1.0/3.0) +\
-				(cpx_cond_min_array[0] * cpx_cond_min_array[1] * cpx_cond_min_array[2])**(1.0/3.0)
 				self.cpx_cond[idx_node] = (cpx_cond_dry_array[0] * cpx_cond_dry_array[1] * cpx_cond_dry_array[2])**(1.0/3.0) +\
 				(cpx_cond_array[0] * cpx_cond_array[1] * cpx_cond_array[2])**(1.0/3.0)
+
+				if method == 'array':
+					self.cpx_cond_max[idx_node] = (cpx_cond_max_dry_array[0] * cpx_cond_max_dry_array[1] * cpx_cond_max_dry_array[2])**(1.0/3.0) +\
+					(cpx_cond_max_array[0] * cpx_cond_max_array[1] * cpx_cond_max_array[2])**(1.0/3.0)
+					self.cpx_cond_min[idx_node] = (cpx_cond_min_dry_array[0] * cpx_cond_min_dry_array[1] * cpx_cond_min_dry_array[2])**(1.0/3.0) +\
+					(cpx_cond_min_array[0] * cpx_cond_min_array[1] * cpx_cond_min_array[2])**(1.0/3.0)
+				else:
+					self.cpx_cond_max[idx_node] = self.cpx_cond[idx_node]
+					self.cpx_cond_min[idx_node] = self.cpx_cond[idx_node]
 
 			return self.cpx_cond_max, self.cpx_cond_min, self.cpx_cond
 
@@ -3715,21 +3811,29 @@ class MATE(QMainWindow):
 
 			if MATE.type[2][MATE.cpx_cond_selection] == '0':
 
-				self.cpx_cond_max[idx_node] = self.conductivity_ionic(0,2,MATE.cpx_cond_selection,method,sol_idx) + self.conductivity_polaron(0,2,MATE.cpx_cond_selection,method,sol_idx) +\
-				self.conductivity_proton(0,2,MATE.cpx_cond_selection,method,sol_idx)
-
-				self.cpx_cond_min[idx_node] = self.conductivity_ionic(1,2,MATE.cpx_cond_selection,method,sol_idx) + self.conductivity_polaron(1,2,MATE.cpx_cond_selection,method,sol_idx) +\
-				self.conductivity_proton(1,2,MATE.cpx_cond_selection,method,sol_idx)
-
 				self.cpx_cond[idx_node] = self.conductivity_ionic(2,2,MATE.cpx_cond_selection,method,sol_idx) + self.conductivity_polaron(2,2,MATE.cpx_cond_selection,method,sol_idx) +\
 				self.conductivity_proton(2,2,MATE.cpx_cond_selection,method,sol_idx)
 
+				if method == 'array':
+					self.cpx_cond_max[idx_node] = self.conductivity_ionic(0,2,MATE.cpx_cond_selection,method,sol_idx) + self.conductivity_polaron(0,2,MATE.cpx_cond_selection,method,sol_idx) +\
+					self.conductivity_proton(0,2,MATE.cpx_cond_selection,method,sol_idx)
+
+					self.cpx_cond_min[idx_node] = self.conductivity_ionic(1,2,MATE.cpx_cond_selection,method,sol_idx) + self.conductivity_polaron(1,2,MATE.cpx_cond_selection,method,sol_idx) +\
+					self.conductivity_proton(1,2,MATE.cpx_cond_selection,method,sol_idx)
+				else:
+					self.cpx_cond_max[idx_node] = self.cpx_cond[idx_node]
+					self.cpx_cond_min[idx_node] = self.cpx_cond[idx_node]
+
+
 			elif MATE.type[2][MATE.cpx_cond_selection] == '1':
 
-				self.cpx_cond_max[idx_node] = self.conductivity_dry(2,MATE.cpx_dry_selection,method,sol_idx)[0] + self.conductivity_proton(0,2,MATE.cpx_cond_selection,method,sol_idx)
-				self.cpx_cond_min[idx_node] = self.conductivity_dry(2,MATE.cpx_dry_selection,method,sol_idx)[1] + self.conductivity_proton(1,2,MATE.cpx_cond_selection,method,sol_idx)
 				self.cpx_cond[idx_node] = self.conductivity_dry(2,MATE.cpx_dry_selection,method,sol_idx)[2] + self.conductivity_proton(2,2,MATE.cpx_cond_selection,method,sol_idx)
-
+				if method == 'array':
+					self.cpx_cond_max[idx_node] = self.conductivity_dry(2,MATE.cpx_dry_selection,method,sol_idx)[0] + self.conductivity_proton(0,2,MATE.cpx_cond_selection,method,sol_idx)
+					self.cpx_cond_min[idx_node] = self.conductivity_dry(2,MATE.cpx_dry_selection,method,sol_idx)[1] + self.conductivity_proton(1,2,MATE.cpx_cond_selection,method,sol_idx)
+				else:
+					self.cpx_cond_max[idx_node] = self.cpx_cond[idx_node]
+					self.cpx_cond_min[idx_node] = self.cpx_cond[idx_node]
 
 			elif (MATE.type[2][MATE.cpx_cond_selection] == '11') or (MATE.type[2][MATE.cpx_cond_selection] == '21'):
 
@@ -3753,19 +3857,26 @@ class MATE(QMainWindow):
 
 					cpx_wet_odd_function = MATE.name[2][MATE.cpx_cond_selection]
 
-				cond_cpx_max,cond_cpx_min,cond_cpx,cond_dry,cond_wet = eval(cpx_wet_odd_function + '(model_method = MATE.model_method[2],T = self.T[idx_node],P = self.p[idx_node],corr_factor = self.correction_factor_pxgt,fo2 = self.calculate_fugacity(MATE.o2_buffer)[idx_node],fo2_ref = self.calculate_fugacity(3)[idx_node],wt_err = self.FTIR_calibration_error(2,self.w_calib[2][MATE.cpx_cond_selection]),cpx_h2o = self.cpx_h2o[idx_node],cpx_fe = self.fe_cpx[idx_node])')
+				cond_cpx_max,cond_cpx_min,cond_cpx,cond_dry,cond_wet = eval(cpx_wet_odd_function + '(model_method = MATE.model_method[2],T = self.T[idx_node],P = self.p[idx_node],corr_factor = self.correction_factor_pxgt,fo2 = self.calculate_fugacity(MATE.o2_buffer)[idx_node],fo2_ref = self.calculate_fugacity(3)[idx_node],wt_err = self.FTIR_calibration_error(2,self.w_calib[2][MATE.cpx_cond_selection]),cpx_h2o = self.cpx_h2o[idx_node],cpx_fe = self.fe_cpx[idx_node],method = method)')
 
 				if MATE.model_method[2] == 0:
 
-					self.cpx_cond_max[idx_node] = cond_cpx_max
-					self.cpx_cond_min[idx_node] = cond_cpx_min
 					self.cpx_cond[idx_node] = cond_cpx
+					if method == 'array':
+						self.cpx_cond_max[idx_node] = cond_cpx_max
+						self.cpx_cond_min[idx_node] = cond_cpx_min
+					else:
+						self.cpx_cond_max[idx_node] = self.cpx_cond[idx_node]
+						self.cpx_cond_min[idx_node] = self.cpx_cond[idx_node]
 
 				elif MATE.model_method[2] == 1:
 
-					self.cpx_cond_max[idx_node] = self.conductivity_dry(2,MATE.cpx_dry_selection,method,sol_idx)[0] + cond_cpx_max
-					self.cpx_cond_min[idx_node] = self.conductivity_dry(2,MATE.cpx_dry_selection,method,sol_idx)[1] + cond_cpx_min
 					self.cpx_cond[idx_node] = self.conductivity_dry(2,MATE.cpx_dry_selection,method,sol_idx)[2] + cond_cpx
+
+					if method == 'array':
+						self.cpx_cond_max[idx_node] = self.conductivity_dry(2,MATE.cpx_dry_selection,method,sol_idx)[0] + cond_cpx_max
+						self.cpx_cond_min[idx_node] = self.conductivity_dry(2,MATE.cpx_dry_selection,method,sol_idx)[1] + cond_cpx_min
+
 
 			elif MATE.type[2][MATE.cpx_cond_selection] == '4':
 
@@ -3779,15 +3890,19 @@ class MATE(QMainWindow):
 
 					cpx_wet_diff_function = MATE.name[2][MATE.cpx_cond_selection]
 
-				DH_max,DH_min,DH = eval(cpx_wet_diff_function + '(T = self.T[idx_node],cpx_h2o = self.cpx_h2o[idx_node])')
+				DH_max,DH_min,DH = eval(cpx_wet_diff_function + '(T = self.T[idx_node],cpx_h2o = self.cpx_h2o[idx_node],method = method)')
 
 				#Dry conductivity + Nernst-Einstein equation
-				self.cpx_cond_max[idx_node] = self.conductivity_dry(2,MATE.cpx_dry_selection,method,sol_idx)[0] +\
-				((DH_max * h2o_h_cpx * (self.el_q**2.0)) / (self.boltz*self.T[idx_node]))
-				self.cpx_cond_min[idx_node] = self.conductivity_dry(2,MATE.cpx_dry_selection,method,sol_idx)[1] +\
-				((DH_min * h2o_h_cpx * (self.el_q**2.0)) / (self.boltz*self.T[idx_node]))
 				self.cpx_cond[idx_node] = self.conductivity_dry(2,MATE.cpx_dry_selection,method,sol_idx)[2] +\
 				((DH * h2o_h_cpx * (self.el_q**2.0)) / (self.boltz*self.T[idx_node]))
+				if method == 'array':
+					self.cpx_cond_max[idx_node] = self.conductivity_dry(2,MATE.cpx_dry_selection,method,sol_idx)[0] +\
+					((DH_max * h2o_h_cpx * (self.el_q**2.0)) / (self.boltz*self.T[idx_node]))
+					self.cpx_cond_min[idx_node] = self.conductivity_dry(2,MATE.cpx_dry_selection,method,sol_idx)[1] +\
+					((DH_min * h2o_h_cpx * (self.el_q**2.0)) / (self.boltz*self.T[idx_node]))
+				else:
+					self.cpx_cond_max[idx_node] = self.cpx_cond[idx_node]
+					self.cpx_cond_min[idx_node] = self.cpx_cond[idx_node]
 
 		if MATE.px_cond_method == 1:
 
@@ -3817,19 +3932,23 @@ class MATE(QMainWindow):
 			if MATE.type[3][idx] == '10':
 
 				for i in range(0,3):
-					self.gt_cond_max_dum = self.conductivity_dry(3,self.gt_dry_selection,method,sol_idx)[0] + self.conductivity_proton(0,3,idx+i,method,sol_idx)
-
-					self.gt_cond_min_dum = self.conductivity_dry(3,self.gt_dry_selection,method,sol_idx)[1] + self.conductivity_proton(1,3,idx+i,method,sol_idx)
 
 					self.gt_cond_dum = self.conductivity_dry(3,self.gt_dry_selection,method,sol_idx)[2] + self.conductivity_proton(2,3,idx+i,method,sol_idx)
-
-					gt_cond_max_array.append(self.gt_cond_max_dum)
-					gt_cond_min_array.append(self.gt_cond_min_dum)
 					gt_cond_array.append(self.gt_cond_dum)
 
-				self.gt_cond_max[idx_node] = (gt_cond_max_array[0] * gt_cond_max_array[1] * gt_cond_max_array[2])**(1.0/3.0)
-				self.gt_cond_min[idx_node] = (gt_cond_min_array[0] * gt_cond_min_array[1] * gt_cond_min_array[2])**(1.0/3.0)
+					if method == 'array':
+						self.gt_cond_max_dum = self.conductivity_dry(3,self.gt_dry_selection,method,sol_idx)[0] + self.conductivity_proton(0,3,idx+i,method,sol_idx)
+						self.gt_cond_min_dum = self.conductivity_dry(3,self.gt_dry_selection,method,sol_idx)[1] + self.conductivity_proton(1,3,idx+i,method,sol_idx)
+						gt_cond_max_array.append(self.gt_cond_max_dum)
+						gt_cond_min_array.append(self.gt_cond_min_dum)
+
 				self.gt_cond[idx_node] = (gt_cond_array[0] * gt_cond_array[1] * gt_cond_array[2])**(1.0/3.0)
+				if method == 'array':
+					self.gt_cond_max[idx_node] = (gt_cond_max_array[0] * gt_cond_max_array[1] * gt_cond_max_array[2])**(1.0/3.0)
+					self.gt_cond_min[idx_node] = (gt_cond_min_array[0] * gt_cond_min_array[1] * gt_cond_min_array[2])**(1.0/3.0)
+				else:
+					self.gt_cond_max[idx_node] = self.gt_cond[idx_node]
+					self.gt_cond_min[idx_node] = self.gt_cond[idx_node]
 
 			elif MATE.type[3][idx] == '20':
 
@@ -3838,46 +3957,61 @@ class MATE(QMainWindow):
 				gt_cond_dry_array = []
 
 				for i in range(0,3):
-
-					self.gt_cond_max_dum = self.conductivity_proton(0,3,idx+i,method,sol_idx)
-					self.gt_cond_min_dum = self.conductivity_proton(1,3,idx+i,method,sol_idx)
 					self.gt_cond_dum = self.conductivity_proton(2,3,idx+i,method,sol_idx)
-					self.gt_cond_max_dum_pol = self.conductivity_polaron(0,3,idx+i,method,sol_idx)
-					self.gt_cond_min_dum_pol = self.conductivity_polaron(1,3,idx+i,method,sol_idx)
 					self.gt_cond_dum_pol = self.conductivity_polaron(2,3,idx+i,method,sol_idx)
-
-					gt_cond_max_array.append(self.gt_cond_max_dum)
-					gt_cond_min_array.append(self.gt_cond_min_dum)
 					gt_cond_array.append(self.gt_cond_dum)
-					gt_cond_max_dry_array.append(self.gt_cond_max_dum_pol)
-					gt_cond_min_dry_array.append(self.gt_cond_min_dum_pol)
 					gt_cond_dry_array.append(self.gt_cond_dum_pol)
 
-				self.gt_cond_max[idx_node] = (gt_cond_max_dry_array[0] * gt_cond_max_dry_array[1] * gt_cond_max_dry_array[2])**(1.0/3.0) +\
-				(gt_cond_max_array[0] * gt_cond_max_array[1] * gt_cond_max_array[2])**(1.0/3.0)
-				self.gt_cond_min[idx_node] = (gt_cond_min_dry_array[0] * gt_cond_min_dry_array[1] * gt_cond_min_dry_array[2])**(1.0/3.0) +\
-				(gt_cond_min_array[0] * gt_cond_min_array[1] * gt_cond_min_array[2])**(1.0/3.0)
+					if method == 'array':
+						self.gt_cond_max_dum = self.conductivity_proton(0,3,idx+i,method,sol_idx)
+						self.gt_cond_min_dum = self.conductivity_proton(1,3,idx+i,method,sol_idx)
+
+						self.gt_cond_max_dum_pol = self.conductivity_polaron(0,3,idx+i,method,sol_idx)
+						self.gt_cond_min_dum_pol = self.conductivity_polaron(1,3,idx+i,method,sol_idx)
+
+						gt_cond_max_array.append(self.gt_cond_max_dum)
+						gt_cond_min_array.append(self.gt_cond_min_dum)
+						gt_cond_max_dry_array.append(self.gt_cond_max_dum_pol)
+						gt_cond_min_dry_array.append(self.gt_cond_min_dum_pol)
+
 				self.gt_cond[idx_node] = (gt_cond_dry_array[0] * gt_cond_dry_array[1] * gt_cond_dry_array[2])**(1.0/3.0) +\
 				(gt_cond_array[0] * gt_cond_array[1] * gt_cond_array[2])**(1.0/3.0)
+				if method == 'array':
+					self.gt_cond_max[idx_node] = (gt_cond_max_dry_array[0] * gt_cond_max_dry_array[1] * gt_cond_max_dry_array[2])**(1.0/3.0) +\
+					(gt_cond_max_array[0] * gt_cond_max_array[1] * gt_cond_max_array[2])**(1.0/3.0)
+					self.gt_cond_min[idx_node] = (gt_cond_min_dry_array[0] * gt_cond_min_dry_array[1] * gt_cond_min_dry_array[2])**(1.0/3.0) +\
+					(gt_cond_min_array[0] * gt_cond_min_array[1] * gt_cond_min_array[2])**(1.0/3.0)
+				else:
+					self.gt_cond_max[idx_node] = self.gt_cond[idx_node]
+					self.gt_cond_min[idx_node] = self.gt_cond[idx_node]
 
 			return self.gt_cond_max,self.gt_cond_min,self.gt_cond
 
 		if MATE.type[3][MATE.gt_cond_selection] == '0':
 
-			self.gt_cond_max[idx_node][idx_node] = self.conductivity_ionic(0,3,MATE.gt_cond_selection,method,sol_idx) + self.conductivity_polaron(0,3,MATE.gt_cond_selection,method,sol_idx) +\
-			self.conductivity_proton(0,3,MATE.gt_cond_selection,method,sol_idx)
-
-			self.gt_cond_min[idx_node][idx_node] = self.conductivity_ionic(1,3,MATE.gt_cond_selection,method,sol_idx) + self.conductivity_polaron(1,3,MATE.gt_cond_selection,method,sol_idx) +\
-			self.conductivity_proton(1,3,MATE.gt_cond_selection,method,sol_idx)
-
-			self.gt_cond[idx_node][idx_node] = self.conductivity_ionic(2,3,MATE.gt_cond_selection,method,sol_idx) + self.conductivity_polaron(2,3,MATE.gt_cond_selection,method,sol_idx) +\
+			self.gt_cond[idx_node] = self.conductivity_ionic(2,3,MATE.gt_cond_selection,method,sol_idx) + self.conductivity_polaron(2,3,MATE.gt_cond_selection,method,sol_idx) +\
 			self.conductivity_proton(2,3,MATE.gt_cond_selection,method,sol_idx)
+
+			if method == 'array':
+				self.gt_cond_max[idx_node] = self.conductivity_ionic(0,3,MATE.gt_cond_selection,method,sol_idx) + self.conductivity_polaron(0,3,MATE.gt_cond_selection,method,sol_idx) +\
+				self.conductivity_proton(0,3,MATE.gt_cond_selection,method,sol_idx)
+
+				self.gt_cond_min[idx_node] = self.conductivity_ionic(1,3,MATE.gt_cond_selection,method,sol_idx) + self.conductivity_polaron(1,3,MATE.gt_cond_selection,method,sol_idx) +\
+				self.conductivity_proton(1,3,MATE.gt_cond_selection,method,sol_idx)
+
+			else:
+				self.gt_cond_max[idx_node] = self.gt_cond[idx_node]
+				self.gt_cond_min[idx_node] = self.gt_cond[idx_node]
 
 		elif MATE.type[3][MATE.gt_cond_selection] == '1':
 
-			self.gt_cond_max[idx_node] = self.conductivity_dry(3,MATE.gt_dry_selection,method,sol_idx)[0] + self.conductivity_proton(0,3,MATE.gt_cond_selection,method,sol_idx)
-			self.gt_cond_min[idx_node] = self.conductivity_dry(3,MATE.gt_dry_selection,method,sol_idx)[1] + self.conductivity_proton(1,3,MATE.gt_cond_selection,method,sol_idx)
 			self.gt_cond[idx_node] = self.conductivity_dry(3,MATE.gt_dry_selection,method,sol_idx)[2] + self.conductivity_proton(2,3,MATE.gt_cond_selection,method,sol_idx)
+			if method == 'array':
+				self.gt_cond_max[idx_node] = self.conductivity_dry(3,MATE.gt_dry_selection,method,sol_idx)[0] + self.conductivity_proton(0,3,MATE.gt_cond_selection,method,sol_idx)
+				self.gt_cond_min[idx_node] = self.conductivity_dry(3,MATE.gt_dry_selection,method,sol_idx)[1] + self.conductivity_proton(1,3,MATE.gt_cond_selection,method,sol_idx)
+			else:
+				self.gt_cond_max[idx_node] = self.gt_cond[idx_node]
+				self.gt_cond_min[idx_node] = self.gt_cond[idx_node]
 
 		elif (MATE.type[3][MATE.gt_cond_selection] == '11') or (MATE.type[3][MATE.gt_cond_selection] == '21'):
 
@@ -3901,19 +4035,29 @@ class MATE(QMainWindow):
 
 				gt_wet_odd_function = MATE.name[3][MATE.gt_cond_selection]
 
-			cond_gt_max,cond_gt_min,cond_gt,cond_dry,cond_wet = eval(gt_wet_odd_function + '(model_method = MATE.model_method[3],T = self.T[idx_node],P = self.p[idx_node],corr_factor = self.correction_factor_pxgt,fo2 = self.calculate_fugacity(MATE.o2_buffer)[idx_node],fo2_ref = self.calculate_fugacity(3)[idx_node],wt_err = self.FTIR_calibration_error(3,self.w_calib[3][MATE.gt_cond_selection]),gt_h2o = self.gt_h2o[idx_node])')
+			cond_gt_max,cond_gt_min,cond_gt,cond_dry,cond_wet = eval(gt_wet_odd_function + '(model_method = MATE.model_method[3],T = self.T[idx_node],P = self.p[idx_node],corr_factor = self.correction_factor_pxgt,fo2 = self.calculate_fugacity(MATE.o2_buffer)[idx_node],fo2_ref = self.calculate_fugacity(3)[idx_node],wt_err = self.FTIR_calibration_error(3,self.w_calib[3][MATE.gt_cond_selection]),gt_h2o = self.gt_h2o[idx_node],method = method)')
 
 			if MATE.model_method[3] == 0:
 
-				self.gt_cond_max[idx_node] = cond_gt_max
-				self.gt_cond_min[idx_node] = cond_gt_min
 				self.gt_cond[idx_node] = cond_gt
+
+				if method == 'array':
+					self.gt_cond_max[idx_node] = cond_gt_max
+					self.gt_cond_min[idx_node] = cond_gt_min
+				else:
+					self.gt_cond_max[idx_node] = self.gt_cond[idx_node]
+					self.gt_cond_min[idx_node] = self.gt_cond[idx_node]
 
 			elif MATE.model_method[3] == 1:
 
-				self.gt_cond_max[idx_node] = self.conductivity_dry(3,MATE.gt_dry_selection,method,sol_idx)[0] + cond_gt_max
-				self.gt_cond_min[idx_node] = self.conductivity_dry(3,MATE.gt_dry_selection,method,sol_idx)[1] + cond_gt_min
 				self.gt_cond[idx_node] = self.conductivity_dry(3,MATE.gt_dry_selection,method,sol_idx)[2] + cond_gt
+				if method == 'array':
+					self.gt_cond_max[idx_node] = self.conductivity_dry(3,MATE.gt_dry_selection,method,sol_idx)[0] + cond_gt_max
+					self.gt_cond_min[idx_node] = self.conductivity_dry(3,MATE.gt_dry_selection,method,sol_idx)[1] + cond_gt_min
+				else:
+					self.gt_cond_max[idx_node] = self.gt_cond[idx_node]
+					self.gt_cond_min[idx_node] = self.gt_cond[idx_node]
+
 
 		elif (MATE.type[3][MATE.gt_cond_selection] == '4'):
 
@@ -3929,17 +4073,21 @@ class MATE(QMainWindow):
 
 				gt_wet_diff_function = MATE.name[3][MATE.gt_cond_selection]
 
-			DH_max,DH_min,DH = eval(gt_wet_diff_function + '(T = self.T[idx_node],gt_h2o = self.gt_h2o[idx_node])')
+			DH_max,DH_min,DH = eval(gt_wet_diff_function + '(T = self.T[idx_node],gt_h2o = self.gt_h2o[idx_node],method = method)')
 
 			#Dry conductivity + Nernst-Einstein equation
 
 			if (MATE.type[3][MATE.gt_cond_selection] == '4'):
-				self.gt_cond_max[idx_node] = self.conductivity_dry(3,MATE.gt_dry_selection,method,sol_idx)[0] +\
-				((DH_max * h2o_h_gt * (self.el_q**2.0)) / (self.boltz*self.T[idx_node]))
-				self.gt_cond_min[idx_node] = self.conductivity_dry(3,MATE.gt_dry_selection,method,sol_idx)[1] +\
-				((DH_min * h2o_h_gt * (self.el_q**2.0)) / (self.boltz*self.T[idx_node]))
 				self.gt_cond[idx_node] = self.conductivity_dry(3,MATE.gt_dry_selection,method,sol_idx)[2] +\
 				((DH * h2o_h_gt * (self.el_q**2.0)) / (self.boltz*self.T[idx_node]))
+				if method == 'array':
+					self.gt_cond_max[idx_node] = self.conductivity_dry(3,MATE.gt_dry_selection,method,sol_idx)[0] +\
+					((DH_max * h2o_h_gt * (self.el_q**2.0)) / (self.boltz*self.T[idx_node]))
+					self.gt_cond_min[idx_node] = self.conductivity_dry(3,MATE.gt_dry_selection,method,sol_idx)[1] +\
+					((DH_min * h2o_h_gt * (self.el_q**2.0)) / (self.boltz*self.T[idx_node]))
+				else:
+					self.gt_cond_max[idx_node] = self.gt_cond[idx_node]
+					self.gt_cond_min[idx_node] = self.gt_cond[idx_node]
 
 	def calculate_amp_conductivity(self,method,sol_idx):
 
@@ -3958,11 +4106,15 @@ class MATE(QMainWindow):
 
 				amp_odd_function = MATE.name[4][MATE.amp_cond_selection]
 
-			cond_amp_max,cond_amp_min,cond_amp = eval(amp_odd_function + '(T = self.T[idx_node])')
+			cond_amp_max,cond_amp_min,cond_amp = eval(amp_odd_function + '(T = self.T[idx_node],method = method)')
 
-			self.amp_cond_max[idx_node][idx_node] = cond_amp_max
-			self.amp_cond_min[idx_node][idx_node] = cond_amp_min
-			self.amp_cond[idx_node][idx_node] = cond_amp
+			self.amp_cond[idx_node] = cond_amp
+			if method == 'array':
+				self.amp_cond_max[idx_node] = cond_amp_max
+				self.amp_cond_min[idx_node] = cond_amp_min
+			else:
+				self.amp_cond_max[idx_node] = self.amp_cond[idx_node]
+				self.amp_cond_min[idx_node] = self.amp_cond[idx_node]
 
 	def calculate_pl_conductivity(self,method,sol_idx):
 
@@ -3984,11 +4136,15 @@ class MATE(QMainWindow):
 
 				pl_odd_function = MATE.name[5][MATE.pl_cond_selection]
 
-			cond_pl_max,cond_pl_min,cond_pl = eval(pl_odd_function + '(T = self.T[idx_node],flu = self.flu[idx_node])')
+			cond_pl_max,cond_pl_min,cond_pl = eval(pl_odd_function + '(T = self.T[idx_node],flu = self.flu[idx_node],method = method)')
 
-			self.pl_cond_max[idx_node] = cond_pl_max
-			self.pl_cond_min[idx_node] = cond_pl_min
 			self.pl_cond[idx_node] = cond_pl
+			if method == 'array':
+				self.pl_cond_max[idx_node] = cond_pl_max
+				self.pl_cond_min[idx_node] = cond_pl_min
+			else:
+				self.pl_cond_max[idx_node] = self.pl_cond[idx_node]
+				self.pl_cond_min[idx_node] = self.pl_cond[idx_node]
 
 	def calculate_sp_chr_conductivity(self,method,sol_idx):
 
@@ -4009,11 +4165,15 @@ class MATE(QMainWindow):
 
 				chr_odd_function = MATE.name[6][MATE.sp_chr_cond_selection]
 
-			cond_chr_max,cond_chr_min,cond_chr = eval(chr_odd_function + '(T = self.T[idx_node])')
+			cond_chr_max,cond_chr_min,cond_chr = eval(chr_odd_function + '(T = self.T[idx_node],method = method)')
 
-			self.sp_chr_cond_max[idx_node] = cond_chr_max
-			self.sp_chr_cond_min[idx_node] = cond_chr_min
 			self.sp_chr_cond[idx_node] = cond_chr
+			if method == 'array':
+				self.sp_chr_cond_max[idx_node] = cond_chr_max
+				self.sp_chr_cond_min[idx_node] = cond_chr_min
+			else:
+				self.sp_chr_cond_max[idx_node] = self.sp_chr_cond[idx_node]
+				self.sp_chr_cond_min[idx_node] = self.sp_chr_cond[idx_node]
 
 	def calculate_melt_conductivity(self,method,sol_idx):
 
@@ -4032,11 +4192,15 @@ class MATE(QMainWindow):
 
 				melt_odd_function = MATE.name[7][MATE.melt_cond_selection]
 
-			cond_melt_max,cond_melt_min,cond_melt = eval(melt_odd_function + '(T = self.T[idx_node], P = self.p[idx_node], Melt_H2O = self.melt_h2o[idx_node], Melt_CO2 = self.co2[idx_node], Melt_Na2O = self.na2o_melt[idx_node], Melt_K2O = self.k2o_melt[idx_node])')
+			cond_melt_max,cond_melt_min,cond_melt = eval(melt_odd_function + '(T = self.T[idx_node], P = self.p[idx_node], Melt_H2O = self.melt_h2o[idx_node], Melt_CO2 = self.co2[idx_node], Melt_Na2O = self.na2o_melt[idx_node], Melt_K2O = self.k2o_melt[idx_node],method = method)')
 
-			self.melt_cond_max[idx_node] = cond_melt_max
-			self.melt_cond_min[idx_node] = cond_melt_min
 			self.melt_cond[idx_node] = cond_melt_max
+			if method == 'array':
+				self.melt_cond_max[idx_node] = cond_melt_max
+				self.melt_cond_min[idx_node] = cond_melt_min
+			else:
+				self.melt_cond_max[idx_node] = self.melt_cond[idx_node]
+				self.melt_cond_min[idx_node] = self.melt_cond[idx_node]
 
 	def phase_mixing_function(self, method = None, melt_method = None, indexing_method = None, sol_idx = None):
 
@@ -4132,24 +4296,6 @@ class MATE(QMainWindow):
 			self.connectedness_pl = self.pl_frac[idx_node]**self.pl_m[idx_node]
 			self.connectedness_cond = self.cond_frac[idx_node]**self.cond_m[idx_node]
 
-			self.bulk_cond_max[idx_node] = (self.ol_cond_max[idx_node]*(self.ol_frac[idx_node]**self.ol_m[idx_node])) +\
-			(self.opx_cond_max[idx_node]*(self.opx_frac[idx_node]**self.opx_m[idx_node])) +\
-			(self.cpx_cond_max[idx_node]*(self.cpx_frac[idx_node]**self.cpx_m[idx_node])) +\
-			(self.gt_cond_max[idx_node]*(self.gt_frac[idx_node]**self.gt_m[idx_node])) +\
-			(self.sp_chr_cond_max[idx_node]*(self.sp_chr_frac[idx_node]**self.sp_chr_m[idx_node])) +\
-			(self.pl_cond_max[idx_node]*(self.pl_frac[idx_node]**self.pl_m[idx_node])) +\
-			(self.amp_cond_max[idx_node]*(self.amp_frac[idx_node]**self.amp_m[idx_node])) +\
-			(self.cond_cond[idx_node]*(self.cond_frac[idx_node]**self.cond_m[idx_node]))
-
-			self.bulk_cond_min[idx_node] = (self.ol_cond_min[idx_node]*(self.ol_frac[idx_node]**self.ol_m[idx_node])) +\
-			(self.opx_cond_min[idx_node]*(self.opx_frac[idx_node]**self.opx_m[idx_node])) +\
-			(self.cpx_cond_min[idx_node]*(self.cpx_frac[idx_node]**self.cpx_m[idx_node])) +\
-			(self.gt_cond_min[idx_node]*(self.gt_frac[idx_node]**self.gt_m[idx_node])) +\
-			(self.sp_chr_cond_min[idx_node]*(self.sp_chr_frac[idx_node]**self.sp_chr_m[idx_node])) +\
-			(self.pl_cond_min[idx_node]*(self.pl_frac[idx_node]**self.pl_m[idx_node])) +\
-			(self.amp_cond_min[idx_node]*(self.amp_frac[idx_node]**self.amp_m[idx_node])) +\
-			(self.cond_cond[idx_node]*(self.cond_frac[idx_node]**self.cond_m[idx_node]))
-
 			self.bulk_cond[idx_node] = (self.ol_cond[idx_node]*(self.ol_frac[idx_node]**self.ol_m[idx_node])) +\
 			(self.opx_cond[idx_node]*(self.opx_frac[idx_node]**self.opx_m[idx_node])) +\
 			(self.cpx_cond[idx_node]*(self.cpx_frac[idx_node]**self.cpx_m[idx_node])) +\
@@ -4158,6 +4304,28 @@ class MATE(QMainWindow):
 			(self.pl_cond[idx_node]*(self.pl_frac[idx_node]**self.pl_m[idx_node])) +\
 			(self.amp_cond[idx_node]*(self.amp_frac[idx_node]**self.amp_m[idx_node])) +\
 			(self.cond_cond[idx_node]*(self.cond_frac[idx_node]**self.cond_m[idx_node]))
+
+			if indexing_method == 'array':
+				self.bulk_cond_max[idx_node] = (self.ol_cond_max[idx_node]*(self.ol_frac[idx_node]**self.ol_m[idx_node])) +\
+				(self.opx_cond_max[idx_node]*(self.opx_frac[idx_node]**self.opx_m[idx_node])) +\
+				(self.cpx_cond_max[idx_node]*(self.cpx_frac[idx_node]**self.cpx_m[idx_node])) +\
+				(self.gt_cond_max[idx_node]*(self.gt_frac[idx_node]**self.gt_m[idx_node])) +\
+				(self.sp_chr_cond_max[idx_node]*(self.sp_chr_frac[idx_node]**self.sp_chr_m[idx_node])) +\
+				(self.pl_cond_max[idx_node]*(self.pl_frac[idx_node]**self.pl_m[idx_node])) +\
+				(self.amp_cond_max[idx_node]*(self.amp_frac[idx_node]**self.amp_m[idx_node])) +\
+				(self.cond_cond[idx_node]*(self.cond_frac[idx_node]**self.cond_m[idx_node]))
+
+				self.bulk_cond_min[idx_node] = (self.ol_cond_min[idx_node]*(self.ol_frac[idx_node]**self.ol_m[idx_node])) +\
+				(self.opx_cond_min[idx_node]*(self.opx_frac[idx_node]**self.opx_m[idx_node])) +\
+				(self.cpx_cond_min[idx_node]*(self.cpx_frac[idx_node]**self.cpx_m[idx_node])) +\
+				(self.gt_cond_min[idx_node]*(self.gt_frac[idx_node]**self.gt_m[idx_node])) +\
+				(self.sp_chr_cond_min[idx_node]*(self.sp_chr_frac[idx_node]**self.sp_chr_m[idx_node])) +\
+				(self.pl_cond_min[idx_node]*(self.pl_frac[idx_node]**self.pl_m[idx_node])) +\
+				(self.amp_cond_min[idx_node]*(self.amp_frac[idx_node]**self.amp_m[idx_node])) +\
+				(self.cond_cond[idx_node]*(self.cond_frac[idx_node]**self.cond_m[idx_node]))
+			else:
+				self.bulk_cond_max[idx_node] = self.bulk_cond[idx_node]
+				self.bulk_cond_min[idx_node] = self.bulk_cond[idx_node]
 
 		elif method == 1:
 
@@ -4221,26 +4389,6 @@ class MATE(QMainWindow):
 						list_i_min = np.delete(list_i_min, np.argwhere(list_i_min == 0))
 						list_i = np.delete(list_i, np.argwhere(list_i == 0))
 
-				self.bulk_cond_min[i] = (((self.ol_frac[i] / (self.ol_cond_min[i] + (2*min_local_min))) +\
-				(self.opx_frac[i] / (self.opx_cond_min[i] + (2*min_local_min))) +\
-				(self.cpx_frac[i] / (self.cpx_cond_min[i] + (2*min_local_min))) +\
-				(self.gt_frac[i] / (self.gt_cond_min[i] + (2*min_local_min))) +\
-				(self.pl_frac[i] / (self.pl_cond_min[i] + (2*min_local_min))) +\
-				(self.amp_frac[i] / (self.amp_cond_min[i] + (2*min_local_min))) +\
-				(self.sp_chr_frac[i] / (self.sp_chr_cond_min[i] + (2*min_local_min))) +\
-				(self.cond_frac[i] / (self.cond_cond[i] + (2*min_local_min))))**(-1.0)) -\
-				2.0*min_local_min
-
-				self.bulk_cond_max[i] = (((self.ol_frac[i] / (self.ol_cond_max[i] + (2*min_local_max))) +\
-				(self.opx_frac[i] / (self.opx_cond_max[i] + (2*min_local_max))) +\
-				(self.cpx_frac[i] / (self.cpx_cond_max[i] + (2*min_local_max))) +\
-				(self.gt_frac[i] / (self.gt_cond_max[i] + (2*min_local_max))) +\
-				(self.pl_frac[i] / (self.pl_cond_max[i] + (2*min_local_max))) +\
-				(self.amp_frac[i] / (self.amp_cond_max[i] + (2*min_local_max))) +\
-				(self.sp_chr_frac[i] / (self.sp_chr_cond_max[i] + (2*min_local_max))) +\
-				(self.cond_frac[i] / (self.cond_cond[i] + (2*min_local_max))))**(-1.0)) -\
-				2.0*min_local_max
-
 				self.bulk_cond[i] =  (((self.ol_frac[i] / (self.ol_cond[i] + (2*min_local))) +\
 				(self.opx_frac[i] / (self.opx_cond[i] + (2*min_local))) +\
 				(self.cpx_frac[i] / (self.cpx_cond[i] + (2*min_local))) +\
@@ -4250,6 +4398,30 @@ class MATE(QMainWindow):
 				(self.sp_chr_frac[i] / (self.sp_chr_cond[i] + (2*min_local))) +\
 				(self.cond_frac[i] / (self.cond_cond[i] + (2*min_local))))**(-1.0)) -\
 				2.0*min_local
+
+				if indexing_method == 'array':
+					self.bulk_cond_min[i] = (((self.ol_frac[i] / (self.ol_cond_min[i] + (2*min_local_min))) +\
+					(self.opx_frac[i] / (self.opx_cond_min[i] + (2*min_local_min))) +\
+					(self.cpx_frac[i] / (self.cpx_cond_min[i] + (2*min_local_min))) +\
+					(self.gt_frac[i] / (self.gt_cond_min[i] + (2*min_local_min))) +\
+					(self.pl_frac[i] / (self.pl_cond_min[i] + (2*min_local_min))) +\
+					(self.amp_frac[i] / (self.amp_cond_min[i] + (2*min_local_min))) +\
+					(self.sp_chr_frac[i] / (self.sp_chr_cond_min[i] + (2*min_local_min))) +\
+					(self.cond_frac[i] / (self.cond_cond[i] + (2*min_local_min))))**(-1.0)) -\
+					2.0*min_local_min
+
+					self.bulk_cond_max[i] = (((self.ol_frac[i] / (self.ol_cond_max[i] + (2*min_local_max))) +\
+					(self.opx_frac[i] / (self.opx_cond_max[i] + (2*min_local_max))) +\
+					(self.cpx_frac[i] / (self.cpx_cond_max[i] + (2*min_local_max))) +\
+					(self.gt_frac[i] / (self.gt_cond_max[i] + (2*min_local_max))) +\
+					(self.pl_frac[i] / (self.pl_cond_max[i] + (2*min_local_max))) +\
+					(self.amp_frac[i] / (self.amp_cond_max[i] + (2*min_local_max))) +\
+					(self.sp_chr_frac[i] / (self.sp_chr_cond_max[i] + (2*min_local_max))) +\
+					(self.cond_frac[i] / (self.cond_cond[i] + (2*min_local_max))))**(-1.0)) -\
+					2.0*min_local_max
+				else:
+					self.bulk_cond_max[idx_node] = self.bulk_cond[idx_node]
+					self.bulk_cond_min[idx_node] = self.bulk_cond[idx_node]
 
 		elif method == 2:
 
@@ -4313,27 +4485,6 @@ class MATE(QMainWindow):
 						list_i_min = np.delete(list_i_min, np.argwhere(list_i_min == 0))
 						list_i = np.delete(list_i, np.argwhere(list_i == 0))
 
-
-				self.bulk_cond_min[i] = (((self.ol_frac[i] / (self.ol_cond_min[i] + 2*max_local_min)) +\
-				(self.opx_frac[i] / (self.opx_cond_min[i] + 2*max_local_min)) +\
-				(self.cpx_frac[i] / (self.cpx_cond_min[i] + 2*max_local_min)) +\
-				(self.gt_frac[i] / (self.gt_cond_min[i] + 2*max_local_min)) +\
-				(self.pl_frac[i] / (self.pl_cond_min[i] + 2*max_local_min)) +\
-				(self.amp_frac[i] / (self.amp_cond_min[i] + 2*max_local_min)) +\
-				(self.sp_chr_frac[i] / (self.sp_chr_cond_min[i] + 2*max_local_min)) +\
-				(self.cond_frac[i] / (self.cond_cond[i] + 2*max_local_min)))**(-1.0)) -\
-				2.0*max_local_min
-
-				self.bulk_cond_max[i] = (((self.ol_frac[i] / (self.ol_cond_max[i] + 2*max_local_max)) +\
-				(self.opx_frac[i] / (self.opx_cond_max[i] + 2*max_local_max)) +\
-				(self.cpx_frac[i] / (self.cpx_cond_max[i] + 2*max_local_max)) +\
-				(self.gt_frac[i] / (self.gt_cond_max[i] + 2*max_local_max)) +\
-				(self.pl_frac[i] / (self.pl_cond_max[i] + 2*max_local_max)) +\
-				(self.amp_frac[i] / (self.amp_cond_max[i] + 2*max_local_max)) +\
-				(self.sp_chr_frac[i] / (self.sp_chr_cond_max[i] + 2*max_local_max)) +\
-				(self.cond_frac[i] / (self.cond_cond[i] + 2*max_local_max)))**(-1.0)) -\
-				2.0*max_local_max
-
 				self.bulk_cond[i] =  (((self.ol_frac[i] / (self.ol_cond[i] + 2*max_local)) +\
 				(self.opx_frac[i] / (self.opx_cond[i] + 2*max_local)) +\
 				(self.cpx_frac[i] / (self.cpx_cond[i] + 2*max_local)) +\
@@ -4344,27 +4495,33 @@ class MATE(QMainWindow):
 				(self.cond_frac[i] / (self.cond_cond[i] + 2*max_local)))**(-1.0)) -\
 				2.0*max_local
 
+				if indexing_method == 'array':
+					self.bulk_cond_min[i] = (((self.ol_frac[i] / (self.ol_cond_min[i] + 2*max_local_min)) +\
+					(self.opx_frac[i] / (self.opx_cond_min[i] + 2*max_local_min)) +\
+					(self.cpx_frac[i] / (self.cpx_cond_min[i] + 2*max_local_min)) +\
+					(self.gt_frac[i] / (self.gt_cond_min[i] + 2*max_local_min)) +\
+					(self.pl_frac[i] / (self.pl_cond_min[i] + 2*max_local_min)) +\
+					(self.amp_frac[i] / (self.amp_cond_min[i] + 2*max_local_min)) +\
+					(self.sp_chr_frac[i] / (self.sp_chr_cond_min[i] + 2*max_local_min)) +\
+					(self.cond_frac[i] / (self.cond_cond[i] + 2*max_local_min)))**(-1.0)) -\
+					2.0*max_local_min
+
+					self.bulk_cond_max[i] = (((self.ol_frac[i] / (self.ol_cond_max[i] + 2*max_local_max)) +\
+					(self.opx_frac[i] / (self.opx_cond_max[i] + 2*max_local_max)) +\
+					(self.cpx_frac[i] / (self.cpx_cond_max[i] + 2*max_local_max)) +\
+					(self.gt_frac[i] / (self.gt_cond_max[i] + 2*max_local_max)) +\
+					(self.pl_frac[i] / (self.pl_cond_max[i] + 2*max_local_max)) +\
+					(self.amp_frac[i] / (self.amp_cond_max[i] + 2*max_local_max)) +\
+					(self.sp_chr_frac[i] / (self.sp_chr_cond_max[i] + 2*max_local_max)) +\
+					(self.cond_frac[i] / (self.cond_cond[i] + 2*max_local_max)))**(-1.0)) -\
+					2.0*max_local_max
+				else:
+					self.bulk_cond_max[idx_node] = self.bulk_cond[idx_node]
+					self.bulk_cond_min[idx_node] = self.bulk_cond[idx_node]
+
 		elif method == 3:
 
 			#Parallel model for maximum, minimum bounds and neutral w/o errors
-
-			self.bulk_cond_max[idx_node] = (self.ol_frac[idx_node]*self.ol_cond_max[idx_node]) +\
-			(self.opx_frac[idx_node]*self.opx_cond_max[idx_node]) +\
-			(self.cpx_frac[idx_node]*self.cpx_cond_max[idx_node]) +\
-			(self.gt_frac[idx_node]*self.gt_cond_max[idx_node]) +\
-			(self.pl_frac[idx_node]*self.pl_cond_max[idx_node]) +\
-			(self.amp_frac[idx_node]*self.amp_cond_max[idx_node]) +\
-			(self.sp_chr_frac[idx_node]*self.sp_chr_cond_max[idx_node]) +\
-			(self.cond_frac[idx_node]*self.cond_cond[idx_node])
-
-			self.bulk_cond_min[idx_node] = (self.ol_frac[idx_node]*self.ol_cond_min[idx_node]) +\
-			(self.opx_frac[idx_node]*self.opx_cond_min[idx_node]) +\
-			(self.cpx_frac[idx_node]*self.cpx_cond_min[idx_node]) +\
-			(self.gt_frac[idx_node]*self.gt_cond_min[idx_node]) +\
-			(self.pl_frac[idx_node]*self.pl_cond_min[idx_node]) +\
-			(self.amp_frac[idx_node]*self.amp_cond_min[idx_node]) +\
-			(self.sp_chr_frac[idx_node]*self.sp_chr_cond_min[idx_node]) +\
-			(self.cond_frac[idx_node]*self.cond_cond[idx_node])
 
 			self.bulk_cond[idx_node] = (self.ol_frac[idx_node]*self.ol_cond[idx_node]) +\
 			(self.opx_frac[idx_node]*self.opx_cond[idx_node]) +\
@@ -4374,6 +4531,28 @@ class MATE(QMainWindow):
 			(self.amp_frac[idx_node]*self.amp_cond[idx_node]) +\
 			(self.sp_chr_frac[idx_node]*self.sp_chr_cond[idx_node]) +\
 			(self.cond_frac[idx_node]*self.cond_cond[idx_node])
+
+			if indexing_method == 'array':
+				self.bulk_cond_max[idx_node] = (self.ol_frac[idx_node]*self.ol_cond_max[idx_node]) +\
+				(self.opx_frac[idx_node]*self.opx_cond_max[idx_node]) +\
+				(self.cpx_frac[idx_node]*self.cpx_cond_max[idx_node]) +\
+				(self.gt_frac[idx_node]*self.gt_cond_max[idx_node]) +\
+				(self.pl_frac[idx_node]*self.pl_cond_max[idx_node]) +\
+				(self.amp_frac[idx_node]*self.amp_cond_max[idx_node]) +\
+				(self.sp_chr_frac[idx_node]*self.sp_chr_cond_max[idx_node]) +\
+				(self.cond_frac[idx_node]*self.cond_cond[idx_node])
+
+				self.bulk_cond_min[idx_node] = (self.ol_frac[idx_node]*self.ol_cond_min[idx_node]) +\
+				(self.opx_frac[idx_node]*self.opx_cond_min[idx_node]) +\
+				(self.cpx_frac[idx_node]*self.cpx_cond_min[idx_node]) +\
+				(self.gt_frac[idx_node]*self.gt_cond_min[idx_node]) +\
+				(self.pl_frac[idx_node]*self.pl_cond_min[idx_node]) +\
+				(self.amp_frac[idx_node]*self.amp_cond_min[idx_node]) +\
+				(self.sp_chr_frac[idx_node]*self.sp_chr_cond_min[idx_node]) +\
+				(self.cond_frac[idx_node]*self.cond_cond[idx_node])
+			else:
+				self.bulk_cond_max[idx_node] = self.bulk_cond[idx_node]
+				self.bulk_cond_min[idx_node] = self.bulk_cond[idx_node]
 
 		elif method == 4:
 
@@ -4420,24 +4599,6 @@ class MATE(QMainWindow):
 				if self.cond_frac[i] == 0.0:
 					self.cond_cond[i] = -999
 
-			self.bulk_cond_max[idx_node] = 1.0 / ((self.ol_frac[idx_node] / self.ol_cond_max[idx_node]) +\
-			(self.opx_frac[idx_node] / self.opx_cond_max[idx_node]) +\
-			(self.cpx_frac[idx_node] / self.cpx_cond_max[idx_node]) +\
-			(self.gt_frac[idx_node] / self.gt_cond_max[idx_node]) +\
-			(self.sp_chr_frac[idx_node] / self.sp_chr_cond_max[idx_node]) +\
-			(self.pl_frac[idx_node] / self.pl_cond_max[idx_node]) +\
-			(self.amp_frac[idx_node] / self.amp_cond_max[idx_node]) +\
-			(self.cond_frac[idx_node] / self.cond_cond[idx_node]))
-
-			self.bulk_cond_min[idx_node] = 1.0 / ((self.ol_frac[idx_node] / self.ol_cond_min[idx_node]) +\
-			(self.opx_frac[idx_node] / self.opx_cond_min[idx_node]) +\
-			(self.cpx_frac[idx_node] / self.cpx_cond_min[idx_node]) +\
-			(self.gt_frac[idx_node] / self.gt_cond_min[idx_node]) +\
-			(self.sp_chr_frac[idx_node] / self.sp_chr_cond_min[idx_node]) +\
-			(self.pl_frac[idx_node] / self.pl_cond_min[idx_node]) +\
-			(self.amp_frac[idx_node] / self.amp_cond_min[idx_node]) +\
-			(self.cond_frac[idx_node] / self.cond_cond[idx_node]))
-
 			self.bulk_cond[idx_node] = 1.0 / ((self.ol_frac[idx_node] / self.ol_cond[idx_node]) +\
 			(self.opx_frac[idx_node] / self.opx_cond[idx_node]) +\
 			(self.cpx_frac[idx_node] / self.cpx_cond[idx_node]) +\
@@ -4447,27 +4608,31 @@ class MATE(QMainWindow):
 			(self.amp_frac[idx_node] / self.amp_cond[idx_node]) +\
 			(self.cond_frac[idx_node] / self.cond_cond[idx_node]))
 
+			if indexing_method == 'array':
+				self.bulk_cond_max[idx_node] = 1.0 / ((self.ol_frac[idx_node] / self.ol_cond_max[idx_node]) +\
+				(self.opx_frac[idx_node] / self.opx_cond_max[idx_node]) +\
+				(self.cpx_frac[idx_node] / self.cpx_cond_max[idx_node]) +\
+				(self.gt_frac[idx_node] / self.gt_cond_max[idx_node]) +\
+				(self.sp_chr_frac[idx_node] / self.sp_chr_cond_max[idx_node]) +\
+				(self.pl_frac[idx_node] / self.pl_cond_max[idx_node]) +\
+				(self.amp_frac[idx_node] / self.amp_cond_max[idx_node]) +\
+				(self.cond_frac[idx_node] / self.cond_cond[idx_node]))
+
+				self.bulk_cond_min[idx_node] = 1.0 / ((self.ol_frac[idx_node] / self.ol_cond_min[idx_node]) +\
+				(self.opx_frac[idx_node] / self.opx_cond_min[idx_node]) +\
+				(self.cpx_frac[idx_node] / self.cpx_cond_min[idx_node]) +\
+				(self.gt_frac[idx_node] / self.gt_cond_min[idx_node]) +\
+				(self.sp_chr_frac[idx_node] / self.sp_chr_cond_min[idx_node]) +\
+				(self.pl_frac[idx_node] / self.pl_cond_min[idx_node]) +\
+				(self.amp_frac[idx_node] / self.amp_cond_min[idx_node]) +\
+				(self.cond_frac[idx_node] / self.cond_cond[idx_node]))
+			else:
+				self.bulk_cond_max[idx_node] = self.bulk_cond[idx_node]
+				self.bulk_cond_min[idx_node] = self.bulk_cond[idx_node]
+
 		elif method == 5:
 
 			#Random model for maximum, minimum bounds and neutral w/o errors
-
-			self.bulk_cond_max[idx_node] = (self.ol_cond_max[idx_node]**self.ol_frac[idx_node]) *\
-			(self.opx_cond_max[idx_node]**self.opx_frac[idx_node]) *\
-			(self.cpx_cond_max[idx_node]**self.cpx_frac[idx_node]) *\
-			(self.gt_cond_max[idx_node]**self.gt_frac[idx_node]) *\
-			(self.sp_chr_cond_max[idx_node]**self.sp_chr_frac[idx_node]) *\
-			(self.pl_cond_max[idx_node]**self.pl_frac[idx_node]) *\
-			(self.amp_cond_max[idx_node]**self.amp_frac[idx_node]) *\
-			(self.cond_cond[idx_node]**self.cond_frac[idx_node])
-
-			self.bulk_cond_min[idx_node] = (self.ol_cond_min[idx_node]**self.ol_frac[idx_node]) *\
-			(self.opx_cond_min[idx_node]**self.opx_frac[idx_node]) *\
-			(self.cpx_cond_min[idx_node]**self.cpx_frac[idx_node]) *\
-			(self.gt_cond_min[idx_node]**self.gt_frac[idx_node]) *\
-			(self.sp_chr_cond_min[idx_node]**self.sp_chr_frac[idx_node]) *\
-			(self.pl_cond_min[idx_node]**self.pl_frac[idx_node]) *\
-			(self.amp_cond_min[idx_node]**self.amp_frac[idx_node]) *\
-			(self.cond_cond[idx_node]**self.cond_frac[idx_node])
 
 			self.bulk_cond[idx_node] = (self.ol_cond[idx_node]**self.ol_frac[idx_node]) *\
 			(self.opx_cond[idx_node]**self.opx_frac[idx_node]) *\
@@ -4477,6 +4642,28 @@ class MATE(QMainWindow):
 			(self.pl_cond[idx_node]**self.pl_frac[idx_node]) *\
 			(self.amp_cond[idx_node]**self.amp_frac[idx_node]) *\
 			(self.cond_cond[idx_node]**self.cond_frac[idx_node])
+
+			if indexing_method == 'array':
+				self.bulk_cond_max[idx_node] = (self.ol_cond_max[idx_node]**self.ol_frac[idx_node]) *\
+				(self.opx_cond_max[idx_node]**self.opx_frac[idx_node]) *\
+				(self.cpx_cond_max[idx_node]**self.cpx_frac[idx_node]) *\
+				(self.gt_cond_max[idx_node]**self.gt_frac[idx_node]) *\
+				(self.sp_chr_cond_max[idx_node]**self.sp_chr_frac[idx_node]) *\
+				(self.pl_cond_max[idx_node]**self.pl_frac[idx_node]) *\
+				(self.amp_cond_max[idx_node]**self.amp_frac[idx_node]) *\
+				(self.cond_cond[idx_node]**self.cond_frac[idx_node])
+
+				self.bulk_cond_min[idx_node] = (self.ol_cond_min[idx_node]**self.ol_frac[idx_node]) *\
+				(self.opx_cond_min[idx_node]**self.opx_frac[idx_node]) *\
+				(self.cpx_cond_min[idx_node]**self.cpx_frac[idx_node]) *\
+				(self.gt_cond_min[idx_node]**self.gt_frac[idx_node]) *\
+				(self.sp_chr_cond_min[idx_node]**self.sp_chr_frac[idx_node]) *\
+				(self.pl_cond_min[idx_node]**self.pl_frac[idx_node]) *\
+				(self.amp_cond_min[idx_node]**self.amp_frac[idx_node]) *\
+				(self.cond_cond[idx_node]**self.cond_frac[idx_node])
+			else:
+				self.bulk_cond_max[idx_node] = self.bulk_cond[idx_node]
+				self.bulk_cond_min[idx_node] = self.bulk_cond[idx_node]
 
 		self.bulk_error = (self.bulk_cond_max - self.bulk_cond_min) / 2.0
 
@@ -4514,16 +4701,25 @@ class MATE(QMainWindow):
 						p = np.log(1.0 - self.melt_frac[i]**self.melt_m[i]) / np.log(1.0 - self.melt_frac[i])
 
 						self.bulk_cond[i] = (self.bulk_cond[i] * (1.0 - self.melt_frac[i])**p) + (self.melt_cond[i] * (self.melt_frac[i]**self.melt_m[i]))
-						self.bulk_cond_max[i] = (self.bulk_cond_max[i] * (1.0 - self.melt_frac[i])**p) + (self.melt_cond_max[i] * (self.melt_frac[i]**self.melt_m[i]))
-						self.bulk_cond_min[i] = (self.bulk_cond_min[i] * (1.0 - self.melt_frac[i])**p) + (self.melt_cond_min[i] * (self.melt_frac[i]**self.melt_m[i]))
+						if indexing_method == 'array':
+							self.bulk_cond_max[i] = (self.bulk_cond_max[i] * (1.0 - self.melt_frac[i])**p) + (self.melt_cond_max[i] * (self.melt_frac[i]**self.melt_m[i]))
+							self.bulk_cond_min[i] = (self.bulk_cond_min[i] * (1.0 - self.melt_frac[i])**p) + (self.melt_cond_min[i] * (self.melt_frac[i]**self.melt_m[i]))
+						else:
+							self.bulk_cond_max[i] = self.bulk_cond[i]
+							self.bulk_cond_min[i] = self.bulk_cond[i]
 
 			elif melt_method == 1:
 
 				#Tubes model for melt and solid mixture from ten Grotenhuis et al. (2005) eq.5
 
 				self.bulk_cond[idx_node] = ((1.0/3.0) * self.melt_frac[idx_node] * self.melt_cond[idx_node]) + ((1.0 - self.melt_frac[idx_node]) * self.bulk_cond[idx_node])
-				self.bulk_cond_max[idx_node] = ((1.0/3.0) * self.melt_frac[idx_node] * self.melt_cond_max[idx_node]) + ((1.0 - self.melt_frac[idx_node]) * self.bulk_cond_max[idx_node])
-				self.bulk_cond_min[idx_node] = ((1.0/3.0) * self.melt_frac[idx_node] * self.melt_cond_min[idx_node]) + ((1.0 - self.melt_frac[idx_node]) * self.bulk_cond_min[idx_node])
+
+				if indexing_method == 'array':
+					self.bulk_cond_max[idx_node] = ((1.0/3.0) * self.melt_frac[idx_node] * self.melt_cond_max[idx_node]) + ((1.0 - self.melt_frac[idx_node]) * self.bulk_cond_max[idx_node])
+					self.bulk_cond_min[idx_node] = ((1.0/3.0) * self.melt_frac[idx_node] * self.melt_cond_min[idx_node]) + ((1.0 - self.melt_frac[idx_node]) * self.bulk_cond_min[idx_node])
+				else:
+					self.bulk_cond_max[i] = self.bulk_cond[i]
+					self.bulk_cond_min[i] = self.bulk_cond[i]
 
 			elif melt_method == 2:
 
@@ -4532,11 +4728,15 @@ class MATE(QMainWindow):
 				self.bulk_cond[idx_node] = self.melt_cond[idx_node] + ((1.0 - self.melt_frac[idx_node]) / ((1.0 / (self.bulk_cond[idx_node] - self.melt_cond[idx_node])) +\
 				 	(self.melt_frac[idx_node] / (3.0 * self.melt_cond[idx_node]))))
 
-				self.bulk_cond_max[idx_node] = self.melt_cond_max[idx_node] + ((1.0 - self.melt_frac[idx_node]) / ((1.0 / (self.bulk_cond_max[idx_node] - self.melt_cond_max[idx_node])) +\
-				 	(self.melt_frac[idx_node] / (3.0 * self.melt_cond_max[idx_node]))))
+				if indexing_method == 'array':
+					self.bulk_cond_max[idx_node] = self.melt_cond_max[idx_node] + ((1.0 - self.melt_frac[idx_node]) / ((1.0 / (self.bulk_cond_max[idx_node] - self.melt_cond_max[idx_node])) +\
+					 	(self.melt_frac[idx_node] / (3.0 * self.melt_cond_max[idx_node]))))
 
-				self.bulk_cond_min[idx_node] = self.melt_cond_min[idx_node] + ((1.0 - self.melt_frac[idx_node]) / ((1.0 / (self.bulk_cond_min[idx_node] - self.melt_cond_min[idx_node])) +\
-				 	(self.melt_frac[idx_node] / (3.0 * self.melt_cond_min[idx_node]))))
+					self.bulk_cond_min[idx_node] = self.melt_cond_min[idx_node] + ((1.0 - self.melt_frac[idx_node]) / ((1.0 / (self.bulk_cond_min[idx_node] - self.melt_cond_min[idx_node])) +\
+					 	(self.melt_frac[idx_node] / (3.0 * self.melt_cond_min[idx_node]))))
+				else:
+					self.bulk_cond_max[i] = self.bulk_cond[i]
+					self.bulk_cond_min[i] = self.bulk_cond[i]
 
 			elif melt_method == 3:
 
@@ -4548,11 +4748,15 @@ class MATE(QMainWindow):
 				self.bulk_cond[idx_node] = self.melt_cond[idx_node] * (((self.melt_cond[idx_node] * (two_thirds - 1.0)) - (self.bulk_cond[idx_node] * two_thirds)) /\
 				((self.bulk_cond[idx_node] * (ones - two_thirds)) + (self.melt_cond[idx_node] * (two_thirds - ones - 1.0))))
 
-				self.bulk_cond_max[idx_node] = self.melt_cond_max[idx_node] * ((self.melt_cond_max[idx_node] * (two_thirds - 1.0)) - (self.bulk_cond_max[idx_node] * two_thirds)) /\
-				((self.bulk_cond_max[idx_node] * (ones - two_thirds)) + (self.melt_cond_max[idx_node] * (two_thirds - ones - 1.0)))
+				if indexing_method == 'array':
+					self.bulk_cond_max[idx_node] = self.melt_cond_max[idx_node] * ((self.melt_cond_max[idx_node] * (two_thirds - 1.0)) - (self.bulk_cond_max[idx_node] * two_thirds)) /\
+					((self.bulk_cond_max[idx_node] * (ones - two_thirds)) + (self.melt_cond_max[idx_node] * (two_thirds - ones - 1.0)))
 
-				self.bulk_cond_min[idx_node] = self.melt_cond_min[idx_node] * ((self.melt_cond_min[idx_node] * (two_thirds - 1.0)) - (self.bulk_cond_min[idx_node] * two_thirds)) /\
-				((self.bulk_cond_min[idx_node] * (ones- two_thirds)) + (self.melt_cond_min[idx_node] * (two_thirds - ones - 1.0)))
+					self.bulk_cond_min[idx_node] = self.melt_cond_min[idx_node] * ((self.melt_cond_min[idx_node] * (two_thirds - 1.0)) - (self.bulk_cond_min[idx_node] * two_thirds)) /\
+					((self.bulk_cond_min[idx_node] * (ones- two_thirds)) + (self.melt_cond_min[idx_node] * (two_thirds - ones - 1.0)))
+				else:
+					self.bulk_cond_max[i] = self.bulk_cond[i]
+					self.bulk_cond_min[i] = self.bulk_cond[i]
 
 			elif melt_method == 4:
 
@@ -4563,13 +4767,17 @@ class MATE(QMainWindow):
 				((3 * vol_matrix * (self.melt_cond[idx_node] - self.bulk_cond[idx_node])) /\
 				(3 * self.melt_cond[idx_node] - (self.melt_frac[idx_node] * (self.melt_cond[idx_node] - self.bulk_cond[idx_node])))))
 
-				self.bulk_cond_max[idx_node] = self.melt_cond_max[idx_node] * (1 -\
-				((3 * vol_matrix * (self.melt_cond_max[idx_node] - self.bulk_cond_max[idx_node])) /\
-				(3 * self.melt_cond_max[idx_node] - (self.melt_frac[idx_node] * (self.melt_cond_max[idx_node] - self.bulk_cond_max[idx_node])))))
+				if indexing_method == 'array':
+					self.bulk_cond_max[idx_node] = self.melt_cond_max[idx_node] * (1 -\
+					((3 * vol_matrix * (self.melt_cond_max[idx_node] - self.bulk_cond_max[idx_node])) /\
+					(3 * self.melt_cond_max[idx_node] - (self.melt_frac[idx_node] * (self.melt_cond_max[idx_node] - self.bulk_cond_max[idx_node])))))
 
-				self.bulk_cond_min[idx_node] = self.melt_cond_min[idx_node] * (1 -\
-				((3 * vol_matrix * (self.melt_cond_min[idx_node] - self.bulk_cond_min[idx_node])) /\
-				(3 * self.melt_cond_min[idx_node] - (self.melt_frac[idx_node] * (self.melt_cond_min[idx_node] - self.bulk_cond_min[idx_node])))))
+					self.bulk_cond_min[idx_node] = self.melt_cond_min[idx_node] * (1 -\
+					((3 * vol_matrix * (self.melt_cond_min[idx_node] - self.bulk_cond_min[idx_node])) /\
+					(3 * self.melt_cond_min[idx_node] - (self.melt_frac[idx_node] * (self.melt_cond_min[idx_node] - self.bulk_cond_min[idx_node])))))
+				else:
+					self.bulk_cond_max[i] = self.bulk_cond[i]
+					self.bulk_cond_min[i] = self.bulk_cond[i]
 
 			elif melt_method == 5:
 
@@ -4580,13 +4788,18 @@ class MATE(QMainWindow):
 				((3 * self.melt_frac[idx_node] * (self.melt_cond[idx_node] - self.bulk_cond[idx_node])) /\
 				(3 * self.bulk_cond[idx_node] + (vol_matrix * (self.melt_cond[idx_node] - self.bulk_cond[idx_node])))))
 
-				self.bulk_cond_max[idx_node] = self.bulk_cond_max[idx_node] * (1 +\
-				((3 * self.melt_frac[idx_node] * (self.melt_cond_max[idx_node] - self.bulk_cond_max[idx_node])) /\
-				(3 * self.bulk_cond_max[idx_node] + (vol_matrix * (self.melt_cond_max[idx_node] - self.bulk_cond_max[idx_node])))))
+				if indexing_method == 'array':
 
-				self.bulk_cond_min[idx_node] = self.bulk_cond_min[idx_node] * (1 +\
-				((3 * self.melt_frac[idx_node] * (self.melt_cond_min[idx_node] - self.bulk_cond_min[idx_node])) /\
-				(3 * self.bulk_cond_min[idx_node] + (vol_matrix * (self.melt_cond_min[idx_node] - self.bulk_cond_min[idx_node])))))
+					self.bulk_cond_max[idx_node] = self.bulk_cond_max[idx_node] * (1 +\
+					((3 * self.melt_frac[idx_node] * (self.melt_cond_max[idx_node] - self.bulk_cond_max[idx_node])) /\
+					(3 * self.bulk_cond_max[idx_node] + (vol_matrix * (self.melt_cond_max[idx_node] - self.bulk_cond_max[idx_node])))))
+
+					self.bulk_cond_min[idx_node] = self.bulk_cond_min[idx_node] * (1 +\
+					((3 * self.melt_frac[idx_node] * (self.melt_cond_min[idx_node] - self.bulk_cond_min[idx_node])) /\
+					(3 * self.bulk_cond_min[idx_node] + (vol_matrix * (self.melt_cond_min[idx_node] - self.bulk_cond_min[idx_node])))))
+				else:
+					self.bulk_cond_max[i] = self.bulk_cond[i]
+					self.bulk_cond_min[i] = self.bulk_cond[i]
 
 	def read_ModEM_dat(self):
 
