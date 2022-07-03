@@ -51,7 +51,7 @@ class bcolors:
 	RED = '\033[91m'
 	B = '\033[0m'
 	NC ='\x1b[0m'
-#Version 1.3, February. 2021.
+#Version 2.0, July. 2022.
 #MATE - (M)antle (A)nalysis (T)ools for (E)lectromagnetics
 #Program written by Sinan Ozaydin (Macquarie University Dept. of Earth and Planetary
 #sciences, Australia).
@@ -344,6 +344,8 @@ class MATE(QMainWindow):
 		MATE.plot_style_list = ['ggplot', 'default', 'classic','bmh', 'fast', 'seaborn', 'seaborn-colorblind',
 		'seaborn-deep','seaborn-pastel', 'seaborn-dark','fivethirtyeight','grayscale']
 		MATE.plot_style_selection = 0
+
+		MATE.dz = 1000.0 #Default interpretation thickness.
 
 		self.drawn = 0
 		self.drawn_1 = 0
@@ -1640,10 +1642,8 @@ class MATE(QMainWindow):
 	def adjust_composition(self):
 
 		#Interpolating the data for to be appear continous from crust to lab
-		#with increments of self.dz in meters.100 m is also suggested for
+		#with increments of MATE.dz in meters.100 m is also suggested for
 		#calculating thermal conductivity properly in Hasterok and Chapman (2010)
-
-		self.dz = 1000.0
 
 		self.h2o_fugacity_calculated = False
 
@@ -1724,7 +1724,7 @@ class MATE(QMainWindow):
 				if i < len(self.layer_data)-1:
 
 					self.depth_comp.append(float(self.layer_data[i][0]) * 1000.0)
-					self.depth_comp.append((float(self.layer_data[i+1][0]) * 1000.0) - self.dz)
+					self.depth_comp.append((float(self.layer_data[i+1][0]) * 1000.0) - MATE.dz)
 
 				else:
 					self.depth_comp.append(float(self.layer_data[i][0]) * 1000.0)
@@ -1807,8 +1807,15 @@ class MATE(QMainWindow):
 			f_heat_prod_mantle = interp1d(self.depth_comp,self.heat_prod_mantle)
 
 			self.composition_readfile = True
-
-			self.depth_mantle = np.arange(MATE.moho,MATE.lab+self.dz,self.dz)
+			self.depth_mantle = []
+			kilometer_mode = (MATE.lab - MATE.moho) % MATE.dz
+			self.depth_mantle.append(MATE.moho)
+			if kilometer_mode != 0:
+				self.depth_mantle.append(kilometer_mode)
+			for i in range(0, int((MATE.lab - MATE.moho) / MATE.dz)):
+				self.depth_mantle.append(MATE.dz)
+			self.depth_mantle = np.array(self.depth_mantle)
+			self.depth_mantle = np.cumsum(self.depth_mantle)
 
 			self.ol_frac = f_ol(self.depth_mantle)
 			self.opx_frac = f_opx(self.depth_mantle)
@@ -1852,7 +1859,7 @@ class MATE(QMainWindow):
 			self.heat_prod_mantle = f_heat_prod_mantle(self.depth_mantle)
 			self.d_z = []
 
-			for i in range(0,int(MATE.moho/self.dz)):
+			for i in range(0,int(MATE.moho/1e3)):
 				self.ol_frac = np.insert(self.ol_frac,0,-999)
 				self.opx_frac = np.insert(self.opx_frac,0,-999)
 				self.cpx_frac = np.insert(self.cpx_frac,0,-999)
@@ -1891,8 +1898,10 @@ class MATE(QMainWindow):
 				self.cond_m = np.insert(self.cond_m,0,-999)
 				self.melt_m = np.insert(self.melt_m,0,-999)
 
-			self.d_z.append([self.dz] * int((MATE.moho) / self.dz))
-			self.d_z.append([self.dz] * int((MATE.lab-MATE.moho) / self.dz))
+			self.d_z.append([1e3] * int((MATE.moho) / 1e3))
+			if kilometer_mode != 0:
+				self.d_z.append([kilometer_mode])
+			self.d_z.append([MATE.dz] * int((MATE.lab - MATE.moho + kilometer_mode) / MATE.dz))
 			self.d_z = np.asarray(list(itertools.chain(*self.d_z)))
 			self.depth = np.cumsum(np.asarray(self.d_z))
 			self.depth = np.insert(self.depth,0,0.0)
@@ -7518,6 +7527,12 @@ class DEPTH_FIX(QWidget):
 		self.lab_depth_textbox.setEnabled(False)
 		depth_layout.addRow(self.btn6,self.lab_depth_textbox)
 
+		self.dz_btn = QPushButton("Interpolation Thickness (km)")
+		self.dz_btn.clicked.connect(self.get_interp_thick)
+		self.dz_btn_txt = QLineEdit(str(MATE.dz / 1000.0))
+		self.dz_btn_txt.setEnabled(False)
+		depth_layout.addRow(self.dz_btn,self.dz_btn_txt)
+
 	def get_heat_prod_4(self):
 
 		text, ok = QInputDialog.getText(self, 'Moho Depth Dialogue', 'Enter the value in (km):')
@@ -7532,7 +7547,7 @@ class DEPTH_FIX(QWidget):
 
 	def get_heat_prod_6(self):
 
-		text, ok = QInputDialog.getText(self, 'Moho Depth Dialogue', 'Enter the value in (km):')
+		text, ok = QInputDialog.getText(self, 'Max Depth Dialogue', 'Enter the value in (km):')
 		if ok:
 			try:
 				float(text)
@@ -7541,6 +7556,20 @@ class DEPTH_FIX(QWidget):
 				else:
 					self.lab_depth_textbox.setText(str(text))
 					MATE.lab = float(text) * 1000.0
+			except ValueError:
+				QMessageBox.about(self,"Warning!","Please enter a value that can be converted to floating number.")
+
+	def get_interp_thick(self):
+
+		text, ok = QInputDialog.getText(self, 'Interpolation Thickness Dialogue', 'Enter the value in (km):')
+		if ok:
+			try:
+				float(text)
+				if (float(text) * 1000) >= (MATE.lab / 3.0):
+					QMessageBox.about(self,"Warning!","Interpretation layer thickness cannot be larger than LAB/3 kms")
+				else:
+					MATE.dz = float(text) * 1000.0
+					self.dz_btn_txt.setText(str(text))
 			except ValueError:
 				QMessageBox.about(self,"Warning!","Please enter a value that can be converted to floating number.")
 
