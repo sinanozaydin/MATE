@@ -6596,9 +6596,7 @@ class MATE(QMainWindow):
 			residuals_current = (1.0/self.bulk_cond - res_to_invert)
 
 			self.idx_resid_for_melt_list = [i for i in range(0,len(residuals_current)) if residuals_current[i] < -50	]
-			print(residuals_current)
-			print(self.idx_resid_for_melt_list)
-
+		
 			# self.solve_for_water()
 
 			self.melt_solution = False
@@ -6682,6 +6680,7 @@ class MATE(QMainWindow):
 									water_search = np.arange(water_search_start,water_search_end[sol_index],water_search_increment)
 									restart = True
 									break
+
 							self.residual_list.append(abs(residual))
 							res_check.append(residual)
 
