@@ -6596,7 +6596,7 @@ class MATE(QMainWindow):
 			residuals_current = (1.0/self.bulk_cond - res_to_invert)
 
 			self.idx_resid_for_melt_list = [i for i in range(0,len(residuals_current)) if residuals_current[i] < -50	]
-		
+
 			# self.solve_for_water()
 
 			self.melt_solution = False
@@ -6676,7 +6676,9 @@ class MATE(QMainWindow):
 
 							if j == 0:
 								if residual < 0.0:
-									water_search_start = 0
+									water_search_start = water_search_start - (water_search_start * 0.1)
+									if water_search_start <= 20:
+										water_search_start = 0
 									water_search = np.arange(water_search_start,water_search_end[sol_index],water_search_increment)
 									restart = True
 									break
@@ -6712,7 +6714,8 @@ class MATE(QMainWindow):
 				start_time = timeit.default_timer()
 
 				#Determining initial solution with three main depths
-				idx_depth_to_initialize = [self.idx_moho, int((len(self.depth) + self.idx_moho) / 2) , len(self.depth)-1]
+				# idx_depth_to_initialize = [self.idx_moho, int((len(self.depth) + self.idx_moho) / 2) , len(self.depth)-1]
+				idx_depth_to_initialize = np.linspace(self.idx_moho,len(self.depth)-1, 5).astype(int)
 
 				solution_init = []
 				for idx in idx_depth_to_initialize:
@@ -6728,8 +6731,8 @@ class MATE(QMainWindow):
 				#Actual solution loop.
 				for i in range(self.idx_moho,len(self.depth)):
 
-					sol_start = solution_water_init[i - self.idx_moho - 1] - (4*2)
-					if sol_start < 0:
+					sol_start = solution_water_init[i - self.idx_moho - 1] - (solution_water_init[i - self.idx_moho - 1] * 0.1)
+					if sol_start < 20:
 						sol_start = 0
 					_solve_(sol_index = i, water_search_start = sol_start, water_search_end = self.h2o_from_sol,  water_search_increment = 4)
 					self.progressBar.setValue(i+1)
