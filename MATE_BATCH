@@ -105,6 +105,7 @@ class MATE_BATCH(object):
 		self.read_ModEM_rho()
 		self.get_T()
 		self.define_profile_()
+		self.calculate_water(method = 'array',idx = None)
 
 	def read_csv(self,filename,delim):
 
@@ -185,25 +186,29 @@ class MATE_BATCH(object):
 		self.GB_ol_select = int(self.setup_data[43][1])
 		self.GB_gt_select = int(self.setup_data[44][1])
 		self.o2_buffer = int(self.setup_data[45][1])
-		self.water_end = bool(self.setup_data[46][1])
 
 		self.model_method_list = ['Proton+Polaron+Ionic', 'Proton Only']
-		self.model_method_ol = int(self.setup_data[47][1])
-		self.model_method_opx = int(self.setup_data[48][1])
-		self.model_method_cpx = int(self.setup_data[49][1])
-		self.model_method_gt = int(self.setup_data[50][1])
+		self.model_method_ol = int(self.setup_data[46][1])
+		self.model_method_opx = int(self.setup_data[47][1])
+		self.model_method_cpx = int(self.setup_data[48][1])
+		self.model_method_gt = int(self.setup_data[49][1])
 
 		self.model_method = [self.model_method_ol,self.model_method_opx,self.model_method_cpx,self.model_method_gt]
 
-		self.solidus_dry_model_selection = int(self.setup_data[51][1])
-		self.solidus_wet_model_selection = int(self.setup_data[52][1])
-		self.solidus_carbon_model_selection = int(self.setup_data[53][1])
-		self.melt_fraction_function_selection = int(self.setup_data[54][1])
+		self.solidus_dry_model_selection = int(self.setup_data[50][1])
+		self.solidus_wet_model_selection = int(self.setup_data[51][1])
+		self.solidus_carbon_model_selection = int(self.setup_data[52][1])
+		self.melt_fraction_function_selection = int(self.setup_data[53][1])
 
 		#Additional PARAMETERS
 
 		self.melt_fraction_function_names = ['Hirschmann2009 dF/dT = -40P + 450']
 		self.melt_fraction_functions = ['(-40 * self.p) + 450.0']
+
+		self.mineral_partitions_calculated = False
+		self.melt_partitions_calculated = False
+
+		self.water_end = False
 
 	def read_cond_models(self):
 
@@ -1316,7 +1321,7 @@ class MATE_BATCH(object):
 
 				if (self.d_melt_opx_type[self.opx_melt_part_select] == '1') or (self.d_melt_opx_type[self.opx_melt_part_select] == '3'):
 
-					self.d_melt_opx = eval(self.d_melt_opx_function[self.opx_part_select])
+					self.d_melt_opx = eval(self.d_melt_opx_function[self.opx_part_select].replace("MATE", "self"))
 
 				elif (self.d_melt_opx_type[self.opx_melt_part_select] == '2'):
 
@@ -1324,9 +1329,9 @@ class MATE_BATCH(object):
 
 					for i in range(0,len(self.p)):
 						if self.p[i] < self.d_melt_opx_change[self.opx_melt_part_select]:
-							self.d_melt_opx[i] = eval(self.d_melt_opx_function[self.opx_melt_part_select])
+							self.d_melt_opx[i] = eval(self.d_melt_opx_function[self.opx_melt_part_select].replace("MATE", "self"))
 						else:
-							self.d_melt_opx[i] = eval(self.d_melt_opx_function[self.opx_melt_part_select])
+							self.d_melt_opx[i] = eval(self.d_melt_opx_function[self.opx_melt_part_select].replace("MATE", "self"))
 
 				elif (self.d_melt_opx_type[self.opx_melt_part_select] == '4'):
 
@@ -1335,7 +1340,7 @@ class MATE_BATCH(object):
 
 				if (self.d_melt_cpx_type[self.cpx_melt_part_select] == '1') or (self.d_melt_cpx_type[self.cpx_melt_part_select] == '3'):
 
-					self.d_melt_cpx = eval(self.d_melt_cpx_function[self.cpx_part_select])
+					self.d_melt_cpx = eval(self.d_melt_cpx_function[self.cpx_part_select].replace("MATE", "self"))
 
 				elif (self.d_melt_cpx_type[self.cpx_melt_part_select] == '2'):
 
@@ -1343,9 +1348,9 @@ class MATE_BATCH(object):
 
 					for i in range(0,len(self.p)):
 						if self.p[i] < self.d_melt_cpx_change[self.cpx_melt_part_select]:
-							self.d_melt_cpx[i] = eval(self.d_melt_cpx_function[self.cpx_melt_part_select])
+							self.d_melt_cpx[i] = eval(self.d_melt_cpx_function[self.cpx_melt_part_select].replace("MATE", "self"))
 						else:
-							self.d_melt_cpx[i] = eval(self.d_melt_cpx_function[self.cpx_melt_part_select])
+							self.d_melt_cpx[i] = eval(self.d_melt_cpx_function[self.cpx_melt_part_select].replace("MATE", "self"))
 
 				elif (self.d_melt_cpx_type[self.cpx_melt_part_select] == '4'):
 
@@ -1393,14 +1398,14 @@ class MATE_BATCH(object):
 				if (self.d_opx_type[self.opx_part_select] == '1') or (self.d_opx_type[self.opx_part_select] == '3'):
 					#Evaluating function that are stored in str form in csv files.
 
-					self.d_opx_ol = eval(self.dopx_function[self.opx_part_select])
+					self.d_opx_ol = eval(self.dopx_function[self.opx_part_select].replace("MATE", "self"))
 				elif (self.d_opx_type[self.opx_part_select] == '2'):
 					self.d_opx_ol = np.zeros(len(self.p))
 					for i in range(0,len(self.p)):
 						if self.p[i] < self.dopx_change[self.opx_part_select]:
-							self.d_opx_ol[i] = eval(self.dopx_function[self.opx_part_select])
+							self.d_opx_ol[i] = eval(self.dopx_function[self.opx_part_select].replace("MATE", "self"))
 						else:
-							self.d_opx_ol[i] = eval(self.dopx_function_2[self.opx_part_select])
+							self.d_opx_ol[i] = eval(self.dopx_function_2[self.opx_part_select].replace("MATE", "self"))
 				elif (self.d_opx_type[self.opx_part_select] == '4'):
 					self.d_opx_ol = np.ones(len(self.p)) * float(self.dopx_function[self.opx_part_select])
 
@@ -1408,14 +1413,14 @@ class MATE_BATCH(object):
 
 				if (self.d_cpx_type[self.cpx_part_select] == '1') or (self.d_cpx_type[self.cpx_part_select] == '3') or (self.d_cpx_type[self.cpx_part_select] == '5') :
 					#Evaluating function that are stored in str form in csv files.
-					self.d_cpx_ol = eval(self.dcpx_function[self.cpx_part_select])
+					self.d_cpx_ol = eval(self.dcpx_function[self.cpx_part_select].replace("MATE", "self"))
 				elif (self.d_cpx_type[self.cpx_part_select] == '2'):
 					self.d_cpx_ol = np.zeros(len(self.p))
 					for i in range(0,len(self.p)):
 						if self.p[i] < self.dcpx_change[self.cpx_part_select]:
-							self.d_cpx_ol[i] = eval(self.dcpx_function[self.cpx_part_select])
+							self.d_cpx_ol[i] = eval(self.dcpx_function[self.cpx_part_select].replace("MATE", "self"))
 						else:
-							self.d_cpx_ol[i] = eval(self.dcpx_function_2[self.cpx_part_select])
+							self.d_cpx_ol[i] = eval(self.dcpx_function_2[self.cpx_part_select].replace("MATE", "self"))
 				elif (self.d_cpx_type[self.cpx_part_select] == '4'):
 					self.d_cpx_ol = np.ones(len(self.p)) * float(self.dcpx_function[self.cpx_part_select])
 
@@ -1423,8 +1428,8 @@ class MATE_BATCH(object):
 
 				if (self.d_opx_type[self.opx_part_select] == '0') or (self.d_opx_type[self.opx_part_select] == '1') or (self.d_opx_type[self.opx_part_select] == '3'):
 
-					self.d_opx_ol =  eval(self.d_px_function[self.px_part_select])
-					self.d_cpx_ol =  eval(self.d_px_function[self.px_part_select])
+					self.d_opx_ol =  eval(self.d_px_function[self.px_part_select].replace("MATE", "self"))
+					self.d_cpx_ol =  eval(self.d_px_function[self.px_part_select].replace("MATE", "self"))
 
 				elif (self.d_px_type[self.px_part_select] == '4'):
 
@@ -4000,6 +4005,7 @@ class MATE_BATCH(object):
 				self.T = np.array(self.temp_rev[self.idx_list[self.i]])
 				self.get_rho_profile()
 				self.melt_partitions_calculated = False
+				self.mineral_partitions_calculated = False
 				self.solve_for_water()
 				self.h2o_list.append(list(self.h2o))
 				self.ol_h2o_list.append(list(self.ol_h2o))
