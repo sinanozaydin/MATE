@@ -100,6 +100,7 @@ class MATE_BATCH(object):
 
 		#Initializing the non iterative parametrisations
 		self.adjust_composition()
+		self.calculate_pressure()
 
 	def read_csv(self,filename,delim):
 
@@ -194,6 +195,11 @@ class MATE_BATCH(object):
 		self.solidus_wet_model_selection = int(self.setup_data[52][1])
 		self.solidus_carbon_model_selection = int(self.setup_data[53][1])
 		self.melt_fraction_function_selection = int(self.setup_data[54][1])
+
+		#Additional PARAMETERS
+
+		self.melt_fraction_function_names = ['Hirschmann2009 dF/dT = -40P + 450']
+		self.melt_fraction_functions = ['(-40 * self.p) + 450.0']
 
 	def read_cond_models(self):
 
@@ -997,7 +1003,7 @@ class MATE_BATCH(object):
 						self.idx_melt_zero.append(i)
 
 			self.data_existence = True
-			
+
 	def get_T(self):
 
 		temp_data = self.read_csv(filename = self.T_path, delim = ' ')
@@ -3961,7 +3967,7 @@ class MATE_BATCH(object):
 
 		self.p = np.cumsum(self.p) / 1e12 #Converting to GPA
 
-		self.dT_dF = eval(MATE.melt_fraction_functions[self.melt_fraction_function_selection]) #melt_fraction estimation gradient.
+		self.dT_dF = eval(self.melt_fraction_functions[self.melt_fraction_function_selection]) #melt_fraction estimation gradient.
 
 	def solve_water_for_model(self):
 
