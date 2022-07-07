@@ -6943,6 +6943,7 @@ class MATE(QMainWindow):
 
 			lines_batch_file.append('moho,' + str(MATE.moho) + '\n')
 			lines_batch_file.append('max_depth,' + str(MATE.lab) + '\n')
+			lines_batch_file.append('dz,' + str(MATE.dz) + '\n')
 			lines_batch_file.append('part_px_method,' + str(MATE.part_px_method) + '\n')
 			lines_batch_file.append('opx_part_select,' + str(MATE.opx_part_select) + '\n')
 			lines_batch_file.append('cpx_part_select,' + str(MATE.cpx_part_select) + '\n')
@@ -6963,6 +6964,7 @@ class MATE(QMainWindow):
 			lines_batch_file.append('ol_sol_calib,' + str(MATE.ol_sol_calib) + '\n')
 			lines_batch_file.append('ol_calib,' + str(MATE.ol_calib) + '\n')
 			lines_batch_file.append('px_calib,' + str(MATE.px_calib) + '\n')
+			lines_batch_file.append('al_method,' + str(MATE.al_method) + '\n')
 
 			lines_batch_file.append('amph_stab_select,' + str(MATE.amph_stab_select) + '\n')
 
@@ -7002,6 +7004,11 @@ class MATE(QMainWindow):
 			lines_batch_file.append('model_method_opx,' + str(MATE.model_method_opx) + '\n')
 			lines_batch_file.append('model_method_cpx,' + str(MATE.model_method_cpx) + '\n')
 			lines_batch_file.append('model_method_gt,' + str(MATE.model_method_gt) + '\n')
+
+			lines_batch_file.append('solidus_dry_model_selection,' + str(MATE.solidus_dry_model_selection) + '\n')
+			lines_batch_file.append('solidus_wet_model_selection,' + str(MATE.solidus_wet_model_selection) + '\n')
+			lines_batch_file.append('solidus_carbon_model_selection,' + str(MATE.solidus_carbon_model_selection) + '\n')
+			lines_batch_file.append('melt_fraction_function_selection,' + str(MATE.melt_fraction_function_selection) + '\n')
 
 			self.write_batch_file_save_name = str(self.write_batch_file_save_name[0])
 			self.dir_path_write = self.write_batch_file_save_name[:self.write_batch_file_save_name.rfind('/')+1]
