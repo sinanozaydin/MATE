@@ -101,6 +101,8 @@ class MATE_BATCH(object):
 		#Initializing the non iterative parametrisations
 		self.adjust_composition()
 		self.calculate_pressure()
+		self.read_ModEM_dat()
+		self.read_ModEM_rho()
 
 	def read_csv(self,filename,delim):
 
@@ -1162,9 +1164,11 @@ class MATE_BATCH(object):
 		self.y_num = int(self.ModEM_rho_data[1][1])
 		self.z_num = int(self.ModEM_rho_data[1][2])
 
-		self.x_grid = np.asarray(self.ModEM_rho_data[2]).astype(np.float)
-		self.y_grid = np.asarray(self.ModEM_rho_data[3]).astype(np.float)
-		self.z_grid = np.asarray(self.ModEM_rho_data[4]).astype(np.float)
+		with warnings.catch_warnings():
+			warnings.simplefilter('ignore', DeprecationWarning)
+			self.x_grid = np.asarray(self.ModEM_rho_data[2]).astype(np.float64)
+			self.y_grid = np.asarray(self.ModEM_rho_data[3]).astype(np.float64)
+			self.z_grid = np.asarray(self.ModEM_rho_data[4]).astype(np.float64)
 
 		#finding the core start and end
 		idx_x_count = 0
@@ -1201,7 +1205,6 @@ class MATE_BATCH(object):
 
 			self.rho.append(rhoy)
 
-		# self.rho.insert(0,self.rho[0])
 		self.rho = np.exp(np.asarray(self.rho))
 
 		self.z_depth = np.array([0.0])
@@ -1243,15 +1246,8 @@ class MATE_BATCH(object):
 			beg_y += self.y_grid[i]
 			self.y_grid_cum.append(beg_y)
 
-		self.rectobj_list = []
 		self.x_grid_cum = self.x_grid_cum[::-1]
 		self.x_grid = self.x_grid[::-1]
-		for i in range(0,len(self.y_grid_cum)-1):
-			for j in range(0,len(self.x_grid_cum)-1):
-				x1 = self.y_grid_cum[i]
-				y1 = self.x_grid_cum[j]
-				rectobj = patches.Rectangle((x1,y1),self.y_grid[i],self.x_grid[j])
-				self.rectobj_list.append(rectobj)
 
 		self.min_x_grid_cum = np.amin(self.x_grid_cum)
 		self.max_x_grid_cum = np.amax(self.x_grid_cum)
