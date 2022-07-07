@@ -103,6 +103,8 @@ class MATE_BATCH(object):
 		self.calculate_pressure()
 		self.read_ModEM_dat()
 		self.read_ModEM_rho()
+		self.get_T()
+		self.define_profile_()
 
 	def read_csv(self,filename,delim):
 
@@ -1038,8 +1040,10 @@ class MATE_BATCH(object):
 		self.lat = np.array(self.lat)
 		self.lon = np.array(self.lon)
 
-		utm_no = gis_tools.get_epsg(self.mc_lat,self.mc_lon)
-		stuff= gis_tools.project_point_ll2utm(self.lat, self.lon, utm_zone = 34, epsg = utm_no)
+		with warnings.catch_warnings():
+			warnings.simplefilter('ignore', FutureWarning)
+			utm_no = gis_tools.get_epsg(self.mc_lat,self.mc_lon)
+			stuff= gis_tools.project_point_ll2utm(self.lat, self.lon, utm_zone = 34, epsg = utm_no)
 		self.x_mtpy = np.zeros(len(stuff))
 		self.y_mtpy = np.zeros(len(stuff))
 		utm_z = []
@@ -1049,7 +1053,9 @@ class MATE_BATCH(object):
 			self.y_mtpy[i] = stuff[i][1]
 			utm_z.append(stuff[i][3])
 
-		x_mtpy_center, y_mtpy_center, utm_center = gis_tools.project_point_ll2utm(self.mc_lat, self.mc_lon, utm_zone = 14, epsg = utm_no)
+		with warnings.catch_warnings():
+			warnings.simplefilter('ignore', FutureWarning)
+			x_mtpy_center, y_mtpy_center, utm_center = gis_tools.project_point_ll2utm(self.mc_lat, self.mc_lon, utm_zone = 14, epsg = utm_no)
 
 		self.x_rel = self.x_mtpy - x_mtpy_center
 		self.y_rel = self.y_mtpy - y_mtpy_center
@@ -3915,6 +3921,8 @@ class MATE_BATCH(object):
 			distances = self.find_distance(self.mesh_centers_x_array[i],self.mesh_centers_y_array[i],self.y_new,self.x_new)
 			idx_smallest = np.where(distances == np.amin(distances))
 			self.idx_list.append(idx_smallest[0][0])
+
+		self.idx_list = np.array(self.idx_list)
 
 	def get_rho_profile(self):
 
