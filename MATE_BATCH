@@ -105,7 +105,9 @@ class MATE_BATCH(object):
 		self.read_ModEM_rho()
 		self.get_T()
 		self.define_profile_()
-		self.calculate_water(method = 'array',idx = None)
+		self.calculate_water(method = 'array',idx = None) #initial water calculation
+		self.solve_water_for_model()
+		self.write_data()
 
 	def read_csv(self,filename,delim):
 
@@ -3788,11 +3790,8 @@ class MATE_BATCH(object):
 		else:
 			calc_count = 1
 
-
-		res_profile = (self.res_profile_plot_list[-1])
-
-		f_res_profile = interp1d(np.array(self.z_depth_plot_list[-1]),res_profile)
-		res_to_invert = f_res_profile(self.depth[self.idx_moho:]/1e3)
+		f_res_profile = interp1d(np.concatenate([[0.0],np.array(self.z_mesh_center)]),np.concatenate([[self.res_profile[0]],np.array(self.res_profile)]))
+		res_to_invert = f_res_profile(self.depth[self.idx_moho:])
 
 		for i in range(0,self.idx_moho):
 			res_to_invert = np.insert(res_to_invert,0,0)
@@ -3827,18 +3826,19 @@ class MATE_BATCH(object):
 					self.calculate_sp_chr_conductivity(method = 'index', sol_idx = sol_index)
 					if self.melt_method == '0':
 						self.calculate_melt_conductivity(method = 'index', sol_idx = sol_index)
-					self.phase_mixing_function(method = self.phs_mix_method, melt_method = self.phs_melt_mix_method,indexing_method = 'index', sol_idx = sol_index)
+					self.phase_mixing_function(method = self.phs_mix_method, melt_method = self.phs_melt_mix_method, indexing_method = 'index', sol_idx = sol_index)
 
 					residual = (1.0/self.bulk_cond[sol_index] - res_to_invert[sol_index])
 
 					if j == 0:
 						if residual < 0.0:
-							water_search_start = water_search_start - (water_search_start * 0.1)
-							if water_search_start <= 20:
-								water_search_start = 0
-							water_search = np.arange(water_search_start,water_search_end[sol_index],water_search_increment)
-							restart = True
-							break
+							if water_search_start != 0.0:
+								water_search_start = water_search_start - (water_search_start * 0.1)
+								if water_search_start <= 20:
+									water_search_start = 0
+								water_search = np.arange(water_search_start,water_search_end[sol_index],water_search_increment)
+								restart = True
+								break
 
 					self.residual_list.append(abs(residual))
 					res_check.append(residual)
@@ -3892,19 +3892,19 @@ class MATE_BATCH(object):
 				sol_start = 0
 			_solve_(sol_index = i, water_search_start = sol_start, water_search_end = self.h2o_from_sol,  water_search_increment = 4)
 
-		self.calculate_water(method = 'array', idx = None)
-		self.calculate_ol_conductivity(method = 'array', sol_idx = None)
-		self.calculate_opx_conductivity(method = 'array', sol_idx = None)
-		self.calculate_cpx_conductivity(method = 'array', sol_idx = None)
-		self.calculate_gt_conductivity(method = 'array', sol_idx = None)
-		if self.pl_method == '0':
-			self.calculate_pl_conductivity(method = 'array', sol_idx = None)
-		if self.amp_method == '0':
-			self.calculate_amp_conductivity(method = 'array', sol_idx = None)
-		self.calculate_sp_chr_conductivity(method = 'array', sol_idx = None)
-		if self.melt_method == '0':
-			self.calculate_melt_conductivity(method = 'array', sol_idx = None)
-		self.phase_mixing_function(method = self.phs_mix_method, melt_method = self.phs_melt_mix_method,indexing_method = 'array', sol_idx = None)
+		# self.calculate_water(method = 'array', idx = None)
+		# self.calculate_ol_conductivity(method = 'array', sol_idx = None)
+		# self.calculate_opx_conductivity(method = 'array', sol_idx = None)
+		# self.calculate_cpx_conductivity(method = 'array', sol_idx = None)
+		# self.calculate_gt_conductivity(method = 'array', sol_idx = None)
+		# if self.pl_method == '0':
+		# 	self.calculate_pl_conductivity(method = 'array', sol_idx = None)
+		# if self.amp_method == '0':
+		# 	self.calculate_amp_conductivity(method = 'array', sol_idx = None)
+		# self.calculate_sp_chr_conductivity(method = 'array', sol_idx = None)
+		# if self.melt_method == '0':
+		# 	self.calculate_melt_conductivity(method = 'array', sol_idx = None)
+		# self.phase_mixing_function(method = self.phs_mix_method, melt_method = self.phs_melt_mix_method,indexing_method = 'array', sol_idx = None)
 
 
 	def find_distance(self,x,y,x1_array,y1_array):
@@ -3978,6 +3978,46 @@ class MATE_BATCH(object):
 
 		self.dT_dF = eval(self.melt_fraction_functions[self.melt_fraction_function_selection]) #melt_fraction estimation gradient.
 
+	def create_empty_cond_arrays(self):
+
+		self.ol_cond = np.zeros(len(self.T))
+		self.ol_cond_max = np.zeros(len(self.T))
+		self.ol_cond_min = np.zeros(len(self.T))
+
+		self.opx_cond = np.zeros(len(self.T))
+		self.opx_cond_max = np.zeros(len(self.T))
+		self.opx_cond_min = np.zeros(len(self.T))
+
+		self.cpx_cond = np.zeros(len(self.T))
+		self.cpx_cond_max = np.zeros(len(self.T))
+		self.cpx_cond_min = np.zeros(len(self.T))
+
+		self.gt_cond = np.zeros(len(self.T))
+		self.gt_cond_max = np.zeros(len(self.T))
+		self.gt_cond_min = np.zeros(len(self.T))
+
+		self.amp_cond = np.zeros(len(self.T))
+		self.amp_cond_max = np.zeros(len(self.T))
+		self.amp_cond_min = np.zeros(len(self.T))
+
+		self.pl_cond = np.zeros(len(self.T))
+		self.pl_cond_max = np.zeros(len(self.T))
+		self.pl_cond_min = np.zeros(len(self.T))
+
+		self.sp_chr_cond = np.zeros(len(self.T))
+		self.sp_chr_cond_max = np.zeros(len(self.T))
+		self.sp_chr_cond_min = np.zeros(len(self.T))
+
+		self.melt_cond = np.zeros(len(self.T))
+		self.melt_cond_max = np.zeros(len(self.T))
+		self.melt_cond_min = np.zeros(len(self.T))
+
+		self.bulk_cond = np.zeros(len(self.T))
+		self.bulk_cond_max = np.zeros(len(self.T))
+		self.bulk_cond_min = np.zeros(len(self.T))
+
+		self.dens_melt = np.zeros(len(self.T))
+
 	def solve_water_for_model(self):
 
 		vans = -999*np.ones(len(self.h2o))
@@ -3987,39 +4027,34 @@ class MATE_BATCH(object):
 		self.cpx_h2o_list = []
 		self.gt_h2o_list = []
 		self.T = np.array(self.temp_rev[self.idx_list[0]])
-		self.calculate_ol_conductivity()
-		self.calculate_opx_conductivity()
-		self.calculate_cpx_conductivity()
-		self.calculate_gt_conductivity()
+		self.create_empty_cond_arrays()
+		self.calculate_ol_conductivity(method = 'array',sol_idx = None)
+		self.calculate_opx_conductivity(method = 'array',sol_idx = None)
+		self.calculate_cpx_conductivity(method = 'array',sol_idx = None)
+		self.calculate_gt_conductivity(method = 'array',sol_idx = None)
 		if self.pl_method == '0':
-			self.calculate_pl_conductivity()
+			self.calculate_pl_conductivity(method = 'array',sol_idx = None)
 		if self.amp_method == '0':
-			self.calculate_amp_conductivity()
-		self.calculate_sp_chr_conductivity()
-		self.phase_mixing_function(method = self.phs_mix_method)
+			self.calculate_amp_conductivity(method = 'array',sol_idx = None)
+		self.calculate_sp_chr_conductivity(method = 'array',sol_idx = None)
+		self.phase_mixing_function(method = self.phs_mix_method,melt_method = self.phs_melt_mix_method ,indexing_method = 'array', sol_idx = None)
 
 		for self.i in range(0,len(self.idx_list)):
 
-			if self.i % 1000 == 0:
-				print(str(self.i / float(len(self.idx_list)) * 100.0) + '% Done')
-				self.T = np.array(self.temp_rev[self.idx_list[self.i]])
-				self.get_rho_profile()
-				self.melt_partitions_calculated = False
-				self.mineral_partitions_calculated = False
-				self.solve_for_water()
-				self.h2o_list.append(list(self.h2o))
-				self.ol_h2o_list.append(list(self.ol_h2o))
-				self.opx_h2o_list.append(list(self.opx_h2o))
-			else:
-				self.h2o_list.append(vans)
-				self.ol_h2o_list.append(vans)
-				self.opx_h2o_list.append(vans)
+			print(str(self.i / float(len(self.idx_list)) * 100.0) + '% Done')
+			self.T = np.array(self.temp_rev[self.idx_list[self.i]])
+			self.create_empty_cond_arrays()
+			self.get_rho_profile()
+			self.melt_partitions_calculated = False
+			self.mineral_partitions_calculated = False
+			self.solve_for_water()
+			self.h2o_list.append(list(self.h2o))
+			self.ol_h2o_list.append(list(self.ol_h2o))
+			self.opx_h2o_list.append(list(self.opx_h2o))
 
 		self.h2o_list = np.array(self.h2o_list)
 		self.ol_h2o_list = np.array(self.ol_h2o_list)
 		self.opx_h2o_list = np.array(self.opx_h2o_list)
-
-		self.write_data()
 
 	def write_data(self):
 

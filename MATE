@@ -6676,12 +6676,13 @@ class MATE(QMainWindow):
 
 							if j == 0:
 								if residual < 0.0:
-									water_search_start = water_search_start - (water_search_start * 0.1)
-									if water_search_start <= 20:
-										water_search_start = 0
-									water_search = np.arange(water_search_start,water_search_end[sol_index],water_search_increment)
-									restart = True
-									break
+									if water_search_start != 0.0:
+										water_search_start = water_search_start - (water_search_start * 0.1)
+										if water_search_start <= 20:
+											water_search_start = 0
+										water_search = np.arange(water_search_start,water_search_end[sol_index],water_search_increment)
+										restart = True
+										break
 
 							self.residual_list.append(abs(residual))
 							res_check.append(residual)
