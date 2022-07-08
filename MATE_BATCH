@@ -1074,7 +1074,6 @@ class MATE_BATCH(object):
 
 		self.depth_ext = np.array(self.depth_ext)
 		self.temp = np.array(self.temp)
-		# print(self.temp[:,7])
 
 		self.xnew = np.arange(np.amin(self.x_rel), np.amax(self.x_rel), 1e4)
 		self.ynew = np.arange(np.amin(self.y_rel), np.amax(self.y_rel), 1e4)
@@ -1105,6 +1104,32 @@ class MATE_BATCH(object):
 			self.temp_rev.append(self.temp_interp[:,i])
 
 		self.temp_rev = np.array(self.temp_rev)
+
+		# import matplotlib.pyplot as plt
+		#
+		# depth_plot = 75 * 1e3
+		# idx_depth_plot = list(self.depth).index(depth_plot)
+		#
+		# self.color_map_temp = 'magma'
+		# fig = plt.figure()
+		# ax1 = plt.subplot(111)
+		# # cax = ax1.imshow(fnew, cmap = self.color_map_water, origin = 'lower')
+		# # ax1.plot(points_interp[:,0], points_interp[:,1], 'o', color = 'k')
+		# cax = ax1.scatter(self.x_new, self.y_new, c = self.temp_interp[idx_depth_plot], cmap = self.color_map_temp, marker = 's', linewidth = 0.01, edgecolor = 'k')
+		# cax.set_clim(750,2000)
+		# ax1.axhline(self.min_x,linestyle = '--')
+		# ax1.axhline(self.max_x,linestyle = '--')
+		# ax1.axvline(self.min_y,linestyle ='--')
+		# ax1.axvline(self.max_y,linestyle ='--')
+		#
+		# ax1.plot(self.station_posy,self.station_posx,'^',color = 'g',markersize = 1)
+		#
+		# ax1.scatter(self.x_rel,self.y_rel, c = self.temp[:,idx_depth_plot], cmap = self.color_map_temp, marker = 'o', s = 9)
+		# cbar_xx = fig.colorbar(cax,boundaries=np.linspace(750,2000),orientation="vertical", pad=0.05,
+		#  ticks = [750,2750.0/2,2000], ax = ax1)
+		# plt.show()
+		#
+		# sys.exit()
 
 	def get_T_profile_for_station(self,lat_, lon_, lat_array, lon_array):
 
@@ -3869,43 +3894,17 @@ class MATE_BATCH(object):
 				min_idx = self.residual_list.index(min(self.residual_list))
 				self.h2o[sol_index] = water_search[min_idx]
 
-		#Determining initial solution with three main depths
-		# idx_depth_to_initialize = [self.idx_moho, int((len(self.depth) + self.idx_moho) / 2) , len(self.depth)-1]
-		idx_depth_to_initialize = np.linspace(self.idx_moho,len(self.depth)-1, 5).astype(int)
-
-		solution_init = []
-		for idx in idx_depth_to_initialize:
-
-			_solve_(sol_index = idx, water_search_start = 0, water_search_end = self.h2o_from_sol, water_search_increment = 8)
-
-			solution_init.append(self.h2o[idx])
-
-		#Interpolating the sparse solution for the initial starting model.
-		idx_input = np.arange(self.idx_moho, len(self.depth)-1, 1)
-		solution_water_init = np.interp(idx_input, np.array(idx_depth_to_initialize),np.array(solution_init))
-
 		#Actual solution loop.
 		for i in range(self.idx_moho,len(self.depth)):
 
-			sol_start = solution_water_init[i - self.idx_moho - 1] - (solution_water_init[i - self.idx_moho - 1] * 0.1)
-			if sol_start < 20:
-				sol_start = 0
+			if i != self.idx_moho:
+				sol_start = self.h2o[i-1] - (self.h2o[i-1]*0.1) #using the previous layer as the next layer solutions initial start
+				if sol_start < 20: #if the guess is too small or negative start from 0
+					sol_start = 0
+			else:
+				sol_start = 0.0
+
 			_solve_(sol_index = i, water_search_start = sol_start, water_search_end = self.h2o_from_sol,  water_search_increment = 4)
-
-		# self.calculate_water(method = 'array', idx = None)
-		# self.calculate_ol_conductivity(method = 'array', sol_idx = None)
-		# self.calculate_opx_conductivity(method = 'array', sol_idx = None)
-		# self.calculate_cpx_conductivity(method = 'array', sol_idx = None)
-		# self.calculate_gt_conductivity(method = 'array', sol_idx = None)
-		# if self.pl_method == '0':
-		# 	self.calculate_pl_conductivity(method = 'array', sol_idx = None)
-		# if self.amp_method == '0':
-		# 	self.calculate_amp_conductivity(method = 'array', sol_idx = None)
-		# self.calculate_sp_chr_conductivity(method = 'array', sol_idx = None)
-		# if self.melt_method == '0':
-		# 	self.calculate_melt_conductivity(method = 'array', sol_idx = None)
-		# self.phase_mixing_function(method = self.phs_mix_method, melt_method = self.phs_melt_mix_method,indexing_method = 'array', sol_idx = None)
-
 
 	def find_distance(self,x,y,x1_array,y1_array):
 
@@ -4063,7 +4062,7 @@ class MATE_BATCH(object):
 			lines = ['idx,Depth,X,Y,H2O_Bulk,H2O_Ol,H2O_opx\n']
 			for i in range(0,len(self.h2o_list)):
 
-				for j in range(0,len(self.depth)):
+				for j in range(self.idx_moho,len(self.depth)):
 					if self.depth[j] == self.depth[id]:
 						lines.append(','.join((str(i),str(self.depth[j]),str(self.mesh_centers_x_array[i]),str(self.mesh_centers_y_array[i]),str(self.h2o_list[i][j]),str(self.ol_h2o_list[i][j]),
 						str(self.opx_h2o_list[i][j]) + '\n')))

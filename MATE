@@ -6714,28 +6714,18 @@ class MATE(QMainWindow):
 						self.h2o[sol_index] = water_search[min_idx]
 				start_time = timeit.default_timer()
 
-				#Determining initial solution with three main depths
-				# idx_depth_to_initialize = [self.idx_moho, int((len(self.depth) + self.idx_moho) / 2) , len(self.depth)-1]
-				idx_depth_to_initialize = np.linspace(self.idx_moho,len(self.depth)-1, 5).astype(int)
-
-				solution_init = []
-				for idx in idx_depth_to_initialize:
-
-					_solve_(sol_index = idx, water_search_start = 0, water_search_end = self.h2o_from_sol, water_search_increment = 8)
-
-					solution_init.append(self.h2o[idx])
-
-				#Interpolating the sparse solution for the initial starting model.
-				idx_input = np.arange(self.idx_moho, len(self.depth)-1, 1)
-				solution_water_init = np.interp(idx_input, np.array(idx_depth_to_initialize),np.array(solution_init))
-
 				#Actual solution loop.
 				for i in range(self.idx_moho,len(self.depth)):
 
-					sol_start = solution_water_init[i - self.idx_moho - 1] - (solution_water_init[i - self.idx_moho - 1] * 0.1)
-					if sol_start < 20:
-						sol_start = 0
+					if i != self.idx_moho:
+						sol_start = self.h2o[i-1] - (self.h2o[i-1]*0.1) #using the previous layer as the next layer solutions initial start
+						if sol_start < 20: #if the guess is too small or negative start from 0
+							sol_start = 0
+					else:
+						sol_start = 0.0
+
 					_solve_(sol_index = i, water_search_start = sol_start, water_search_end = self.h2o_from_sol,  water_search_increment = 4)
+					
 					self.progressBar.setValue(i+1)
 
 				self.progressBar.setValue(self.idx_moho)
