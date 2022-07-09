@@ -51,9 +51,10 @@ class bcolors:
 	RED = '\033[91m'
 	B = '\033[0m'
 	NC ='\x1b[0m'
+	
 #Version 2.0, July. 2022.
 #MATE - (M)antle (A)nalysis (T)ools for (E)lectromagnetics
-#Program written by Sinan Ozaydin (Macquarie University Dept. of Earth and Planetary
+#Program written by Sinan Ozaydin (Macquarie University, School of Natural Sciences
 #sciences, Australia).
 
 #Indentation method: hard tabs ('\t')
@@ -6725,7 +6726,7 @@ class MATE(QMainWindow):
 						sol_start = 0.0
 
 					_solve_(sol_index = i, water_search_start = sol_start, water_search_end = self.h2o_from_sol,  water_search_increment = 4)
-					
+
 					self.progressBar.setValue(i+1)
 
 				self.progressBar.setValue(self.idx_moho)

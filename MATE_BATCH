@@ -9,6 +9,8 @@ import sys, csv, itertools, math, platform, random, warnings
 import numpy as np
 from scipy.interpolate import interp1d, griddata
 from scipy import optimize
+
+if sys.argv[1] == '-modem'
 from mtpy.utils import gis_tools as gis_tools
 
 #Importing external functions
@@ -36,16 +38,18 @@ class bcolors:
 	GREEN = '\033[92m'
 	RED = '\033[91m'
 	B = '\033[0m'
+	NC ='\x1b[0m'
 
-#Version 1.3, February. 2021.
+#Version 2.0, July. 2022.
 #MATE - (M)antle (A)nalysis (T)ools for (E)lectromagnetics
-#Program written by Sinan Ozaydin (Macquarie University Dept. of Earth and Planetary
+#Program written by Sinan Ozaydin (Macquarie University, School of Natural
 #sciences, Australia).
 
 #Indentation method: hard tabs ('\t')
 
 #Works with Python3
 #Required libraries: numpy,scipy,matplotlib,PyQt5
+#optional libraries: mtpy
 
 #Installation of libraries:
 #In Linux (mac included) distros through terminal:
@@ -66,7 +70,7 @@ print(' ')
 print(' ')
 print(bcolors.GREEN + '#############################################')
 print(bcolors.BLUE + 'developed by Sinan Ozaydin,' + bcolors.RED +  '(Department of Earth and Planetary Sciences, Core to Crust Fluid Systems(CCFS), Macquarie University)')
-
+print(bcolors.NC + 'Initializing the software...')
 
 class MATE_BATCH(object):
 
@@ -75,39 +79,49 @@ class MATE_BATCH(object):
 		args_input = sys.argv
 		self.core_path = core_path
 
-		try:
+		if len(args_input) == 1:
 
-			self.setup_path = args_input[1]
-			self.comp_path = args_input[2]
-			self.rho_path = args_input[3]
-			self.dat_path = args_input[4]
-			self.T_path = args_input[5]
-
-		except IndexError:
-			print('Not enough inputs are entered, five input files are needed...')
-			print('1. Parameter setup file')
-			print('2. Composition file')
-			print('3. MT Model File (e.g. ModEM rho)')
-			print('4. MT Data File (e.g. ModEM dat)')
-			print('5. Thermal model')
-			print('Exiting the program try again with correct input format')
+			print('You have to run the program with options:')
+			print('1. -modem ')
+			print('This options reads a ModEM output model and data file calculates\
+			water content with the input temperature, composition and parametrisations.')
 			sys.exit()
 
-		self.read_batch_parameter_file()
-		self.read_cond_models()
-		self.read_cond_dry_models()
-		self.read_params()
+		if args_input[1] == '-modem':
 
-		#Initializing the non iterative parametrisations
-		self.adjust_composition()
-		self.calculate_pressure()
-		self.read_ModEM_dat()
-		self.read_ModEM_rho()
-		self.get_T()
-		self.define_profile_()
-		self.calculate_water(method = 'array',idx = None) #initial water calculation
-		self.solve_water_for_model()
-		self.write_data()
+			try:
+
+				self.setup_path = args_input[2]
+				self.comp_path = args_input[3]
+				self.rho_path = args_input[4]
+				self.dat_path = args_input[5]
+				self.T_path = args_input[6]
+
+			except IndexError:
+				print('Not enough inputs are entered for -modem method, five input files are needed...')
+				print('1. Parameter setup file')
+				print('2. Composition file')
+				print('3. MT Model File (e.g. ModEM rho)')
+				print('4. MT Data File (e.g. ModEM dat)')
+				print('5. Thermal model')
+				print('Exiting the program try again with correct input format')
+				sys.exit()
+
+			self.read_batch_parameter_file()
+			self.read_cond_models()
+			self.read_cond_dry_models()
+			self.read_params()
+
+			#Initializing the non iterative parametrisations
+			self.adjust_composition()
+			self.calculate_pressure()
+			self.read_ModEM_dat()
+			self.read_ModEM_rho()
+			self.get_T()
+			self.define_profile_()
+			self.calculate_water(method = 'array',idx = None) #initial water calculation
+			self.solve_water_for_model()
+			self.write_data()
 
 	def read_csv(self,filename,delim):
 
