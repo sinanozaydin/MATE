@@ -1105,32 +1105,6 @@ class MATE_BATCH(object):
 
 		self.temp_rev = np.array(self.temp_rev)
 
-		# import matplotlib.pyplot as plt
-		#
-		# depth_plot = 75 * 1e3
-		# idx_depth_plot = list(self.depth).index(depth_plot)
-		#
-		# self.color_map_temp = 'magma'
-		# fig = plt.figure()
-		# ax1 = plt.subplot(111)
-		# # cax = ax1.imshow(fnew, cmap = self.color_map_water, origin = 'lower')
-		# # ax1.plot(points_interp[:,0], points_interp[:,1], 'o', color = 'k')
-		# cax = ax1.scatter(self.x_new, self.y_new, c = self.temp_interp[idx_depth_plot], cmap = self.color_map_temp, marker = 's', linewidth = 0.01, edgecolor = 'k')
-		# cax.set_clim(750,2000)
-		# ax1.axhline(self.min_x,linestyle = '--')
-		# ax1.axhline(self.max_x,linestyle = '--')
-		# ax1.axvline(self.min_y,linestyle ='--')
-		# ax1.axvline(self.max_y,linestyle ='--')
-		#
-		# ax1.plot(self.station_posy,self.station_posx,'^',color = 'g',markersize = 1)
-		#
-		# ax1.scatter(self.x_rel,self.y_rel, c = self.temp[:,idx_depth_plot], cmap = self.color_map_temp, marker = 'o', s = 9)
-		# cbar_xx = fig.colorbar(cax,boundaries=np.linspace(750,2000),orientation="vertical", pad=0.05,
-		#  ticks = [750,2750.0/2,2000], ax = ax1)
-		# plt.show()
-		#
-		# sys.exit()
-
 	def get_T_profile_for_station(self,lat_, lon_, lat_array, lon_array):
 
 		idx_profile = self.find_distance(x = lat_ , y = lon_, x1_array = lat_array, y1_array = lon_array)
