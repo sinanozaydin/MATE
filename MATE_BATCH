@@ -10,8 +10,8 @@ import numpy as np
 from scipy.interpolate import interp1d, griddata
 from scipy import optimize
 
-if sys.argv[1] == '-modem'
-from mtpy.utils import gis_tools as gis_tools
+if sys.argv[1] == '-modem':
+	from mtpy.utils import gis_tools as gis_tools
 
 #Importing external functions
 
@@ -98,6 +98,7 @@ class MATE_BATCH(object):
 				self.T_path = args_input[6]
 
 			except IndexError:
+
 				print('Not enough inputs are entered for -modem method, five input files are needed...')
 				print('1. Parameter setup file')
 				print('2. Composition file')
@@ -120,7 +121,9 @@ class MATE_BATCH(object):
 			self.get_T()
 			self.define_profile_()
 			self.calculate_water(method = 'array',idx = None) #initial water calculation
+			#solving for the entered resistivity and temperature
 			self.solve_water_for_model()
+			#writing out water data
 			self.write_data()
 
 	def read_csv(self,filename,delim):
@@ -3916,10 +3919,10 @@ class MATE_BATCH(object):
 
 		self.idx_list = np.array(self.idx_list)
 
-	def get_rho_profile(self):
+	def get_rho_profile(self,rho_index):
 
-		self.idx_x = (np.abs(np.asarray(self.x_mesh_center) - self.mesh_centers_x_array[self.i])).argmin()
-		self.idx_y = (np.abs(np.asarray(self.y_mesh_center) - self.mesh_centers_y_array[self.i])).argmin()
+		self.idx_x = (np.abs(np.asarray(self.x_mesh_center) - self.mesh_centers_x_array[rho_index])).argmin()
+		self.idx_y = (np.abs(np.asarray(self.y_mesh_center) - self.mesh_centers_y_array[rho_index])).argmin()
 		self.res_profile = []
 		for id_rho in range(0,len(self.rho)):
 			self.res_profile.append(self.rho[id_rho][self.idx_y][self.idx_x])
@@ -4026,12 +4029,12 @@ class MATE_BATCH(object):
 		self.calculate_sp_chr_conductivity(method = 'array',sol_idx = None)
 		self.phase_mixing_function(method = self.phs_mix_method,melt_method = self.phs_melt_mix_method ,indexing_method = 'array', sol_idx = None)
 
-		for self.i in range(0,len(self.idx_list)):
+		for i in range(0,len(self.idx_list)):
 
-			print(str(self.i / float(len(self.idx_list)) * 100.0) + '% Done')
-			self.T = np.array(self.temp_rev[self.idx_list[self.i]])
+			print(str(i / float(len(self.idx_list)) * 100.0) + '% Done')
+			self.T = np.array(self.temp_rev[self.idx_list[i]])
 			self.create_empty_cond_arrays()
-			self.get_rho_profile()
+			self.get_rho_profile(i)
 			self.melt_partitions_calculated = False
 			self.mineral_partitions_calculated = False
 			self.solve_for_water()
