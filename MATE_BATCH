@@ -3884,7 +3884,12 @@ class MATE_BATCH(object):
 			else:
 				min_idx = self.residual_list.index(min(self.residual_list))
 				self.h2o[sol_index] = water_search[min_idx]
+				if water_search[min_idx] >= water_search_end[sol_index]:
+					search_sol_bool = True
+				else:
+					search_sol_bool = False
 
+		self.search_sol_bool_list = []
 		#Actual solution loop.
 		for i in range(self.idx_moho,len(self.depth)):
 
@@ -3896,6 +3901,10 @@ class MATE_BATCH(object):
 				sol_start = 0.0
 
 			_solve_(sol_index = i, water_search_start = sol_start, water_search_end = self.h2o_from_sol,  water_search_increment = 4)
+
+			self.search_sol_bool_list.append(search_sol_bool)
+			for i in range(0,self.idx_moho):
+				self.search_sol_bool_list.insert(0,False)
 
 	def find_distance(self,x,y,x1_array,y1_array):
 
@@ -4016,6 +4025,7 @@ class MATE_BATCH(object):
 		self.opx_h2o_list = []
 		self.cpx_h2o_list = []
 		self.gt_h2o_list = []
+		self.sol_bool_list = []
 		self.T = np.array(self.temp_rev[self.idx_list[0]])
 		self.create_empty_cond_arrays()
 		self.calculate_ol_conductivity(method = 'array',sol_idx = None)
@@ -4041,6 +4051,9 @@ class MATE_BATCH(object):
 			self.h2o_list.append(list(self.h2o))
 			self.ol_h2o_list.append(list(self.ol_h2o))
 			self.opx_h2o_list.append(list(self.opx_h2o))
+			self.cpx_h2o_list.append(list(self.cpx_h2o))
+			self.gt_h2o_list.append(list(self.gt_h2o))
+			self.sol_bool_list.append(self.search_sol_bool_list)
 
 		self.h2o_list = np.array(self.h2o_list)
 		self.ol_h2o_list = np.array(self.ol_h2o_list)
@@ -4048,15 +4061,15 @@ class MATE_BATCH(object):
 
 	def write_data(self):
 
-		for id in range(1,len(self.depth)):
+		for id in range(self.idx_moho,len(self.depth)):
 
-			lines = ['idx,Depth,X,Y,H2O_Bulk,H2O_Ol,H2O_opx\n']
+			lines = ['idx,Depth,X,Y,H2O_Bulk,H2O_Ol,H2O_opx,H2O_cpx,H2O_gt,Sol_limit_reached\n']
 			for i in range(0,len(self.h2o_list)):
 
 				for j in range(self.idx_moho,len(self.depth)):
 					if self.depth[j] == self.depth[id]:
 						lines.append(','.join((str(i),str(self.depth[j]),str(self.mesh_centers_x_array[i]),str(self.mesh_centers_y_array[i]),str(self.h2o_list[i][j]),str(self.ol_h2o_list[i][j]),
-						str(self.opx_h2o_list[i][j]) + '\n')))
+						str(self.opx_h2o_list[i][j]), str(self.cpx_h2o_list[i][j]), str(self.gt_h2o_list[i][j]), str(self.opx_h2o_list[i][j]), str(self.sol_bool_list[i][j]) + '\n')))
 
 			filesave_comp = open(os.path.join(os.getcwd(), ('Depth_water_section_' + str(self.depth[id] / 1e3) + 'km_.csv')) ,'w')
 			filesave_comp.writelines(lines)
