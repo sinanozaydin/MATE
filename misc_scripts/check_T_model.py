@@ -25,7 +25,7 @@ class check_T_model(object):
 			print('2. MT Data File (e.g. ModEM dat)')
 			sys.exit()
 
-		self.depth = np.arange(0,400000,5000)
+		self.depth = np.arange(0,340000,5000)
 
 		self.read_ModEM_dat()
 		self.get_T()
@@ -119,19 +119,38 @@ class check_T_model(object):
 		dep = [0.0]
 		tempa = [0.0]
 
+		for i in range(0,len(temp_data[0])):
+			if temp_data[0][i] == 'Latitude':
+				index_lat = i
+			elif temp_data[0][i] == 'Longitude':
+				index_lon = i
+			elif temp_data[0][i] == 'Temperature':
+				index_temp = i
+			elif temp_data[0][i] == 'id':
+				index_id = i
+			elif temp_data[0][i] == 'Depth':
+				index_depth = i
+
+		try:
+			index_what = index_lat + index_lon + index_temp + index_id + index_depth
+		except NameError:
+			print('Header info on temperature file cannot be read, be sure the individual header parameters are named in the exact same form:')
+			print('id,Latitude,Longitude,Depth,Temperature')
+			sys.exit()
+
 		for i in range(1,len(temp_data)):
 
 			if float(temp_data[i][3]) < 0.0:
 
-				dep.append(-1.0 * float(temp_data[i][3]) * 1e3)
-				tempa.append(float(temp_data[i][4])+273.0)
+				dep.append(-1.0 * float(temp_data[i][index_depth]) * 1e3)
+				tempa.append(float(temp_data[i][index_temp])+273.0)
 
-			if temp_data[i][0] != temp_data[i-1][0]:
-				self.lat.append(float(temp_data[i-1][2]))
+			if temp_data[i][index_id] != temp_data[i-1][index_id]:
+				self.lat.append(float(temp_data[i-1][index_lat]))
 				if float(temp_data[i-1][1]) < 180.0:
-					self.lon.append(float(temp_data[i-1][1]))
+					self.lon.append(float(temp_data[i-1][index_lon]))
 				else:
-					self.lon.append(float(temp_data[i-1][1]) - 360.0)
+					self.lon.append(float(temp_data[i-1][index_lon]) - 360.0)
 				self.depth_ext.append(dep)
 				self.temp.append(tempa)
 				dep = [0.0]
