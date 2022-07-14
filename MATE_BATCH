@@ -1043,19 +1043,39 @@ class MATE_BATCH(object):
 		dep = [0.0]
 		tempa = [0.0]
 
+
+		for i in range(0,len(temp_data[0])):
+			if temp_data[0][i] == 'Latitude':
+				index_lat = i
+			elif temp_data[0][i] == 'Longitude':
+				index_lon = i
+			elif temp_data[0][i] == 'Temperature':
+				index_temp = i
+			elif temp_data[0][i] == 'id':
+				index_id = i
+			elif temp_data[0][i] == 'Depth':
+				index_depth = i
+
+		try:
+			index_what = index_lat + index_lon + index_temp + index_id + index_depth
+		except NameError:
+			print('Header info on temperature file cannot be read, be sure the individual header parameters are named in the exact same form:')
+			print('id,Latitude,Longitude,Depth,Temperature')
+			sys.exit()
+
 		for i in range(1,len(temp_data)):
 
 			if float(temp_data[i][3]) < 0.0:
 
-				dep.append(-1.0 * float(temp_data[i][3]) * 1e3)
-				tempa.append(float(temp_data[i][4])+273.0)
+				dep.append(-1.0 * float(temp_data[i][index_depth]) * 1e3)
+				tempa.append(float(temp_data[i][index_temp])+273.0)
 
-			if temp_data[i][0] != temp_data[i-1][0]:
-				self.lat.append(float(temp_data[i-1][2]))
+			if temp_data[i][index_id] != temp_data[i-1][index_id]:
+				self.lat.append(float(temp_data[i-1][index_lat]))
 				if float(temp_data[i-1][1]) < 180.0:
-					self.lon.append(float(temp_data[i-1][1]))
+					self.lon.append(float(temp_data[i-1][index_lon]))
 				else:
-					self.lon.append(float(temp_data[i-1][1]) - 360.0)
+					self.lon.append(float(temp_data[i-1][index_lon]) - 360.0)
 				self.depth_ext.append(dep)
 				self.temp.append(tempa)
 				dep = [0.0]
@@ -3884,10 +3904,11 @@ class MATE_BATCH(object):
 			else:
 				min_idx = self.residual_list.index(min(self.residual_list))
 				self.h2o[sol_index] = water_search[min_idx]
-				if water_search[min_idx] >= water_search_end[sol_index]:
-					search_sol_bool = True
-				else:
-					search_sol_bool = False
+			if water_search[min_idx] >= (water_search_end[sol_index] - 4):
+				self.search_sol_bool = True
+			else:
+				self.search_sol_bool = False
+
 
 		self.search_sol_bool_list = []
 		#Actual solution loop.
@@ -3902,7 +3923,7 @@ class MATE_BATCH(object):
 
 			_solve_(sol_index = i, water_search_start = sol_start, water_search_end = self.h2o_from_sol,  water_search_increment = 4)
 
-			self.search_sol_bool_list.append(search_sol_bool)
+			self.search_sol_bool_list.append(self.search_sol_bool)
 			for i in range(0,self.idx_moho):
 				self.search_sol_bool_list.insert(0,False)
 
@@ -4054,6 +4075,7 @@ class MATE_BATCH(object):
 			self.cpx_h2o_list.append(list(self.cpx_h2o))
 			self.gt_h2o_list.append(list(self.gt_h2o))
 			self.sol_bool_list.append(self.search_sol_bool_list)
+			print(self.sol_bool_list)
 
 		self.h2o_list = np.array(self.h2o_list)
 		self.ol_h2o_list = np.array(self.ol_h2o_list)
@@ -4069,18 +4091,11 @@ class MATE_BATCH(object):
 				for j in range(self.idx_moho,len(self.depth)):
 					if self.depth[j] == self.depth[id]:
 						lines.append(','.join((str(i),str(self.depth[j]),str(self.mesh_centers_x_array[i]),str(self.mesh_centers_y_array[i]),str(self.h2o_list[i][j]),str(self.ol_h2o_list[i][j]),
-						str(self.opx_h2o_list[i][j]), str(self.cpx_h2o_list[i][j]), str(self.gt_h2o_list[i][j]), str(self.opx_h2o_list[i][j]), str(self.sol_bool_list[i][j]) + '\n')))
+						str(self.opx_h2o_list[i][j]), str(self.cpx_h2o_list[i][j]), str(self.gt_h2o_list[i][j]), str(self.sol_bool_list[i][j]) + '\n')))
 
 			filesave_comp = open(os.path.join(os.getcwd(), ('Depth_water_section_' + str(self.depth[id] / 1e3) + 'km_.csv')) ,'w')
 			filesave_comp.writelines(lines)
 			filesave_comp.close()
 			print('File is written:  ' + 'Depth_water_section_' + str(self.depth[id]/1e3) + 'km_.csv')
-
-		lines_station = ['Y,X\n']
-		for i in range(0,len(self.station_posy)):
-			lines_station.append(','.join((str(self.station_posy[i]),str(self.station_posx[i]) + '\n')))
-		filesave_stations = open(os.path.join(os.getcwd(), ('THO_stations.csv')) ,'w')
-		filesave_stations.writelines(lines_station)
-		filesave_stations.close()
 
 RUN_PROGRAM = MATE_BATCH()
