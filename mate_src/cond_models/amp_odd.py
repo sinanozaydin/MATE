@@ -4,7 +4,7 @@ import numpy as np
 
 R_const = 8.3144621
 
-def Hu2018H(T):
+def Hu2018H(T,method):
 
 	#Hydrogenated metstable part at 2GPa
 
@@ -19,7 +19,7 @@ def Hu2018H(T):
 
 	return cond_max,cond_min,cond
 
-def Hu2018DH(T):
+def Hu2018DH(T,method):
 
 	#Dehydrogenated metstable part at 2GPa
 
@@ -32,7 +32,7 @@ def Hu2018DH(T):
 
 	return cond_max,cond_min,cond
 
-def Wang2012(T):
+def Wang2012(T,method):
 
 	#Conductivity model taken from Wang et al. (2012) - Contr. to Min Petr
 	#This is the Hornblende and actinolite.
@@ -48,7 +48,7 @@ def Wang2012(T):
 
 	return cond_max,cond_min,cond
 
-def Wang2012_LE(T):
+def Wang2012_LE(T,method):
 
 	A_wang_amph = 10**2.03
 

@@ -1,5 +1,5 @@
-StudyName,Type,Tmin,Tmax,Pmin,Pmax,WCalib,Mg#,sigma_i,sigma_i_err,h_i,h_i_err,sigma_pol,sigma_pol_err,h_pol,h_pol_err,sigma_p,sigma_p_err,h_p,h_p_err,r,r_err,alpha_p,alpha_p_err,wtype,assemblage,sampletype,fugacity,avggrainsize(mm)
-Liu2019,1,623,1073,1,1,1,77,0,0,0,0,0,0,0,0,3.51,0.11,82000,1000,1.1,0.04,0,0,0,cpx-gt,Polycrystalline,Ni-NiO,0.1-0.7
-Yang2011**,0,523,1273,0.6,1.2,1,0.72,0,0,0,0,2.16,0.27,102000,5000,3.56,0.1,71000,1000,1.13,0.05,0,0,0,cpx,Polycrystalline,Ni-NiO,0.02-0.05
-Yang2012b**,0,723,1273,1.2,1.2,0,0.72,0,0,0,0,1.88,0.1,87000,2000,3.67,0.17,73000,2000,0.94,0.08,0,0,0,cpx,Polycrystalline,Ni-NiO,Unknown
-Zhao2016,1,600,1200,1.5,1.5,0,0.92,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,cpx,Polycrystalline,Ni-NiO,0.01
+StudyName,Type,Tmin,Tmax,Pmin,Pmax,WCalib,Mg#,sigma_i,sigma_i_err,h_i,h_i_err,sigma_pol,sigma_pol_err,h_pol,h_pol_err,sigma_p,sigma_p_err,h_p,h_p_err,r,r_err,alpha_p,alpha_p_err,wtype,dens_mat,assemblage,sampletype,fugacity,avggrainsize(mm)
+Liu2019,1,623,1073,1,1,1,77,0,0,0,0,0,0,0,0,3.51,0.11,82000,1000,1.1,0.04,0,0,0,3251,cpx-gt,Polycrystalline,Ni-NiO,0.1-0.7
+Yang2011**,0,523,1273,0.6,1.2,1,0.72,0,0,0,0,2.16,0.27,102000,5000,3.56,0.1,71000,1000,1.13,0.05,0,0,0,3251,cpx,Polycrystalline,Ni-NiO,0.02-0.05
+Yang2012b**,0,723,1273,1.2,1.2,0,0.72,0,0,0,0,1.88,0.1,87000,2000,3.67,0.17,73000,2000,0.94,0.08,0,0,0,3251,cpx,Polycrystalline,Ni-NiO,Unknown
+Zhao2016,1,600,1200,1.5,1.5,0,0.92,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3251,cpx,Polycrystalline,Ni-NiO,0.01

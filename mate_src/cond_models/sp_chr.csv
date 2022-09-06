@@ -1,2 +1,2 @@
-StudyName,Type,Tmin,Tmax,Pmin,Pmax,WCalib,Mg#,sigma_i,sigma_i_err,h_i,h_i_err,sigma_pol,sigma_pol_err,h_pol,h_pol_err,sigma_p,sigma_p_err,h_p,h_p_err,r,r_err,alpha_p,alpha_p_err,wtype,assemblage,sampletype,fugacity,avggrainsize(mm)
-Sun2021,3,873,1223,2,2,0,0.75,0,0,0,0,3.65,0.04,47000,1000,0,0,0,0,0,0,0,0,0,chromite,Polycrystal,Ni-NiO,0
+StudyName,Type,Tmin,Tmax,Pmin,Pmax,WCalib,Mg#,sigma_i,sigma_i_err,h_i,h_i_err,sigma_pol,sigma_pol_err,h_pol,h_pol_err,sigma_p,sigma_p_err,h_p,h_p_err,r,r_err,alpha_p,alpha_p_err,wtype,dens_mat,assemblage,sampletype,fugacity,avggrainsize(mm)
+Sun2021,3,873,1223,2,2,0,0.75,0,0,0,0,3.65,0.04,47000,1000,0,0,0,0,0,0,0,0,0,4790,chromite,Polycrystal,Ni-NiO,0

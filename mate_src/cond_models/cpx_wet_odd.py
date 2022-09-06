@@ -2,7 +2,7 @@
 
 import numpy as np
 
-def Zhao2016(model_method,T,P,corr_factor,wt_err,fo2,fo2_ref,cpx_h2o,cpx_fe):
+def Zhao2016(model_method,T,P,corr_factor,wt_err,fo2,fo2_ref,cpx_h2o,cpx_fe,method):
 
 	R_const = 8.3144621
 
@@ -14,24 +14,30 @@ def Zhao2016(model_method,T,P,corr_factor,wt_err,fo2,fo2_ref,cpx_h2o,cpx_fe):
 	e_zhao = [83000.0,115000.0,129000.0]
 	e_zhao_err = [7000,2000,2000]
 
-
-	cond_max_ = (a_zhao[0] * (h2o + (h2o * wt_err))**(r_zhao[0]-r_zhao_err[0]) * np.exp(- (e_zhao[0] - e_zhao_err[0]) / (R_const * T))) +\
-	(a_zhao[1] * (h2o + (h2o * wt_err))**(r_zhao[1]-r_zhao_err[1]) * np.exp(- (e_zhao[1] - e_zhao_err[1]) / (R_const * T))) +\
-	(a_zhao[2] * (h2o + (h2o * wt_err))**(r_zhao[2]-r_zhao_err[2]) * np.exp(- (e_zhao[2] - e_zhao_err[2]) / (R_const * T)))
-
-	cond_min = (a_zhao[0] * (h2o - (h2o * wt_err))**(r_zhao[0]+r_zhao_err[0]) * np.exp(- (e_zhao[0] + e_zhao_err[0]) / (R_const * T))) +\
-	(a_zhao[1] * (h2o - (h2o * wt_err))**(r_zhao[1]+r_zhao_err[1]) * np.exp(- (e_zhao[1] + e_zhao_err[1]) / (R_const * T))) +\
-	(a_zhao[2] * (h2o - (h2o * wt_err))**(r_zhao[2]+r_zhao_err[2]) * np.exp(- (e_zhao[2] + e_zhao_err[2]) / (R_const * T)))
-
 	cond = (a_zhao[0] * (h2o**(r_zhao[0])) * np.exp(- (e_zhao[0]) / (R_const * T))) +\
 	(a_zhao[1] * (h2o)**(r_zhao[1]) * np.exp(- (e_zhao[1]) / (R_const * T))) +\
 	(a_zhao[2] * (h2o)**(r_zhao[2]) * np.exp(- (e_zhao[2]) / (R_const * T)))
+
+	if method == 'array':
+
+		cond_max_ = (a_zhao[0] * (h2o + (h2o * wt_err))**(r_zhao[0]-r_zhao_err[0]) * np.exp(- (e_zhao[0] - e_zhao_err[0]) / (R_const * T))) +\
+		(a_zhao[1] * (h2o + (h2o * wt_err))**(r_zhao[1]-r_zhao_err[1]) * np.exp(- (e_zhao[1] - e_zhao_err[1]) / (R_const * T))) +\
+		(a_zhao[2] * (h2o + (h2o * wt_err))**(r_zhao[2]-r_zhao_err[2]) * np.exp(- (e_zhao[2] - e_zhao_err[2]) / (R_const * T)))
+
+		cond_min = (a_zhao[0] * (h2o - (h2o * wt_err))**(r_zhao[0]+r_zhao_err[0]) * np.exp(- (e_zhao[0] + e_zhao_err[0]) / (R_const * T))) +\
+		(a_zhao[1] * (h2o - (h2o * wt_err))**(r_zhao[1]+r_zhao_err[1]) * np.exp(- (e_zhao[1] + e_zhao_err[1]) / (R_const * T))) +\
+		(a_zhao[2] * (h2o - (h2o * wt_err))**(r_zhao[2]+r_zhao_err[2]) * np.exp(- (e_zhao[2] + e_zhao_err[2]) / (R_const * T)))
+
+	else:
+
+		cond_max = cond
+		cond_min = cond
 
 	cond_dry = np.zeros(len(cond))
 
 	return cond_max,cond_min,cond,cond_dry,cond
 
-def Zhang2019(model_method,T,P,corr_factor,wt_err,fo2,fo2_ref,cpx_h2o,cpx_fe):
+def Zhang2019(model_method,T,P,corr_factor,wt_err,fo2,fo2_ref,cpx_h2o,cpx_fe,method):
 
 	R_const = 8.3144621
 
@@ -50,12 +56,17 @@ def Zhang2019(model_method,T,P,corr_factor,wt_err,fo2,fo2_ref,cpx_h2o,cpx_fe):
 	beta_zhang = 38000.0
 	beta_zhang_err = 7000.0
 
-	cond_max = (a_zhang + a_zhang_err) * (cpx_fe**(n_zhang-n_zhang_err)) * ((h2o + (h2o * wt_err))**(r_zhang-r_zhang_err)) *\
-	np.exp(-((E_zhang - E_zhang_err) - ((alpha_zhang-alpha_zhang_err)*cpx_fe) - ((beta_zhang-beta_zhang_err)*((h2o + (h2o * wt_err))**(1.0/3.0)))) / (R_const*T))
-	cond_min = (a_zhang - a_zhang_err) * (cpx_fe**(n_zhang+n_zhang_err)) * ((h2o - (h2o * wt_err))**(r_zhang+r_zhang_err)) *\
-	np.exp(-((E_zhang + E_zhang_err) - ((alpha_zhang+alpha_zhang_err)*cpx_fe) - ((beta_zhang+beta_zhang_err)*((h2o - (h2o * wt_err))**(1.0/3.0)))) / (R_const*T))
 	cond = (a_zhang) * (cpx_fe**n_zhang) * (h2o**r_zhang) *\
 	np.exp(-(E_zhang - (alpha_zhang*cpx_fe) - (beta_zhang*(h2o**(1.0/3.0)))) / (R_const*T))
+
+	if method == 'array':
+		cond_max = (a_zhang + a_zhang_err) * (cpx_fe**(n_zhang-n_zhang_err)) * ((h2o + (h2o * wt_err))**(r_zhang-r_zhang_err)) *\
+		np.exp(-((E_zhang - E_zhang_err) - ((alpha_zhang-alpha_zhang_err)*cpx_fe) - ((beta_zhang-beta_zhang_err)*((h2o + (h2o * wt_err))**(1.0/3.0)))) / (R_const*T))
+		cond_min = (a_zhang - a_zhang_err) * (cpx_fe**(n_zhang+n_zhang_err)) * ((h2o - (h2o * wt_err))**(r_zhang+r_zhang_err)) *\
+		np.exp(-((E_zhang + E_zhang_err) - ((alpha_zhang+alpha_zhang_err)*cpx_fe) - ((beta_zhang+beta_zhang_err)*((h2o - (h2o * wt_err))**(1.0/3.0)))) / (R_const*T))
+	else:
+		cond_max = cond
+		cond_min = cond
 
 	cond_dry = np.zeros(len(cond))
 

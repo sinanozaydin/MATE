@@ -1,0 +1,3 @@
+#ModelName,ModelType,Function1,Function2,PChange,Description
+Hirschmann2009,1,(0.0015 * self.al_opx) + 0.0082,0,0,Hirschmann2009 Al-in-opx dependent function of melt/opx
+Tenner2012,4,0.00515,0,0,Tenner2012 Average single value of melt/opx
