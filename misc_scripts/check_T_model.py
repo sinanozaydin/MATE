@@ -120,6 +120,7 @@ class check_T_model(object):
 		tempa = [0.0]
 
 		for i in range(0,len(temp_data[0])):
+			print(temp_data[0])
 			if temp_data[0][i] == 'Latitude':
 				index_lat = i
 			elif temp_data[0][i] == 'Longitude':
@@ -131,6 +132,7 @@ class check_T_model(object):
 			elif temp_data[0][i] == 'Depth':
 				index_depth = i
 
+		print(index_depth,index_id,index_temp,index_lon,index_lat)
 		try:
 			index_what = index_lat + index_lon + index_temp + index_id + index_depth
 		except NameError:
@@ -138,7 +140,7 @@ class check_T_model(object):
 			print('id,Latitude,Longitude,Depth,Temperature')
 			sys.exit()
 
-		for i in range(1,len(temp_data)):
+		for i in range(2,len(temp_data)):
 
 			if float(temp_data[i][3]) < 0.0:
 

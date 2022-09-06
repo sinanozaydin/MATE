@@ -1,0 +1,612 @@
+#!/usr/bin/env python3
+
+import os,sys,csv,itertools,warnings
+import matplotlib.pyplot as plt
+import matplotlib.patches as patches
+from matplotlib.collections import PatchCollection
+import matplotlib.colors as colors
+import matplotlib.cbook as cbook
+
+from scipy.interpolate import griddata
+
+
+import numpy as np
+
+class plot_water_results(object):
+
+	def __init__(self):
+
+		args_input = sys.argv
+
+		if len(args_input) <= 1:
+			print('Missing .dat file input as first parameter.')
+			print('Run the code as: plot_water_result something.dat')
+			sys.exit()
+
+		self.stations_file = args_input[1]
+
+		cm_data = np.loadtxt('batlow_blackend.txt')
+		color_map = colors.LinearSegmentedColormap.from_list('batlow_blackend',cm_data)
+		self.color_map_iso = color_map
+
+		self.csv_list = [os.path.join(os.getcwd(),csvi) for csvi in os.listdir(os.getcwd()) if csvi.find('.csv')>0]
+
+		while True:
+			print('Do you want to plot contour maps (1) or histograms (2) or iso file to depth (3) or averaged depth (4)')
+			self.plot_style = str(input())
+			if (self.plot_style == '1') or (self.plot_style == '2') or (self.plot_style == '3') or (self.plot_style == '4'):
+				break
+			else:
+				print('Please provide a valid answer 1 or 2 or 3 or 4')
+
+		self.file_names = []
+		self.depth = []
+		for i in range(0,len(self.csv_list)):
+			self.depth.append(float(self.csv_list[i][self.csv_list[i].rfind('/')+21:-7]))
+
+		self.csv_list = [x for _, x in sorted(zip(self.depth, self.csv_list))]  #sorting csv files.
+		self.depth = np.array(self.depth)
+		self.depth.sort()
+
+		for i in range(0,len(self.csv_list)):
+			self.file_names.append(self.csv_list[i][self.csv_list[i].rfind('/')+21:-5])
+
+		if (self.plot_style == '1'):
+			while True:
+				print('Do you want to plot the axes?y/n')
+				self.ax_grid_answer = str(input())
+				if (self.ax_grid_answer == 'y') or (self.ax_grid_answer == 'n'):
+					break
+				else:
+					print('Please provide a valid answer y/n')
+
+			while True:
+				print('Do you want to plot stations as well?y/n')
+				self.station_answer = str(input())
+				if (self.station_answer == 'y') or (self.station_answer == 'n'):
+					break
+				else:
+					print('Please provide a valid answer y/n')
+
+			while True:
+				print('Do you want to save the files (1) or just plot them (2)? ')
+				self.plot_answer = str(input())
+				if (self.plot_answer == '1') or (self.plot_answer == '2'):
+					break
+				else:
+					print('Please provide a valid answer 1 or 2')
+
+			self.color_map_water = 'cividis'
+
+			if self.stations_file != None:
+
+				self.stations_file_path = os.path.join(os.getcwd(), self.stations_file)
+
+				self.read_ModEM_dat()
+
+			for idx_csv in range(0,len(self.csv_list)):
+
+				# self.file_path = os.path.join(os.getcwd(),filename)
+				self.file_path = self.csv_list[idx_csv]
+				self.file_name_current = self.file_names[idx_csv]
+
+				self.data = self.read_csv(filename = self.file_path, delim = ',')
+				self.sort_data()
+				self.plot_water_slice()
+
+		elif self.plot_style == '2':
+
+			self.water_content_hist = []
+
+			for idx_csv in range(0,len(self.csv_list)):
+
+				self.file_path = self.csv_list[idx_csv]
+				self.file_name_current = self.file_names[idx_csv]
+
+				self.data = self.read_csv(filename = self.file_path, delim = ',')
+				self.sort_data()
+
+			self.plot_histograms()
+
+		elif (self.plot_style == '3'):
+
+			while True:
+				print('Do you want to plot the axes?y/n')
+				self.ax_grid_answer = str(input())
+				if (self.ax_grid_answer == 'y') or (self.ax_grid_answer == 'n'):
+					break
+				else:
+					print('Please provide a valid answer y/n')
+
+			while True:
+				print('Do you want to plot stations as well?y/n')
+				self.station_answer = str(input())
+				if (self.station_answer == 'y') or (self.station_answer == 'n'):
+					break
+				else:
+					print('Please provide a valid answer y/n')
+
+			while True:
+				print('Do you want to save the files (1) or just plot them (2)? ')
+				self.plot_answer = str(input())
+				if (self.plot_answer == '1') or (self.plot_answer == '2'):
+					break
+				else:
+					print('Please provide a valid answer 1 or 2')
+
+			while True:
+				print('What is the water content to search for the iso depth plot')
+				self.water_search = float(input())
+				break
+
+			self.color_map_water = 'cividis'
+
+
+			if self.stations_file != None:
+
+				self.stations_file_path = os.path.join(os.getcwd(),self.stations_file)
+
+				self.read_ModEM_dat()
+
+			self.water_content_array = []
+
+			for idx_csv in range(0,len(self.csv_list)):
+
+				self.file_path = self.csv_list[idx_csv]
+				self.file_name_current = self.file_names[idx_csv]
+
+				self.data = self.read_csv(filename = self.file_path, delim = ',')
+				self.sort_data()
+
+			self.water_content_array = np.array(self.water_content_array)
+
+			self.define_iso()
+			self.plot_iso()
+
+		elif self.plot_style == '4':
+
+			while True:
+				print('Do you want to plot the axes?y/n')
+				self.ax_grid_answer = str(input())
+				if (self.ax_grid_answer == 'y') or (self.ax_grid_answer == 'n'):
+					break
+				else:
+					print('Please provide a valid answer y/n')
+
+			while True:
+				print('Do you want to plot stations as well?y/n')
+				self.station_answer = str(input())
+				if (self.station_answer == 'y') or (self.station_answer == 'n'):
+					break
+				else:
+					print('Please provide a valid answer y/n')
+
+			while True:
+				print('Do you want to save the files (1) or just plot them (2)? ')
+				self.plot_answer = str(input())
+				if (self.plot_answer == '1') or (self.plot_answer == '2'):
+					break
+				else:
+					print('Please provide a valid answer 1 or 2')
+
+			while True:
+				print('What is the minimum depth to be averaged')
+				self.water_avg_min = float(input())
+				break
+
+			while True:
+				print('What is the max depth to be averaged')
+				self.water_avg_max = float(input())
+				break
+
+			while True:
+
+				print('Is it going to be mean (1) or cumulative(2)')
+				self.water_bool = str(input())
+				if (self.water_bool == '1') or (self.water_bool == '2'):
+					break
+				else:
+					print('Enter a valid response, 1 or 2')
+
+			self.color_map_water = 'cividis'
+
+			if self.stations_file != None:
+
+				self.stations_file_path = os.path.join(os.getcwd(),self.stations_file)
+
+				self.read_ModEM_dat()
+
+			self.water_content_array = []
+
+			for idx_csv in range(0,len(self.csv_list)):
+
+				self.file_path = self.csv_list[idx_csv]
+				self.file_name_current = self.file_names[idx_csv]
+
+				self.data = self.read_csv(filename = self.file_path, delim = ',')
+				self.sort_data()
+
+			self.water_content_array = np.array(self.water_content_array)
+
+			self.plot_water_slice()
+
+	def read_csv(self,filename,delim):
+
+		#Simple function for reading csv files and give out filtered output for given delimiter (delim)
+
+		file_obj = open(filename,'rt',encoding = "utf8") #Creating file object
+		file_csv = csv.reader(file_obj,delimiter = delim) #Reading the file object with csv module, delimiter assigned to ','
+		data = [] #Creating empty array to append data
+
+		#Appending data from csb object
+		for row in file_csv:
+			data.append(row)
+
+		#Filtering data for None elements read.
+		for j in range(0,len(data)):
+			data[j] = list(filter(None,data[j]))
+		data = list(filter(None,data))
+
+		return data
+
+	def read_ModEM_dat(self):
+
+		#Reading ModEM dat file to get coordinates of stations and model centre.
+
+		from mtpy.utils import gis_tools as gis_tools
+
+		self.ModEM_dat_data = self.read_csv(filename = self.stations_file_path ,delim = ' ')
+
+		self.station_lat = []
+		self.station_lon = []
+		self.station_name = []
+
+		self.mc_lat = float(self.ModEM_dat_data[6][1])
+		self.mc_lon = float(self.ModEM_dat_data[6][2])
+
+		dash_found = False
+
+		for row in range(8,len(self.ModEM_dat_data)):
+		    if self.ModEM_dat_data[row][0] == '#' :
+		        limitlines = row-1
+		        dash_found = True
+
+		if dash_found == False:
+			limitlines = len(self.ModEM_dat_data)
+
+		for row in range(8,limitlines):
+			if self.ModEM_dat_data[row][1] != self.ModEM_dat_data[row-1][1]:
+				self.station_name.append(self.ModEM_dat_data[row][1])
+				self.station_lat.append(float(self.ModEM_dat_data[row][2]))
+				self.station_lon.append(float(self.ModEM_dat_data[row][3]))
+
+		self.ModEM_dat_read = True
+		self.res_profile_plot_list = []
+		self.res_profile_max_plot_list = []
+		self.res_profile_min_plot_list = []
+
+		self.st_item_list = []
+
+		for i in range(0,len(self.station_name)):
+
+			self.st_item_list.append(str(i) + ' - ' + self.station_name[i])
+
+
+
+		self.station_lat = np.array(self.station_lat)
+		self.station_lon = np.array(self.station_lon)
+
+		utm_no = gis_tools.get_epsg(self.mc_lat,self.mc_lon)
+		stuff= gis_tools.project_point_ll2utm(self.station_lat, self.station_lon, utm_zone = 34, epsg = utm_no)
+		self.x_mtpy = np.zeros(len(stuff))
+		self.y_mtpy = np.zeros(len(stuff))
+		utm_z = []
+
+		for i in range(0,len(stuff)):
+			self.x_mtpy[i] = stuff[i][0]
+			self.y_mtpy[i] = stuff[i][1]
+			utm_z.append(stuff[i][3])
+
+		x_mtpy_center, y_mtpy_center, utm_center = gis_tools.project_point_ll2utm(self.mc_lat, self.mc_lon, utm_zone = 14, epsg = utm_no)
+
+		self.x_stations = self.x_mtpy - x_mtpy_center
+		self.y_stations = self.y_mtpy - y_mtpy_center
+
+		self.distance_from_x = 20
+		self.distance_from_y = 20
+		self.max_x = max(self.x_stations) + (self.distance_from_x * 1000.0)
+		self.min_x = min(self.x_stations) - (self.distance_from_x * 1000.0)
+		self.max_y = max(self.y_stations) + (self.distance_from_y * 1000.0)
+		self.min_y = min(self.y_stations) - (self.distance_from_y * 1000.0)
+
+	def sort_data(self):
+
+		self.x = np.zeros(len(self.data) - 1)
+		self.y = np.zeros(len(self.data) - 1)
+		self.water_bulk = np.zeros(len(self.data) - 1)
+		self.water_ol = np.zeros(len(self.data) - 1)
+		self.water_opx = np.zeros(len(self.data) - 1)
+		self.dry_index = []
+
+		for i in range(1,len(self.data)):
+
+			self.x[i-1] = self.data[i][3]
+			self.y[i-1] = self.data[i][2]
+			self.water_bulk[i-1] = self.data[i][4]
+			self.water_ol[i-1] = self.data[i][5]
+			self.water_opx[i-1] = self.data[i][6]
+
+
+			if float(self.data[i][4]) <= 0.0:
+
+				self.dry_index.append(i)
+
+		if self.plot_style == '2':
+
+			self.water_content_hist.append(self.water_bulk)
+
+		elif (self.plot_style == '3') or (self.plot_style == '4'):
+
+			self.water_content_array.append(self.water_bulk)
+
+	def plot_water_slice(self):
+
+		xi = np.arange(np.amin(self.x), np.amax(self.x),10000)
+		yi = np.arange(np.amin(self.y), np.amax(self.y),10000)
+
+		x_i,  y_i = np.meshgrid(xi,yi)
+
+		points_interp = np.column_stack((self.x, self.y))
+		if self.plot_style == '1':
+			fnew = griddata(points_interp, self.water_bulk, (x_i, y_i), method = 'cubic')
+			label_pm = 'Bulk Water Content ($H_2O$ wt ppm)'
+			up = 600
+			down = 0
+		elif self.plot_style == '4':
+			idx_min = np.abs(self.depth-self.water_avg_min).argmin()
+			idx_max = np.abs(self.depth-self.water_avg_max).argmin()
+			if self.water_bool == '1':
+				self.water_array_mean = self.water_content_array[idx_min:idx_max].mean(axis = 0)
+				label_pm = 'Average Bulk Water Content ($H_2O$ wt ppm)'
+				up = 600
+				down = 0
+			elif self.water_bool == '2':
+				self.water_array_mean = self.water_content_array[idx_min:idx_max].sum(axis = 0)
+				label_pm = 'Cumulative Bulk Water Content ($H_2O$ wt ppm)'
+				up = 1200
+				down = 0
+
+			fnew = griddata(points_interp, self.water_array_mean, (x_i, y_i), method = 'cubic')
+
+		fig = plt.figure(figsize = (10,7))
+		ax1 = plt.subplot(111)
+		with warnings.catch_warnings():
+			warnings.simplefilter('ignore', DeprecationWarning)
+			cax = ax1.pcolormesh(xi, yi, fnew, cmap = self.color_map_iso)
+		cax.set_clim(down,up)
+
+		# if len(self.dry_index) > 0:
+		# 	for index in self.dry_index:
+		# 		ax1.plot(self.x[index-1],self.y[index-1],'s',color = 'k',alpha = 1.0)
+				# ax1.plot(self.x[index-1],self.y[index-1],'x',color = 'k',alpha = 0.3)
+		ax1.set_xlim((self.min_x,self.max_x))
+		ax1.set_ylim((self.min_y,self.max_y))
+
+		cont = ax1.contour(xi, yi, fnew, levels = [10, 50, 100, 200, 300, 600, 1000], alpha = 0.5,colors = 'k',linewidths = 0.75, linestyles = '--')
+		ax1.clabel(cont, cont.levels, inline = True, fontsize = 8)
+
+		transparent_answer = True
+		if self.ax_grid_answer == 'y':
+			transparent_answer = False
+			ax1.set_xlabel('Easting')
+			ax1.set_ylabel('Northing')
+
+			cbar_ax = fig.colorbar(cax, boundaries= np.linspace(down,up), orientation="vertical", pad=0.05,
+			 ticks = [0,up/2.0,up], ax = ax1, label = label_pm)
+		else:
+			ax1.grid(None)
+			ax1.axis('off')
+
+		# ax1.plot(self.y,self.x ,'s')
+
+		if self.stations_file != None:
+			if self.station_answer == 'y':
+				ax1.plot(self.x_stations, self.y_stations, 'v', markersize = 3, color = '#ffffff',markeredgecolor = 'k', markeredgewidth = 0.5)
+
+		if self.plot_answer == '1':
+			if self.plot_style == '1':
+				plt.savefig('Water_depth_' + self.file_name_current + '.png', dpi = 300,transparent = transparent_answer)
+				print('File saved for depth:' + self.file_name_current)
+			elif self.plot_style == '4':
+				plt.savefig('Meaned_map_water' + str(self.depth[idx_min]) + '-' + str(self.depth[idx_max]) + '.png', dpi = 300, transparent = True)
+		else:
+			plt.show()
+
+	def get_T(self):
+
+		temp_data = self.read_csv(filename = self.T_path, delim = ' ')
+
+		self.temp = []
+		self.lat = []
+		self.lon = []
+		self.depth_ext = []
+		dep = [0.0]
+		tempa = [0.0]
+
+		for i in range(1,len(temp_data)):
+
+			if float(temp_data[i][3]) < 0.0:
+
+				dep.append(-1.0 * float(temp_data[i][3]) * 1e3)
+				tempa.append(float(temp_data[i][4])+273.0)
+
+			if temp_data[i][0] != temp_data[i-1][0]:
+				self.lat.append(float(temp_data[i-1][2]))
+				if float(temp_data[i-1][1]) < 180.0:
+					self.lon.append(float(temp_data[i-1][1]))
+				else:
+					self.lon.append(float(temp_data[i-1][1]) - 360.0)
+				self.depth_ext.append(dep)
+				self.temp.append(tempa)
+				dep = [0.0]
+				tempa = [0.0]
+
+		self.lat = np.array(self.lat)
+		self.lon = np.array(self.lon)
+
+		with warnings.catch_warnings():
+			warnings.simplefilter('ignore', FutureWarning)
+			utm_no = gis_tools.get_epsg(self.mc_lat,self.mc_lon)
+			stuff= gis_tools.project_point_ll2utm(self.lat, self.lon, utm_zone = 34, epsg = utm_no)
+		self.x_mtpy = np.zeros(len(stuff))
+		self.y_mtpy = np.zeros(len(stuff))
+		utm_z = []
+
+		for i in range(0,len(stuff)):
+			self.x_mtpy[i] = stuff[i][0]
+			self.y_mtpy[i] = stuff[i][1]
+			utm_z.append(stuff[i][3])
+
+		with warnings.catch_warnings():
+			warnings.simplefilter('ignore', FutureWarning)
+			x_mtpy_center, y_mtpy_center, utm_center = gis_tools.project_point_ll2utm(self.mc_lat, self.mc_lon, utm_zone = 14, epsg = utm_no)
+
+		self.x_rel = self.x_mtpy - x_mtpy_center
+		self.y_rel = self.y_mtpy - y_mtpy_center
+
+		for i in range(0,len(self.x_rel)):
+			f_sond = interp1d(self.depth_ext[i],self.temp[i])
+			self.temp[i] = f_sond(self.depth)
+			self.depth_ext[i] = self.depth
+
+		self.depth_ext = np.array(self.depth_ext)
+		self.temp = np.array(self.temp)
+
+		self.xnew = np.arange(np.amin(self.x_rel), np.amax(self.x_rel), 1e4)
+		self.ynew = np.arange(np.amin(self.y_rel), np.amax(self.y_rel), 1e4)
+
+		self.x_new, self.y_new = np.meshgrid(self.xnew, self.ynew)
+
+		points_interp = np.column_stack((self.x_rel, self.y_rel))
+
+		self.temp_interp = []
+
+		for i in range(0,len(self.depth)):
+
+			interp_array = np.array(self.temp[:,i])
+			fnew = griddata(points_interp, interp_array, (self.x_new, self.y_new), method = 'cubic')
+			fnew[np.isnan(fnew)] = 273.0
+			fnew = np.asarray(list(itertools.chain(*fnew)))
+			self.temp_interp.append(fnew)
+
+		self.x_new = np.asarray(list(itertools.chain(*self.x_new)))
+		self.y_new = np.asarray(list(itertools.chain(*self.y_new)))
+
+		self.temp_interp = np.array(self.temp_interp)
+
+		self.temp_rev = []
+
+		for i in range(0,len(self.x_new)):
+
+			self.temp_rev.append(self.temp_interp[:,i])
+
+		self.temp_rev = np.array(self.temp_rev)
+
+	def plot_histograms(self):
+
+		self.water_content_hist = np.array(list(itertools.chain(*self.water_content_hist)))
+
+		idx_list_nan = np.argwhere(np.isin(self.water_content_hist, -999))
+		self.water_content_hist = np.delete(self.water_content_hist, idx_list_nan)
+
+		idx_list_bigger= np.argwhere(self.water_content_hist < 100.0)
+		self.water_content_hist = np.delete(self.water_content_hist, idx_list_bigger)
+		median_wt_content = np.median(self.water_content_hist)
+		mean_wt_content = np.mean(self.water_content_hist)
+
+		fig_hist = plt.figure(figsize = (8,5))
+		ax = plt.subplot(111)
+		#plt.hist(self.rho_list_flat,bins = np.logspace(np.log10(0.1),np.log10(1e5), 50),color = 'b')
+		counts, edges, patches = plt.hist(self.water_content_hist,
+		bins = np.linspace(np.amin(self.water_content_hist),np.amax(self.water_content_hist), 100),color = '#2d8e5f')
+		centers = 0.5*(edges[:-1] + edges[1:])
+		ax.axvline(median_wt_content, color = '#960aab')
+		ax.axvline(mean_wt_content, color = '#ab220a')
+
+		plt.show()
+
+	def define_iso(self):
+
+		self.idx_list_water = []
+		for i in range(0,len(self.water_content_array[0])):
+
+			array = self.water_content_array[:,i]
+			# print(array)
+			idx_local = []
+			for j in range(0,len(array)):
+				if array[j] >= self.water_search:
+					print(array[j])
+					idx_local.append(j)
+
+			if len(idx_local) == 0:
+				idx_local.append(0)
+
+			self.idx_list_water.append(idx_local[-1])
+
+		self.depth_list  = np.zeros(len(self.idx_list_water))
+		for idx in range(0,len(self.idx_list_water)):
+
+			if self.idx_list_water[idx] == 0:
+
+				self.depth_list[idx] = 0
+			else:
+				self.depth_list[idx] = self.depth[self.idx_list_water[idx]]
+
+	def plot_iso(self):
+
+		xi = np.arange(np.amin(self.x), np.amax(self.x),10000)
+		yi = np.arange(np.amin(self.y), np.amax(self.y),10000)
+
+		x_i,  y_i = np.meshgrid(xi,yi)
+
+		up = 200
+		down = 0
+		points_interp = np.column_stack((self.x, self.y))
+		fnew = griddata(points_interp, self.depth_list, (x_i, y_i), method = 'cubic')
+
+		fig = plt.figure(figsize = (10,7))
+		ax1 = plt.subplot(111)
+		cax = ax1.pcolormesh(xi, yi, fnew, cmap = self.color_map_iso)
+		cax.set_clim(down,up)
+
+		ax1.set_xlim((self.min_x,self.max_x))
+		ax1.set_ylim((self.min_y,self.max_y))
+
+		transparent_answer = True
+		if self.ax_grid_answer == 'y':
+			transparent_answer = False
+			ax1.set_xlabel('Easting')
+			ax1.set_ylabel('Northing')
+
+			cbar_ax = fig.colorbar(cax, boundaries= np.linspace(down,up,10), orientation="vertical", pad=0.05,
+			 ticks = [0,up/2.0,up], ax = ax1, label = 'Depth (km)')
+		else:
+			ax1.grid(None)
+			ax1.axis('off')
+
+		# ax1.plot(self.y,self.x ,'s')
+
+		if self.stations_file != None:
+
+			if self.station_answer == 'y':
+
+				ax1.plot(self.x_stations, self.y_stations, 'v', markersize = 3, color = 'k')
+
+		if self.plot_answer == '1':
+			plt.savefig('iso_plot_' + str(self.water_search) +  '.png', dpi = 300,transparent = transparent_answer)
+			print('File saved for depth:' + self.file_name_current)
+		else:
+			plt.show()
+
+
+run = plot_water_results()
