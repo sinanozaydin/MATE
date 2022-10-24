@@ -51,7 +51,7 @@ class bcolors:
 	RED = '\033[91m'
 	B = '\033[0m'
 	NC ='\x1b[0m'
-	
+
 #Version 2.0, July. 2022.
 #MATE - (M)antle (A)nalysis (T)ools for (E)lectromagnetics
 #Program written by Sinan Ozaydin (Macquarie University, School of Natural Sciences
@@ -526,6 +526,8 @@ class MATE(QMainWindow):
 		MATE.cond_uncert_method = '0'
 
 		MATE.waterplotlim_up = 600.0
+		MATE.geotherm_up = 1500.0
+		MATE.geotherm_asked = False
 
 		MATE.heat_flow_search_start = 35
 		MATE.heat_flow_search_end = 45
@@ -2301,7 +2303,7 @@ class MATE(QMainWindow):
 
 				if (MATE.d_melt_opx_type[MATE.opx_melt_part_select] == '1') or (MATE.d_melt_opx_type[MATE.opx_melt_part_select] == '3'):
 
-					MATE.d_melt_opx = eval(self.d_melt_opx_function[MATE.opx_part_select])
+					MATE.d_melt_opx = eval(self.d_melt_opx_function[MATE.opx_melt_part_select])
 
 				elif (MATE.d_melt_opx_type[MATE.opx_melt_part_select] == '2'):
 
@@ -2320,7 +2322,7 @@ class MATE(QMainWindow):
 
 				if (MATE.d_melt_cpx_type[MATE.cpx_melt_part_select] == '1') or (MATE.d_melt_cpx_type[MATE.cpx_melt_part_select] == '3'):
 
-					MATE.d_melt_cpx = eval(self.d_melt_cpx_function[MATE.cpx_part_select])
+					MATE.d_melt_cpx = eval(self.d_melt_cpx_function[MATE.cpx_melt_part_select])
 
 				elif (MATE.d_melt_cpx_type[MATE.cpx_melt_part_select] == '2'):
 
@@ -5228,7 +5230,10 @@ class MATE(QMainWindow):
 		self.ax3.axhline(MATE.lab/1000.0, linestyle = '--', color = 'k', alpha = 0.85,linewidth = 2.5)
 		if self.depth_spinel != 0.0:
 			self.ax3.axhline(self.depth_spinel/1000.0,linestyle = '--', color = '#7EB345', alpha = 0.85, label = 'sp-gt transition',linewidth = 2.5)
-		self.ax3.set_xlim((0,np.amax(self.T) - 273.0 + 50.0))
+		if MATE.geotherm_asked == False:
+			self.ax3.set_xlim((0,np.amax(self.T) - 273.0 + 50.0))
+		elif MATE.geotherm_asked == True:
+			self.ax3.set_xlim((0,MATE.geotherm_up))
 		self.ax3.set_ylim((MATE.lab / 1000.0) + 25.0, 0.0)
 		if method == 'draw':
 			self.ax3.set_yticks([])
@@ -6412,6 +6417,8 @@ class MATE(QMainWindow):
 		self.solidus_wet_calculated = False
 		self.solidus_carbon_calculated = False
 
+		MATE.geotherm_asked = False
+
 		self.melt_calc_from_zero_melt = False
 
 		self.act_comp_btn.setStyleSheet("QPushButton {min-width: 10em; font: bold; font-size: 9pt;background-color: #93db88}")
@@ -6749,6 +6756,8 @@ class MATE(QMainWindow):
 				self.plot_water(method = 'draw')
 				self.plt_water_btn.setStyleSheet("QPushButton {min-width: 10em; font: bold; font-size: 9pt;background-color: #679c5f}")
 				self.plot_conductivity(method = 'draw', boundaries = False)
+
+				self.water_inverted = True
 
 				QMessageBox.about(self, 'Info', "The calculation has finished in " + str(total_time) + " seconds.")
 
@@ -7759,8 +7768,6 @@ class PART_POP(QWidget):
 
 	def get_ampol(self):
 
-		if MATE.amp_method == '0':
-
 			item, ok = QInputDialog.getItem(self, "select input dialog",
 				"Partitioning method", MATE.d_amp_display_items, 0, False)
 
@@ -7773,12 +7780,7 @@ class PART_POP(QWidget):
 
 			MATE.mineral_partitions_calculated = False
 
-		else:
-			QMessageBox.about(self, "Info on this","In order to select amphibole conductivity model you first have to activate its entry from Composition Setup section")
-
 	def get_plol(self):
-
-		if MATE.pl_method == '0':
 
 			item, ok = QInputDialog.getItem(self, "select input dialog",
 				"Partitioning method", MATE.d_pl_display_items, 0, False)
@@ -7792,8 +7794,6 @@ class PART_POP(QWidget):
 
 			MATE.mineral_partitions_calculated = False
 
-		else:
-			QMessageBox.about(self, "Info on this","In order to select phlogopite water partitoning model you first have to enter some phlogopites!")
 
 	def get_ol_melt(self):
 
@@ -9867,6 +9867,11 @@ class FIGPROP_POP(QWidget):
 		self.water_x_lim_btn_txt.setEnabled(False)
 		self.water_x_lim_btn.clicked.connect(self.get_waterplotlim_up)
 
+		self.geotherm_x_lim_btn = QPushButton('Geotherm Plot Upper Limit')
+		self.geotherm_x_lim_btn_txt = QLineEdit(str(MATE.geotherm_up))
+		self.geotherm_x_lim_btn_txt.setEnabled(False)
+		self.geotherm_x_lim_btn.clicked.connect(self.get_geotherm_up)
+
 		self.condrange_btn = QPushButton('Conductivity Range')
 		self.condrange_btn_txt = QLineEdit(str(MATE.condrange_list[MATE.condrange_method]))
 		self.condrange_btn_txt.setEnabled(False)
@@ -9902,6 +9907,7 @@ class FIGPROP_POP(QWidget):
 		figureprop_layout.addRow(self.sol_plot_type_btn,self.sol_plot_type_btn_txt)
 		figureprop_layout.addRow(self.sol_plot_scale_type_btn,self.sol_plot_scale_type_btn_txt)
 		figureprop_layout.addRow(self.water_x_lim_btn,self.water_x_lim_btn_txt)
+		figureprop_layout.addRow(self.geotherm_x_lim_btn,self.geotherm_x_lim_btn_txt)
 		figureprop_layout.addRow(self.condrange_btn,self.condrange_btn_txt)
 		figureprop_layout.addRow(self.condlinestyle_btn,self.condlinestyle_btn_txt)
 		figureprop_layout.addRow(self.condlinewidth_btn,self.condlinewidth_btn_txt)
@@ -9998,6 +10004,18 @@ class FIGPROP_POP(QWidget):
 				float(text)
 				self.water_x_lim_btn_txt.setText(str(text))
 				MATE.waterplotlim_up = float(text)
+			except ValueError:
+				QMessageBox.about(self,"Warning!","Please enter a value that can be converted to floating number.")
+
+	def get_geotherm_up(self):
+
+		text, ok = QInputDialog.getText(self, 'X-limit of the geotherm plot', 'X-limit of the geotherm plot from max in C')
+		if ok:
+			try:
+				float(text)
+				self.geotherm_x_lim_btn_txt.setText(str(text))
+				MATE.geotherm_up = float(text)
+				MATE.geotherm_asked = True
 			except ValueError:
 				QMessageBox.about(self,"Warning!","Please enter a value that can be converted to floating number.")
 
