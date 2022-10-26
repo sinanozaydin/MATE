@@ -313,6 +313,11 @@ class MATE(QMainWindow):
 		solverBatchOutput.triggered.connect(self.write_batch_process_output)
 		solverMenu.addAction(solverBatchOutput)
 
+		watSolver = QAction('Water solver properties', self)
+		watSolver.triggered.connect(self.wat_solver_properties)
+		solverMenu.addAction(watSolver)
+		self.wat_solver = None
+
 		xenSolver = QAction('Geotherm solver properties', self)
 		xenSolver.triggered.connect(self.xen_solver_properties)
 		solverMenu.addAction(xenSolver)
@@ -502,6 +507,9 @@ class MATE(QMainWindow):
 
 		MATE.add_water_method = 0
 		MATE.water_file_read = False
+
+		MATE.solver_search_ratio = 0.1
+		MATE.water_search_increment_start = 4.0
 
 		self.last_draw_method = 0
 
@@ -6586,6 +6594,8 @@ class MATE(QMainWindow):
 
 	def solve_for_water_melt(self):
 
+		QMessageBox.about(self, 'Warning!', "This function does not work yet.")
+		"""
 		if MATE.watermelt_solve_method == 0:
 			#First solve for water without any melt
 			self.melt_mass_frac[self.idx_moho:] = 0.0
@@ -6608,7 +6618,7 @@ class MATE(QMainWindow):
 			# self.solve_for_water()
 
 			self.melt_solution = False
-
+		"""
 	def solve_for_water(self):
 
 		#Brute solver for peridotite water content.
@@ -6726,13 +6736,13 @@ class MATE(QMainWindow):
 				for i in range(self.idx_moho,len(self.depth)):
 
 					if i != self.idx_moho:
-						sol_start = self.h2o[i-1] - (self.h2o[i-1]*0.1) #using the previous layer as the next layer solutions initial start
+						sol_start = self.h2o[i-1] - (self.h2o[i-1]*MATE.solver_search_ratio) #using the previous layer as the next layer solutions initial start
 						if sol_start < 20: #if the guess is too small or negative start from 0
 							sol_start = 0
 					else:
 						sol_start = 0.0
 
-					_solve_(sol_index = i, water_search_start = sol_start, water_search_end = self.h2o_from_sol,  water_search_increment = 4)
+					_solve_(sol_index = i, water_search_start = sol_start, water_search_end = self.h2o_from_sol,  water_search_increment = MATE.water_search_increment_start)
 
 					self.progressBar.setValue(i+1)
 
@@ -6866,6 +6876,13 @@ class MATE(QMainWindow):
 		else:
 
 			QMessageBox.about(self, 'Warning!', "Water calculation has to be made at least once before using this functionality.")
+
+	def wat_solver_properties(self):
+
+		if self.wat_solver is None:
+			self.wat_solver_pop = WAT_SOLV_POP()
+			self.wat_solver_pop.setGeometry(QtCore.QRect(1000, 500, 100, 100))
+		self.wat_solver_pop.show()
 
 	def xen_solver_properties(self):
 
@@ -10126,6 +10143,49 @@ class COND_UNCERT_POP(QWidget):
 		elif b.text() == "Minimum bound of the model":
 			if b.isChecked() == True:
 				MATE.cond_uncert_method = '2'
+
+class WAT_SOLV_POP(QWidget):
+
+	def __init__(self):
+
+		QWidget.__init__(self)
+
+		wat_solv_layout = QFormLayout(self)
+
+		self.wat_search_btn = QPushButton('Water search reduction ratio')
+		self.wat_search_btn_txt = QLineEdit(str(MATE.solver_search_ratio))
+		self.wat_search_btn_txt.setEnabled(False)
+		self.wat_search_btn.clicked.connect(self.get_water_solver_search_ratio)
+
+		self.wat_search_incr_btn = QPushButton('Water search increment start (ppm)')
+		self.wat_search_incr_btn_txt = QLineEdit(str(MATE.water_search_increment_start))
+		self.wat_search_incr_btn_txt.setEnabled(False)
+		self.wat_search_incr_btn.clicked.connect(self.get_water_search_increment_start)
+
+		wat_solv_layout.addRow(self.wat_search_btn,self.wat_search_btn_txt)
+		wat_solv_layout.addRow(self.wat_search_incr_btn,self.wat_search_incr_btn_txt)
+
+	def get_water_solver_search_ratio(self):
+
+		text, ok = QInputDialog.getText(self, 'Enter the water solver reduction ratio', 'Enter the water solver reduction ratio')
+		if ok:
+			try:
+				float(text)
+				self.wat_search_btn_txt.setText(str(text))
+				MATE.solver_search_ratio = float(text)
+			except ValueError:
+				QMessageBox.about(self,"Warning!","Please enter a value that can be converted to floating number.")
+
+	def get_water_search_increment_start(self):
+
+		text, ok = QInputDialog.getText(self, 'Enter the water search increment start', 'Enter the water search increment start')
+		if ok:
+			try:
+				float(text)
+				self.wat_search_incr_btn_txt.setText(str(text))
+				MATE.water_search_increment_start = float(text)
+			except ValueError:
+				QMessageBox.about(self,"Warning!","Please enter a value that can be converted to floating number.")
 
 class XEN_SOLV_POP(QWidget):
 
