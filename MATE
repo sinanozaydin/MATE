@@ -4873,9 +4873,9 @@ class MATE(QMainWindow):
 			dash_found = False
 
 			for row in range(8,len(self.ModEM_dat_data)):
-			    if self.ModEM_dat_data[row][0] == '#' :
-			        limitlines = row-1
-			        dash_found = True
+				if self.ModEM_dat_data[row][0] == '#' :
+					limitlines = row-1
+					dash_found = True
 
 			if dash_found == False:
 				limitlines = len(self.ModEM_dat_data)
