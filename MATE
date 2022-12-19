@@ -217,6 +217,11 @@ class MATE(QMainWindow):
 		solidusSelectionButton.triggered.connect(self.select_solidus)
 		meltsolidusMenu.addAction(solidusSelectionButton)
 		self.melt_solidus_pop = None
+		
+		solidusPlotButton = QAction("&Other Solidus Plot",self)
+		solidusPlotButton.triggered.connect(self.select_plot_solidus)
+		meltsolidusMenu.addAction(solidusPlotButton)
+		self.melt_solidusPlot_pop = None
 
 		meltFracSelectionButton = QAction("&Melt Fraction Gradient",self)
 		meltFracSelectionButton.triggered.connect(self.select_melt_fraction_gradient)
@@ -534,7 +539,7 @@ class MATE(QMainWindow):
 		MATE.cond_uncert_method = '0'
 
 		MATE.waterplotlim_up = 600.0
-		MATE.geotherm_up = 1500.0
+		MATE.geotherm_up = 1800.0
 		MATE.geotherm_asked = False
 
 		MATE.heat_flow_search_start = 35
@@ -545,6 +550,21 @@ class MATE(QMainWindow):
 		MATE.res_profile_max_plot_list = []
 		MATE.res_profile_min_plot_list = []
 		MATE.z_depth_plot_list = []
+		
+		#Wallace_Green Oxidised solidus curve points in P-T(C)
+		self.Wallace_Green_1988_T = [1003.6,1015.5,1024.7,1034.8,1044.9,1053.1,1061.4,1066,1068.8,1069.8,1048.9,
+		1027.1,1008,991.61,980.71,972.56,972.61,972.67,971.82,971.87,973.75,978.34,986.6,993.04,999.47,1010.5,
+		1023.3,1033.4,1047.1,1063.6,1078.2,1090.1,1103.8,1113.9,1125.8,1135.9,1148.7,1164.3,1183.5]
+		self.Wallace_Green_1988_P = [0.019069,0.24061,0.45282,0.67428,0.90495,1.1539,1.3845,1.6242,1.8269,1.9098,
+		1.8996,1.9078,1.9253,1.943,1.9701,2.0526,2.1908,2.3473,2.513,2.6695,2.817,2.9553,3.1675,3.3611,3.564,3.7855,
+		4.0531,4.2838,4.5607,4.81,5.0593,5.2993,5.5578,5.7884,6.01,6.213,6.5083,6.8405,7.2005]
+		
+		MATE.solidus_wg_plot = False
+		
+		self.Foley_2022_T = [1011.6,1273.5]
+		self.Foley_2022_P = [1.4147,4.9454]
+		
+		MATE.solidus_foley_plot = False
 
 		self.color_list_csv = []
 
@@ -1482,7 +1502,14 @@ class MATE(QMainWindow):
 			self.melt_solidus_pop = SELECT_SOLIDUS_POP()
 			self.melt_solidus_pop.setGeometry(QtCore.QRect(200, 200, 300, 100))
 		self.melt_solidus_pop.show()
-
+		
+	def select_plot_solidus(self):
+		
+		if self.melt_solidusPlot_pop is None:
+			self.melt_solidusPlot_pop = SELECT_SOLIDUS_PLOT_POP()
+			self.melt_solidusPlot_pop.setGeometry(QtCore.QRect(200, 200, 300, 100))
+		self.melt_solidusPlot_pop.show()
+	
 	def select_melt_fraction_gradient(self):
 
 		if self.melt_frac_pop is None:
@@ -1995,8 +2022,8 @@ class MATE(QMainWindow):
 
 			self.p = np.cumsum(self.p) / 1e12 #Converting to GPA
 
-			self.dT_dF = eval(MATE.melt_fraction_functions[MATE.melt_fraction_function_selection]) #melt_fraction estimation gradient.
-
+			self.dT_dF = eval(MATE.melt_fraction_functions[MATE.melt_fraction_function_selection]) #melt_fraction estimation gradient from Hirschmann 2009
+			
 	def calculate_geotherm(self):
 
 		#Creating the depth array for calculating the 1-d steady state geotherm
@@ -2638,13 +2665,13 @@ class MATE(QMainWindow):
 
 		#Water fugacity calculation for pure water from the EOS of Pitzer and Sterner (1994), adapted after the python script of Tony Withers taken from his personal website.
 
-		coeff=[[0,0,0.24657688e6,0.51359951e2,0,0],[0,0,0.58638965e0,-0.28646939e-2,0.31375577e-4,0],
+		coeff = [[0,0,0.24657688e6,0.51359951e2,0,0],[0,0,0.58638965e0,-0.28646939e-2,0.31375577e-4,0],
 		[0,0,-0.62783840e1,0.14791599e-1,0.35779579e-3,0.15432925e-7],[0,0,0,-0.42719875e0,-0.16325155e-4,0],
 		[0,0,0.56654978e4,-0.16580167e2,0.76560762e-1,0],[0,0,0,0.10917883e0,0,0],
 		[0.38878656e13,-0.13494878e9,0.30916564e6,0.75591105e1,0,0],[0,0,-0.65537898e5,0.18810675e3,0,0],
 		[-0.14182435e14,0.18165390e9,-0.19769068e6,-0.23530318e2,0,0],[0,0,0.92093375e5,0.12246777e3,0,0]]
 
-		c=[]
+		c = []
 
 		def PSeos(volume, temperature, targetP):  # cc/mol, Kelvins, bars
 			R=8314510  # Pa.cc/K/mol
@@ -2652,36 +2679,36 @@ class MATE(QMainWindow):
 
 			for i in range(10):
 					c.insert(i,coeff[i][0]*temperature**-4+coeff[i][1]*temperature**-2
-			                +coeff[i][2]*temperature**-1+coeff[i][3]
-			                +coeff[i][4]*temperature+coeff[i][5]*temperature**2)
+							+coeff[i][2]*temperature**-1+coeff[i][3]
+							+coeff[i][4]*temperature+coeff[i][5]*temperature**2)
 
-			pressure=(den+c[0]*den**2-den**2*((c[2]+2*c[3]*den+3*c[4]*den**2
-		            +4*c[5]*den**3)/(c[1]+c[2]*den+c[3]*den**2+c[4]*den**3
-		            +c[5]*den**4)**2)+c[6]*den**2*math.exp(-c[7]*den)
-		            +c[8]*den**2*math.exp(-c[9]*den))*R*temperature/1e5
+			pressure = (den+c[0]*den**2-den**2*((c[2]+2*c[3]*den+3*c[4]*den**2
+					+4*c[5]*den**3)/(c[1]+c[2]*den+c[3]*den**2+c[4]*den**3
+					+c[5]*den**4)**2)+c[6]*den**2*math.exp(-c[7]*den)
+					+c[8]*den**2*math.exp(-c[9]*den))*R*temperature/1e5
 			return pressure-targetP  # bars
 
 		def PSvolume(pressure, temperature):  # bars, Kelvins
 
-			volume=optimize.root(PSeos, 10, args = (temperature, pressure))
+			volume = optimize.root(PSeos, 10, args = (temperature, pressure))
 			return volume.x
 
 		def PSfugacity(pressure, temperature):  # bars, Kelvins
 
 			for i in range(10):
 					c.insert(i,coeff[i][0]*temperature**-4+coeff[i][1]*temperature**-2
-			                +coeff[i][2]*temperature**-1+coeff[i][3]
-			                +coeff[i][4]*temperature+coeff[i][5]*temperature**2)
+							+coeff[i][2]*temperature**-1+coeff[i][3]
+							+coeff[i][4]*temperature+coeff[i][5]*temperature**2)
 
 			volume=PSvolume(pressure, temperature)
-			R=8314510  # Pa.cc/K/mol
-			den=1/volume  # mol/cc
-			fug=math.exp(math.log(den)+c[0]*den+(1/(c[1]+c[2]*den+c[3]*den**2
-		                +c[4]*den**3+c[5]*den**4)-1/c[1])
-		                -c[6]/c[7]*(math.exp(-c[7]*den)-1)
-		                -c[8]/c[9]*(math.exp(-c[9]*den)-1)
-		                +pressure*1e5/(den*R*temperature)
-		                +math.log(R*temperature)-1)/1e5
+			R = 8314510  # Pa.cc/K/mol
+			den = 1/volume  # mol/cc
+			fug = math.exp(math.log(den)+c[0]*den+(1/(c[1]+c[2]*den+c[3]*den**2
+						+c[4]*den**3+c[5]*den**4)-1/c[1])
+						-c[6]/c[7]*(math.exp(-c[7]*den)-1)
+						-c[8]/c[9]*(math.exp(-c[9]*den)-1)
+						+pressure*1e5/(den*R*temperature)
+						+math.log(R*temperature)-1)/1e5
 			return fug  # bars
 
 		self.h2o_fug = np.zeros(len(self.T))
@@ -5346,6 +5373,34 @@ class MATE(QMainWindow):
 		if self.solidus_carbon_calculated == True:
 
 			self.ax3.plot(self.T_carbon_solidus - 273.15, self.depth/1e3, color = '#1d9a29',linewidth = 2, linestyle = '--', label = 'Carbonated-Wet Mantle Solidus')
+			
+		if MATE.solidus_wg_plot == True:
+		
+			self.Wallace_Green_1988_depth = []
+			
+			for i in range(0,len(self.Wallace_Green_1988_P)):
+				idx_wg, = np.where(self.p == self.find_nearest(self.p,self.Wallace_Green_1988_P[i]))
+				idx_wg = int(idx_wg)
+				
+				self.Wallace_Green_1988_depth.append(self.depth[idx_wg])
+				
+			self.Wallace_Green_1988_depth = np.array(self.Wallace_Green_1988_depth)
+			
+			self.ax3.plot(self.Wallace_Green_1988_T, self.Wallace_Green_1988_depth/1e3, color = '#730eaa',linewidth = 2, linestyle = '--', label = 'Wallace & Green (1988)')
+			
+		if MATE.solidus_foley_plot == True:
+		
+			self.Foley_2022_depth = []
+			
+			for i in range(0,len(self.Foley_2022_P)):
+				idx_f, = np.where(self.p == self.find_nearest(self.p,self.Foley_2022_P[i]))
+				idx_f = int(idx_f)
+				
+				self.Foley_2022_depth.append(self.depth[idx_f])
+				
+			self.Foley_2022_depth = np.array(self.Foley_2022_depth)
+			
+			self.ax3.plot(self.Foley_2022_T, self.Foley_2022_depth/1e3, color = '#fc7f03',linewidth = 2, linestyle = '--', label = 'Foley et al. (2022)')
 
 		if method == 'draw':
 			self.canvas.draw()
@@ -6511,6 +6566,9 @@ class MATE(QMainWindow):
 				cond_lines = ['#\n']
 				cond_lines.append('Depth(Km),T(K),P(GPa),sigma_ol,sigma_opx,sigma_cpx,sigma_gt,sigma_phlg,sigma_amp,sigma_cond,sigma_melt,sigma_bulk,sigma_bulk_max,sigma_bulk_min\n')
 
+				solidus_lines = ['#\n']
+				solidus_lines.append('Depth(Km),T(K),P(GPa),T_Dry_Solidus(K),T_Water_Solidus(K),T_Carbon_Solidus(K)\n')
+				
 				for i in range(self.idx_moho,len(self.depth)):
 					comp_lines.append('  ' + str('%4.3f' %  float(self.depth[i] / 1000.0)) + ',' +\
 					str('%4.3f' %  self.T[i]) + ',' +\
@@ -6577,7 +6635,14 @@ class MATE(QMainWindow):
 					str('%1.5E' %  self.bulk_cond[i]) + ',' +\
 					str('%1.5E' %  self.bulk_cond_max[i]) + ',' +\
 					str('%1.5E' %  self.bulk_cond_min[i]) + '\n')
-
+					
+					solidus_lines.append('  ' + str('%4.3f' %  float(self.depth[i] / 1000.0)) + ',' +\
+					str('%4.3f' %  self.T[i]) + ',' +\
+					str('%4.3f' %  self.p[i]) + ',' +\
+					str('%4.3f' %  self.T_dry_solidus[i]) + ',' +\
+					str('%4.3f' %  self.T_wet_solidus[i]) + ',' +\
+					str('%4.3f' %  self.T_carbon_solidus[i]) + '\n')
+					
 
 				self.write_file_save_name = str(self.write_file_save_name[0])
 				self.dir_path_write = self.write_file_save_name[:self.write_file_save_name.rfind('/')+1]
@@ -6594,6 +6659,10 @@ class MATE(QMainWindow):
 				filesave_cond = open(os.path.join(self.dir_path_write, (self.write_file_name+'_cond.csv')) ,'w')
 				filesave_cond.writelines(cond_lines)
 				filesave_cond.close()
+				
+				filesave_solidus = open(os.path.join(self.dir_path_write, (self.write_file_name+'_solidus.csv')) ,'w')
+				filesave_solidus.writelines(solidus_lines)
+				filesave_solidus.close()
 
 				QMessageBox.about(self, 'Hey sup!', "Files are saved at the location " + self.dir_path_write)
 
@@ -9829,6 +9898,71 @@ class SELECT_SOLIDUS_POP(QWidget):
 			self.solidus_carbon_selection_text_box.setText(item)
 
 		MATE.solidus_carbon_model_selection = MATE.solidus_carbon_model_names.index(item)
+		
+class SELECT_SOLIDUS_PLOT_POP(QWidget):
+
+	def __init__(self):
+
+		QWidget.__init__(self)
+
+		solidus_plot_layout = QFormLayout(self)
+					
+		bg1 = QButtonGroup(self)
+		
+		self.wg_1988_label = QLabel(self)
+		self.wg_1988_label.setText('Plot Wallace & Green (1988) Peridotite Oxidised Solidus?')
+		self.wg_1988_btn_True = QRadioButton("True")
+		self.wg_1988_btn_True.toggled.connect(lambda:self.btnstate_wg1988_inp(self.wg_1988_btn_True))
+		self.wg_1988_btn_False = QRadioButton("False")
+		self.wg_1988_btn_False.toggled.connect(lambda:self.btnstate_wg1988_inp(self.wg_1988_btn_False))
+		
+		if MATE.solidus_wg_plot == True:
+			self.wg_1988_btn_True.setChecked(True)
+		elif MATE.solidus_wg_plot == False:
+			self.wg_1988_btn_False.setChecked(True)
+			
+		bg2 = QButtonGroup(self)
+		
+		self.foley_2022_label = QLabel(self)
+		self.foley_2022_label.setText('Plot Foley et al. (2022) Hydrous Pyroxenite Solidus?')
+		self.foley_2022_btn_True = QRadioButton("True")
+		self.foley_2022_btn_True.toggled.connect(lambda:self.btnstate_foley2022_inp(self.foley_2022_btn_True))
+		self.foley_2022_btn_False = QRadioButton("False")
+		self.foley_2022_btn_False.toggled.connect(lambda:self.btnstate_foley2022_inp(self.foley_2022_btn_False))
+		
+		if MATE.solidus_foley_plot == True:
+			self.foley_2022_btn_True.setChecked(True)
+		elif MATE.solidus_foley_plot == False:
+			self.foley_2022_btn_False.setChecked(True)
+					
+		bg1.addButton(self.wg_1988_btn_True)
+		bg1.addButton(self.wg_1988_btn_False)
+		
+		bg2.addButton(self.foley_2022_btn_True)
+		bg2.addButton(self.foley_2022_btn_False)
+		
+		solidus_plot_layout.addRow(self.wg_1988_label)
+		solidus_plot_layout.addRow(self.wg_1988_btn_True, self.wg_1988_btn_False)
+		solidus_plot_layout.addRow(self.foley_2022_label)
+		solidus_plot_layout.addRow(self.foley_2022_btn_True, self.foley_2022_btn_False)
+
+	def btnstate_wg1988_inp(self,b):
+
+		if b.text() == "True":
+			if b.isChecked() == True:
+				MATE.solidus_wg_plot = True
+		elif b.text() == "False":
+			if b.isChecked() == True:
+				MATE.solidus_wg_plot = False
+				
+	def btnstate_foley2022_inp(self,b):
+
+		if b.text() == "True":
+			if b.isChecked() == True:
+				MATE.solidus_foley_plot = True
+		elif b.text() == "False":
+			if b.isChecked() == True:
+				MATE.solidus_foley_plot = False
 
 class SELECT_MELT_FRAC_POP(QWidget):
 
