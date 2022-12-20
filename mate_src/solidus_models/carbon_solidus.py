@@ -10,7 +10,7 @@ def Dasgupta2013_CarbonatedPeridotite(T, T_solidus, P, CO2_Melt):
 
     delta_T = np.zeros(len(T))
 
-    for i in range(0,len(P)):
+    for i in range(0,len(T)):
 
         if P[i] <= 2.5:
             a = 19.21
