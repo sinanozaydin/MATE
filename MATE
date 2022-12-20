@@ -2389,9 +2389,12 @@ class MATE(QMainWindow):
 					(self.gt_frac_wt * MATE.d_melt_gt)
 
 				MATE.melt_partitions_calculated = True
-
-			self.calculate_wet_solidus(method = method, idx = idx_node)
-			self.calculate_carbonated_solidus(method = method, idx = idx_node)
+			
+			if self.solidus_wet_calculated == False:
+				self.calculate_wet_solidus(method = method, idx = idx_node)
+			
+			if self.solidus_carbon_calculated == False:
+				self.calculate_carbonated_solidus(method = method, idx = idx_node)
 
 			self.melt_h2o[idx_node] = self.calculate_melt_water(h2o_bulk = self.h2o[idx_node], melt_mass_frac = self.melt_mass_frac[idx_node], d_per_melt = self.d_per_melt[idx_node])
 
@@ -2730,9 +2733,9 @@ class MATE(QMainWindow):
 		if np.mean(self.h2o[self.idx_moho:]) != 0.0:
 			if MATE.solidus_wet_model_type[MATE.solidus_wet_model_selection] == 0:
 				if method == 'array':
-					self.T_wet_solidus = eval(MATE.solidus_wet_model_names[MATE.solidus_wet_model_selection] + '(T = self.T, T_solidus = self.T_dry_solidus, P = self.p, Melt_Mass_Frac = self.melt_mass_frac, H2O = self.h2o, D_per_melt = self.d_per_melt, cpx_frac = self.cpx_frac)')
+					self.T_wet_solidus = eval(MATE.solidus_wet_model_names[MATE.solidus_wet_model_selection] + '(method = method, T = self.T, T_solidus = self.T_dry_solidus, P = self.p, Melt_Mass_Frac = self.melt_mass_frac, H2O = self.h2o, D_per_melt = self.d_per_melt, cpx_frac = self.cpx_frac)')
 				elif method == 'index':
-					self.T_wet_solidus[idx] = eval(MATE.solidus_wet_model_names[MATE.solidus_wet_model_selection] + '(T = self.T[idx], T_solidus = self.T_dry_solidus[idx], P = self.p[idx], Melt_Mass_Frac = self.melt_mass_frac[idx], H2O = self.h2o[idx], D_per_melt = self.d_per_melt[idx], cpx_frac = self.cpx_frac[idx])')
+					self.T_wet_solidus[idx] = eval(MATE.solidus_wet_model_names[MATE.solidus_wet_model_selection] + '(method = method, T = self.T, T_solidus = self.T_dry_solidus[idx], P = self.p[idx], Melt_Mass_Frac = self.melt_mass_frac[idx], H2O = self.h2o[idx], D_per_melt = self.d_per_melt[idx], cpx_frac = self.cpx_frac[idx])')
 				self.solidus_wet_calculated = True
 
 	def calculate_carbonated_solidus(self, method, idx = None):
@@ -2742,7 +2745,7 @@ class MATE(QMainWindow):
 				if method == 'array':
 					self.T_carbon_solidus = eval(MATE.solidus_carbon_model_names[MATE.solidus_carbon_model_selection] + '(T = self.T, T_solidus = self.T_wet_solidus, P = self.p, CO2_Melt = self.co2)')
 				elif method == 'index':
-					self.T_carbon_solidus[idx] = eval(MATE.solidus_carbon_model_names[MATE.solidus_carbon_model_selection] + '(T = self.T[idx], T_solidus = self.T_wet_solidus[idx], P = self.p[idx], CO2_Melt = self.co2[idx])')
+					self.T_carbon_solidus[idx] = eval(MATE.solidus_carbon_model_names[MATE.solidus_carbon_model_selection] + '(T = self.T, T_solidus = self.T_wet_solidus[idx], P = self.p[idx], CO2_Melt = self.co2[idx])')
 				self.solidus_carbon_calculated = True
 
 	def calculate_melt_water(self, h2o_bulk, melt_mass_frac, d_per_melt):
@@ -6237,6 +6240,8 @@ class MATE(QMainWindow):
 						self.plot_composition(method = 'draw')
 						if MATE.melt_method == '0':
 							self.plot_melt_frac(method = 'draw')
+							self.solidus_wet_calculated = False
+							self.solidus_carbon_calculated = False
 
 						self.drawn = self.drawn + 1
 						self.drawn_11 = self.drawn_11 + 1
@@ -6310,6 +6315,8 @@ class MATE(QMainWindow):
 		self.melt_h2o_min_list = []
 		self.plt_water_btn.setStyleSheet("QPushButton {min-width: 10em; font: bold; font-size: 9pt;background-color: #93db88}")
 
+		self.solidus_wet_calculated = False
+		self.solidus_carbon_calculated = False
 		self.water_inverted = False
 
 	def plot_conductivity_button(self):
@@ -6569,6 +6576,13 @@ class MATE(QMainWindow):
 				solidus_lines = ['#\n']
 				solidus_lines.append('Depth(Km),T(K),P(GPa),T_Dry_Solidus(K),T_Water_Solidus(K),T_Carbon_Solidus(K)\n')
 				
+				if self.solidus_dry_calculated == False:
+					self.T_dry_solidus = np.zeros(len(self.T))
+				if self.solidus_wet_calculated == False:
+					self.T_wet_solidus = np.zeros(len(self.T))
+				if self.solidus_carbon_calculated == False:
+					self.T_carbon_solidus = np.zeros(len(self.T))
+	
 				for i in range(self.idx_moho,len(self.depth)):
 					comp_lines.append('  ' + str('%4.3f' %  float(self.depth[i] / 1000.0)) + ',' +\
 					str('%4.3f' %  self.T[i]) + ',' +\
@@ -6635,7 +6649,7 @@ class MATE(QMainWindow):
 					str('%1.5E' %  self.bulk_cond[i]) + ',' +\
 					str('%1.5E' %  self.bulk_cond_max[i]) + ',' +\
 					str('%1.5E' %  self.bulk_cond_min[i]) + '\n')
-					
+										
 					solidus_lines.append('  ' + str('%4.3f' %  float(self.depth[i] / 1000.0)) + ',' +\
 					str('%4.3f' %  self.T[i]) + ',' +\
 					str('%4.3f' %  self.p[i]) + ',' +\
@@ -6712,7 +6726,9 @@ class MATE(QMainWindow):
 					calc_count = 3
 				else:
 					calc_count = 1
-
+				
+				self.solidus_wet_calculated = False
+				self.solidus_carbon_calculated = False
 				QMessageBox.about(self, 'Info', "Solving for water content at each layer. Watch Calc. Progress bar for the process. Disregard the program not responding popups if there is any.")
 				self.progressBar.setMinimum(self.idx_moho)
 				self.progressBar.setMaximum(len(self.depth))
@@ -6932,10 +6948,13 @@ class MATE(QMainWindow):
 
 		else:
 
-			QMessageBox.about(self, 'Warning!', "Thermobarometry data has to be imported for this function to work.")
+			QMessageBox.about(self, 'Warning!', "Thermobarometry or some form of thermal input data has to be imported for this function to work.")
 
 	def solve_for_melt_fraction(self):
-
+		
+		QMessageBox.about(self, 'Warning!', "This function is not available to use yet! Check for updates if you want to use it in the future.")
+		
+		"""
 		if self.water_existence == True:
 
 			self.melt_mass_frac = self.calculate_melt_fraction_iterative(method = 'array', sol_idx = None)
@@ -6954,7 +6973,7 @@ class MATE(QMainWindow):
 		else:
 
 			QMessageBox.about(self, 'Warning!', "Water calculation has to be made at least once before using this functionality.")
-
+		"""
 	def wat_solver_properties(self):
 
 		if self.wat_solver is None:

@@ -31,6 +31,6 @@ def Dasgupta2013_CarbonatedPeridotite(T, T_solidus, P, CO2_Melt):
 
         delta_T[i] = (a * CO2_Melt[i]) + (b * np.log((1e2 - (c * CO2_Melt[i])) / 1e2))
 
-    T_solidus = T_solidus - delta_T
+    T_carbon_solidus = T_solidus - delta_T
 
-    return T_solidus
+    return T_carbon_solidus
