@@ -5371,11 +5371,11 @@ class MATE(QMainWindow):
 
 		if self.solidus_wet_calculated == True:
 
-			self.ax3.plot(self.T_wet_solidus - 273.15, self.depth/1e3, color = '#1e7ab5',linewidth = 2, linestyle = '--', label = 'Wet Mantle Solidus')
+			self.ax3.plot(self.T_wet_solidus - 273.15, self.depth/1e3, color = '#1e7ab5',linewidth = 2, linestyle = '-.', label = 'Wet Mantle Solidus')
 
 		if self.solidus_carbon_calculated == True:
 
-			self.ax3.plot(self.T_carbon_solidus - 273.15, self.depth/1e3, color = '#1d9a29',linewidth = 2, linestyle = '--', label = 'Carbonated-Wet Mantle Solidus')
+			self.ax3.plot(self.T_carbon_solidus - 273.15, self.depth/1e3, color = '#1d9a29',linewidth = 2, linestyle = ':', label = 'Carbonated-Wet Mantle Solidus')
 			
 		if MATE.solidus_wg_plot == True:
 		
