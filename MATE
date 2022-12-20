@@ -5190,7 +5190,7 @@ class MATE(QMainWindow):
 
 		elif method == 'save':
 
-			self.ax0.legend(fontsize = fontsize_labels, bbox_to_anchor=(0.5, 1.14), borderaxespad=0.1)
+			#self.ax0.legend(fontsize = fontsize_labels, bbox_to_anchor=(0.5, 1.14), borderaxespad=0.1)
 			plt.savefig(self.png_file_name + '_composition.png',dpi = 300,bbox_inches = "tight")
 			os.system(self.commandmv + ' ' + self.png_file_name + '_composition.png ' + self.dir_path)
 
@@ -5408,7 +5408,7 @@ class MATE(QMainWindow):
 		if method == 'draw':
 			self.canvas.draw()
 		elif method == 'save':
-			self.ax3.legend(fontsize = fontsize_labels, bbox_to_anchor=(0.8, 1.14), borderaxespad=0.1)
+			#self.ax3.legend(fontsize = fontsize_labels, bbox_to_anchor=(0.8, 1.14), borderaxespad=0.1)
 			plt.savefig(self.png_file_name + '_geotherm.png',dpi = 300,bbox_inches = "tight")
 			os.system(self.commandmv + ' ' + self.png_file_name + '_geotherm.png ' + self.dir_path)
 
@@ -5682,7 +5682,7 @@ class MATE(QMainWindow):
 			self.ax4.set_yticks([])
 		if method == 'save':
 			self.ax4.set_ylabel(r'$Depth \, (km)$',fontsize = fontsize_labels)
-			self.ax4.legend(fontsize = fontsize_labels,bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.1,handles = handle_list)
+			#self.ax4.legend(fontsize = fontsize_labels,bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.1,handles = handle_list)
 			for tick in self.ax4.yaxis.get_major_ticks():
 				tick.label.set_fontsize(fontsize_labels)
 
@@ -5813,7 +5813,7 @@ class MATE(QMainWindow):
 
 		if method == 'save':
 			self.ax5.set_ylabel(r'$Depth \, (km)$',fontsize = 10)
-			self.ax5.legend(fontsize = fontsize_labels,bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.1)
+			#self.ax5.legend(fontsize = fontsize_labels,bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.1)
 			for tick in self.ax5.yaxis.get_major_ticks():
 				tick.label.set_fontsize(fontsize_labels)
 
