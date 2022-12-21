@@ -565,7 +565,16 @@ class MATE(QMainWindow):
 		self.Foley_2022_P = [1.4147,4.9454]
 		
 		MATE.solidus_foley_plot = False
-
+		
+		self.Green_2010_T = [1140,1093.8,1053.8,1030.8,1010.8,996.92,989.23,984.62,978.46,976.92,970.77,970.77,975.38,
+		980,987.69,996.92,1004.6,1020,1033.8,1047.7,1069.2,1092.3,1110.8,1140,1167.7,1195.4,1223.1,1238.5,1256.9,1278.5,
+		1300,1324.6,1350.8,1376.9,1398.5,1407.7]
+		self.Green_2010_P = [0.02381,0.095238,0.16667,0.2381,0.36508,0.48413,0.66667,0.80159,0.93651,1.0714,1.254,1.4841,
+		1.7143,1.9048,2.1032,2.2619,2.3968,2.5714,2.7381,2.8889,3.0794,3.246,3.3968,3.5873,3.7698,3.9524,4.1349,4.2698,
+		4.4444,4.6508,4.873,5.1905,5.5238,5.8968,6.2619,6.4683]
+		
+		MATE.solidus_green2010_plot = False
+		
 		self.color_list_csv = []
 
 		MATE.csv_file_selection = 0
@@ -1170,7 +1179,7 @@ class MATE(QMainWindow):
 		self.d_melt_ol_function = []
 		self.d_melt_ol_function_2 = []
 
-		for i in range(1,len(self.pl_data)):
+		for i in range(1,len(self.ol_melt_data)):
 
 			MATE.d_melt_ol_items.append("Type " + self.ol_melt_data[i][1] + ' - ' +self.ol_melt_data[i][-1])
 			MATE.d_melt_ol_type.append(self.ol_melt_data[i][1])
@@ -1190,7 +1199,7 @@ class MATE(QMainWindow):
 		self.d_melt_opx_function_2 = []
 		self.d_melt_opx_change = []
 
-		for i in range(1,len(self.pl_data)):
+		for i in range(1,len(self.opx_melt_data)):
 
 			MATE.d_melt_opx_items.append("Type " + self.opx_melt_data[i][1] + ' - ' +self.opx_melt_data[i][-1])
 			MATE.d_melt_opx_type.append(self.opx_melt_data[i][1])
@@ -1211,7 +1220,7 @@ class MATE(QMainWindow):
 		self.d_melt_cpx_function_2 = []
 		self.d_melt_cpx_change = []
 
-		for i in range(1,len(self.pl_data)):
+		for i in range(1,len(self.cpx_melt_data)):
 
 			MATE.d_melt_cpx_items.append("Type " + self.cpx_melt_data[i][1] + ' - ' +self.cpx_melt_data[i][-1])
 			MATE.d_melt_cpx_type.append(self.cpx_melt_data[i][1])
@@ -1231,7 +1240,7 @@ class MATE(QMainWindow):
 		self.d_melt_gt_function = []
 		self.d_melt_gt_function_2 = []
 
-		for i in range(1,len(self.pl_data)):
+		for i in range(1,len(self.gt_melt_data)):
 
 			MATE.d_melt_gt_items.append("Type " + self.gt_melt_data[i][1] + ' - ' +self.gt_melt_data[i][-1])
 			MATE.d_melt_gt_type.append(self.gt_melt_data[i][1])
@@ -2745,7 +2754,7 @@ class MATE(QMainWindow):
 				if method == 'array':
 					self.T_carbon_solidus = eval(MATE.solidus_carbon_model_names[MATE.solidus_carbon_model_selection] + '(T = self.T, T_solidus = self.T_wet_solidus, P = self.p, CO2_Melt = self.co2)')
 				elif method == 'index':
-					self.T_carbon_solidus[idx] = eval(MATE.solidus_carbon_model_names[MATE.solidus_carbon_model_selection] + '(T = self.T, T_solidus = self.T_wet_solidus[idx], P = self.p[idx], CO2_Melt = self.co2[idx])')
+					self.T_carbon_solidus[idx] = eval(MATE.solidus_carbon_model_names[MATE.solidus_carbon_model_selection] + '(T = self.T, T_solidus = self.T_wet_solidus[idx], P = self.p, CO2_Melt = self.co2[idx])')
 				self.solidus_carbon_calculated = True
 
 	def calculate_melt_water(self, h2o_bulk, melt_mass_frac, d_per_melt):
@@ -5404,6 +5413,20 @@ class MATE(QMainWindow):
 			self.Foley_2022_depth = np.array(self.Foley_2022_depth)
 			
 			self.ax3.plot(self.Foley_2022_T, self.Foley_2022_depth/1e3, color = '#fc7f03',linewidth = 2, linestyle = '--', label = 'Foley et al. (2022)')
+			
+		if MATE.solidus_green2010_plot == True:
+		
+			self.Green_2010_Depth = []
+			
+			for i in range(0,len(self.Green_2010_P)):
+				idx_g, = np.where(self.p == self.find_nearest(self.p,self.Green_2010_P[i]))
+				idx_g = int(idx_g)
+				
+				self.Green_2010_Depth.append(self.depth[idx_g])
+				
+			self.Green_2010_Depth = np.array(self.Green_2010_Depth)
+			
+			self.ax3.plot(self.Green_2010_T, self.Green_2010_Depth/1e3, color = '#3264a8',linewidth = 2, linestyle = '--', label = 'Green et al. (2010)')
 
 		if method == 'draw':
 			self.canvas.draw()
@@ -7911,76 +7934,63 @@ class PART_POP(QWidget):
 
 	def get_ol_melt(self):
 
-		if MATE.melt_method == '0':
+		
 
-			item, ok = QInputDialog.getItem(self, "select input dialog",
-				"Partitioning method", MATE.d_melt_ol_items, 0, False)
+		item, ok = QInputDialog.getItem(self, "select input dialog",
+			"Partitioning method", MATE.d_melt_ol_items, 0, False)
 
-			if ok and item:
-				self.ol_melt_textbox.setText(item)
+		if ok and item:
+			self.ol_melt_textbox.setText(item)
 
-			MATE.ol_melt_display = item
+		MATE.ol_melt_display = item
 
-			MATE.ol_melt_part_select = int(MATE.d_melt_ol_items.index(item))
-		else:
-			QMessageBox.about(self, "Info on this","In order to select melt water partitoning models you first have to enter some melt!")
+		MATE.ol_melt_part_select = int(MATE.d_melt_ol_items.index(item))
+		
 
 	def get_opx_melt(self):
 
-		if MATE.melt_method == '0':
 
-			item, ok = QInputDialog.getItem(self, "select input dialog",
-				"Partitioning method", MATE.d_melt_opx_items, 0, False)
 
-			if ok and item:
-				self.opx_melt_textbox.setText(item)
+		item, ok = QInputDialog.getItem(self, "select input dialog",
+			"Partitioning method", MATE.d_melt_opx_items, 0, False)
 
-			MATE.opx_melt_display = item
+		if ok and item:
+			self.opx_melt_textbox.setText(item)
 
-			MATE.opx_melt_part_select = int(MATE.d_melt_opx_items.index(item))
+		MATE.opx_melt_display = item
 
-			MATE.melt_partitions_calculated = False
+		MATE.opx_melt_part_select = int(MATE.d_melt_opx_items.index(item))
 
-		else:
-			QMessageBox.about(self, "Info on this","In order to select melt water partitoning models you first have to enter some melt!")
+		MATE.melt_partitions_calculated = False
+
 
 	def get_cpx_melt(self):
 
-		if MATE.melt_method == '0':
+		item, ok = QInputDialog.getItem(self, "select input dialog",
+			"Partitioning method", MATE.d_melt_cpx_items, 0, False)
 
-			item, ok = QInputDialog.getItem(self, "select input dialog",
-				"Partitioning method", MATE.d_melt_cpx_items, 0, False)
+		if ok and item:
+			self.cpx_melt_textbox.setText(item)
 
-			if ok and item:
-				self.cpx_melt_textbox.setText(item)
+		MATE.cpx_melt_display = item
 
-			MATE.cpx_melt_display = item
+		MATE.cpx_melt_part_select = int(MATE.d_melt_cpx_items.index(item))
 
-			MATE.cpx_melt_part_select = int(MATE.d_melt_cpx_items.index(item))
-
-			MATE.melt_partitions_calculated = False
-
-		else:
-			QMessageBox.about(self, "Info on this","In order to select melt water partitoning models you first have to enter some melt!")
+		MATE.melt_partitions_calculated = False
 
 	def get_gt_melt(self):
 
-		if MATE.melt_method == '0':
+		item, ok = QInputDialog.getItem(self, "select input dialog",
+			"Partitioning method", MATE.d_melt_gt_items, 0, False)
 
-			item, ok = QInputDialog.getItem(self, "select input dialog",
-				"Partitioning method", MATE.d_melt_gt_items, 0, False)
+		if ok and item:
+			self.gt_melt_textbox.setText(item)
 
-			if ok and item:
-				self.gt_melt_textbox.setText(item)
+		MATE.gt_melt_display = item
 
-			MATE.gt_melt_display = item
+		MATE.gt_melt_part_select = int(MATE.d_melt_gt_items.index(item))
 
-			MATE.gt_melt_part_select = int(MATE.d_melt_gt_items.index(item))
-
-			MATE.melt_partitions_calculated = False
-
-		else:
-			QMessageBox.about(self, "Info on this","In order to select melt water partitoning models you first have to enter some melt!")
+		MATE.melt_partitions_calculated = False
 
 	def open_px_window(self):
 
@@ -8575,35 +8585,23 @@ class COND_POP(QWidget):
 
 	def amp_cond_get(self):
 
-		if MATE.amp_method == '0':
+		item, ok = QInputDialog.getItem(self, "select input dialog",
+			"Conductivity model", MATE.name[4], 0, False)
 
-			item, ok = QInputDialog.getItem(self, "select input dialog",
-				"Conductivity model", MATE.name[4], 0, False)
+		if ok and item:
+			self.amp_cond_text_box.setText(item)
 
-			if ok and item:
-				self.amp_cond_text_box.setText(item)
-
-			MATE.amp_cond_selection = MATE.name[4].index(item)
-
-		else:
-
-			QMessageBox.about(self, "Info on this","In order to select amphibole conductivity model you first have to activate its entry from Composition Setup section")
+		MATE.amp_cond_selection = MATE.name[4].index(item)
 
 	def pl_cond_get(self):
 
-		if MATE.pl_method == '0':
+		item, ok = QInputDialog.getItem(self, "select input dialog",
+			"Conductivity model", MATE.name[5], 0, False)
 
-			item, ok = QInputDialog.getItem(self, "select input dialog",
-				"Conductivity model", MATE.name[5], 0, False)
+		if ok and item:
+			self.pl_cond_text_box.setText(item)
 
-			if ok and item:
-				self.pl_cond_text_box.setText(item)
-
-			MATE.pl_cond_selection = MATE.name[5].index(item)
-
-		else:
-
-			QMessageBox.about(self, "Info on this","In order to select phlogopite conductivity model you first have to activate its entry from Composition Setup section")
+		MATE.pl_cond_selection = MATE.name[5].index(item)
 
 	def sp_chr_cond_get(self):
 
@@ -9953,6 +9951,21 @@ class SELECT_SOLIDUS_PLOT_POP(QWidget):
 			self.foley_2022_btn_True.setChecked(True)
 		elif MATE.solidus_foley_plot == False:
 			self.foley_2022_btn_False.setChecked(True)
+			
+			
+		bg3 = QButtonGroup(self)
+		
+		self.green_2010_label = QLabel(self)
+		self.green_2010_label.setText('Plot Green et al. (2010) Hydrous Peridotite Solidus (180 ppm wt H2O)?')
+		self.green_2010_btn_True = QRadioButton("True")
+		self.green_2010_btn_True.toggled.connect(lambda:self.btnstate_green2010_inp(self.green_2010_btn_True))
+		self.green_2010_btn_False = QRadioButton("False")
+		self.green_2010_btn_False.toggled.connect(lambda:self.btnstate_green2010_inp(self.green_2010_btn_False))
+		
+		if MATE.solidus_green2010_plot == True:
+			self.green_2010_btn_True.setChecked(True)
+		elif MATE.solidus_green2010_plot == False:
+			self.green_2010_btn_False.setChecked(True)
 					
 		bg1.addButton(self.wg_1988_btn_True)
 		bg1.addButton(self.wg_1988_btn_False)
@@ -9960,10 +9973,15 @@ class SELECT_SOLIDUS_PLOT_POP(QWidget):
 		bg2.addButton(self.foley_2022_btn_True)
 		bg2.addButton(self.foley_2022_btn_False)
 		
+		bg3.addButton(self.green_2010_btn_True)
+		bg3.addButton(self.green_2010_btn_False)
+		
 		solidus_plot_layout.addRow(self.wg_1988_label)
 		solidus_plot_layout.addRow(self.wg_1988_btn_True, self.wg_1988_btn_False)
 		solidus_plot_layout.addRow(self.foley_2022_label)
 		solidus_plot_layout.addRow(self.foley_2022_btn_True, self.foley_2022_btn_False)
+		solidus_plot_layout.addRow(self.green_2010_label)
+		solidus_plot_layout.addRow(self.green_2010_btn_True, self.green_2010_btn_False)
 
 	def btnstate_wg1988_inp(self,b):
 
@@ -9982,6 +10000,15 @@ class SELECT_SOLIDUS_PLOT_POP(QWidget):
 		elif b.text() == "False":
 			if b.isChecked() == True:
 				MATE.solidus_foley_plot = False
+				
+	def btnstate_green2010_inp(self,b):
+
+		if b.text() == "True":
+			if b.isChecked() == True:
+				MATE.solidus_green2010_plot = True
+		elif b.text() == "False":
+			if b.isChecked() == True:
+				MATE.solidus_green2010_plot = False
 
 class SELECT_MELT_FRAC_POP(QWidget):
 
