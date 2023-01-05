@@ -9,6 +9,8 @@ Who would be interested in using this program?
 - Magnetotelluricists who wants to make interpretations on their models.
 - Petrologists who conduct high-pressure and temperature conductivity and/or hydrogen diffusion studies to make comparisons with real data and other studies.
 
+We also suggest that the users should keep using an up-to-date version of the software to exploit the newer models included and benefit from the functionality updates made on the software.
+
 How to cite
 ========== 
 - Özaydın, S., & Selway, K. (2020). MATE: An analysis tool for the interpretation of magnetotelluric models of the mantle. Geochemistry, Geophysics, Geosystems, 21, e2020GC009126. https://doi.org/10.1029/2020GC009126 
