@@ -25,7 +25,7 @@ class check_T_model(object):
 			print('2. MT Data File (e.g. ModEM dat)')
 			sys.exit()
 
-		self.depth = np.arange(0,340000,5000)
+		self.depth = np.arange(0,250000,5000)
 
 		self.read_ModEM_dat()
 		self.get_T()
@@ -74,9 +74,9 @@ class check_T_model(object):
 		dash_found = False
 
 		for row in range(8,len(self.ModEM_dat_data)):
-		    if self.ModEM_dat_data[row][0] == '#' :
-		        limitlines = row-1
-		        dash_found = True
+			if self.ModEM_dat_data[row][0] == '#' :
+				limitlines = row-1
+				dash_found = True
 
 		if dash_found == False:
 			limitlines = len(self.ModEM_dat_data)
@@ -142,7 +142,7 @@ class check_T_model(object):
 
 		for i in range(2,len(temp_data)):
 
-			if float(temp_data[i][3]) < 0.0:
+			if float(temp_data[i][index_depth]) != 0.0:
 
 				dep.append(-1.0 * float(temp_data[i][index_depth]) * 1e3)
 				tempa.append(float(temp_data[i][index_temp])+273.0)
@@ -180,7 +180,7 @@ class check_T_model(object):
 
 		self.x_rel = self.x_mtpy - x_mtpy_center
 		self.y_rel = self.y_mtpy - y_mtpy_center
-
+		
 		for i in range(0,len(self.x_rel)):
 			f_sond = interp1d(self.depth_ext[i],self.temp[i])
 			self.temp[i] = f_sond(self.depth)
@@ -222,7 +222,9 @@ class check_T_model(object):
 	def plot_temp(self):
 
 		idx_depth_plot = (np.abs(self.depth-self.depth_input)).argmin()
-
+		print(idx_depth_plot)
+		print(self.depth[idx_depth_plot])
+		print('THIS')
 		self.color_map_temp = 'magma'
 		fig = plt.figure()
 		ax1 = plt.subplot(111)

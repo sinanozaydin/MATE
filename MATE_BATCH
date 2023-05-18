@@ -9,6 +9,7 @@ import sys, csv, itertools, math, platform, random, warnings
 import numpy as np
 from scipy.interpolate import interp1d, griddata
 from scipy import optimize
+from mtpy.utils import gis_tools as gis_tools
 
 #Importing external functions
 
@@ -85,8 +86,6 @@ class MATE_BATCH(object):
 			sys.exit()
 
 		if args_input[1] == '-modem':
-
-			from mtpy.utils import gis_tools as gis_tools
 
 			try:
 
@@ -204,19 +203,26 @@ class MATE_BATCH(object):
 		self.GB_ol_select = int(self.setup_data[43][1])
 		self.GB_gt_select = int(self.setup_data[44][1])
 		self.o2_buffer = int(self.setup_data[45][1])
+		
+		self.water_end = self.setup_data[46][1]
+		
+		if self.water_end == 'False':
+		    self.water_end = False
+		elif self.water_end == 'True':
+		    self.water_end = True
 
 		self.model_method_list = ['Proton+Polaron+Ionic', 'Proton Only']
-		self.model_method_ol = int(self.setup_data[46][1])
-		self.model_method_opx = int(self.setup_data[47][1])
-		self.model_method_cpx = int(self.setup_data[48][1])
-		self.model_method_gt = int(self.setup_data[49][1])
+		self.model_method_ol = int(self.setup_data[47][1])
+		self.model_method_opx = int(self.setup_data[48][1])
+		self.model_method_cpx = int(self.setup_data[49][1])
+		self.model_method_gt = int(self.setup_data[50][1])
 
 		self.model_method = [self.model_method_ol,self.model_method_opx,self.model_method_cpx,self.model_method_gt]
 
-		self.solidus_dry_model_selection = int(self.setup_data[50][1])
-		self.solidus_wet_model_selection = int(self.setup_data[51][1])
-		self.solidus_carbon_model_selection = int(self.setup_data[52][1])
-		self.melt_fraction_function_selection = int(self.setup_data[53][1])
+		self.solidus_dry_model_selection = int(self.setup_data[51][1])
+		self.solidus_wet_model_selection = int(self.setup_data[52][1])
+		self.solidus_carbon_model_selection = int(self.setup_data[53][1])
+		self.melt_fraction_function_selection = int(self.setup_data[54][1])
 
 		#Additional PARAMETERS
 
@@ -4075,10 +4081,6 @@ class MATE_BATCH(object):
 			self.gt_h2o_list.append(list(self.gt_h2o))
 			self.bulk_h2o_sol_list.append(list(self.h2o_from_sol))
 			self.residual_list_list.append(self.resid_list)
-			# print(self.residual_list)
-			print(len(self.residual_list))
-			print(len(self.h2o[self.idx_moho:]))
-			# print(self.h2o)
 
 		self.h2o_list = np.array(self.h2o_list)
 		self.ol_h2o_list = np.array(self.ol_h2o_list)
