@@ -52,14 +52,27 @@ If the user uses Anaconda package management system, required libraries can be i
 conda install numpy scipy matplotlib pyQt5
 
 ```
-**Matplotlib3.3 is slower**
 
-For some reason the latest version of the matplotlib (3.3) works significantly slower, this problem may go away once the version is updated. You may download the previous version with the following command, either in the global install or in a virtual python environment.
+**Running MATE_BATCH**
+
+With the MATE_BATCH, the user have two options currently.
+
 
 ```bash
-pip3 install matplotlib==3.2.1
+MATE_BATCH -modem
 
 ```
+
+This command takes the input ModEM format model and data files alongside a thermal model entered in XYZ format to make water content maps.
+In order to carry this out, the user has to take an output of the parameter file from GUI MATE>Solver>Export batch process parameter selection file.
+This command will output the selections made in the MATE by the user and outputs them as a parameter file.
+
+```bash
+MATE_BATCH -forward
+
+```
+
+This command is to make batch-process forward calculations with MATE without dealing with GUI for certain compositions and temperatures. The user needs to enter the parameter file output from the GUI MATE like the "-modem" method and calculation file. An example of the calculation file can be found in the "example_calculation_file" directory.
 
 
 **Creating Exe file**
@@ -100,4 +113,4 @@ Contact
 **Sinan Özaydın**
 
 sinan.ozaydin@protonmail.com
-sinan.ozaydin@mq.edu.au
+sinan.ozaydin@sydney.edu.au

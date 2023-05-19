@@ -1,0 +1,4 @@
+Depth(km),H2O_bulk(ppm),CO2_melt(ppm),ol_frac,opx_frac,cpx_frac,gt_frac,sp_chr_frac,pl_frac,amp_frac,cond_frac,cond_cond(ohm_m),melt_mass_frac,XFe-ol,XFe-opx,XFe-cpx,XFe-gt,m_ol,m_opx,m_cpx,m_gt,m_sp_chr,m_pl,m_amp,m_cond,m_melt,Al-opx(wt%),Ti-ol(wt%),Na2O_melt(wt%),K2O_melt(wt%),t_k_cond(W/mK),fl_pl(wt%),ol_gs(mm),Temperature (C )
+38,100,0,62.7,30.3,7,0,0,0,0,0,0.00001,0,0.09,0.09,0.09,0.09,1,2,4,4,4,4,4,4,4,6,0.005,1,1,25,0.52,1,900
+25,100,0,62.7,30.3,7,0,0,0,0,0,0.00001,0,0.09,0.09,0.09,0.09,1,2,4,4,4,4,4,4,4,6,0.005,1,1,25,0.52,1,900
+100,350,0,62.7,30.3,7,0,0,0,0,0,0.00001,0,0.09,0.09,0.09,0.09,1,2,4,4,4,4,4,4,4,6,0.005,1,1,25,0.52,1,1300

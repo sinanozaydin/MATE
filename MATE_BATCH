@@ -58,7 +58,7 @@ print(bcolors.GREEN + '#############################################')
 print(' ')
 print(' ')
 print(' ')
-print(bcolors.GREEN + '                  MATE_BATCH 1.4')
+print(bcolors.GREEN + '                MATE_BATCH 1.5')
 print(' ')
 print(bcolors.BLUE + '            Mantle Analysis Tools')
 print('                     for')
@@ -67,8 +67,11 @@ print(' ')
 print(' ')
 print(' ')
 print(bcolors.GREEN + '#############################################')
-print(bcolors.BLUE + 'developed by Sinan Ozaydin,' + bcolors.RED +  '(Department of Earth and Planetary Sciences, Core to Crust Fluid Systems(CCFS), Macquarie University)')
-print(bcolors.NC + 'Initializing the software...')
+print(bcolors.BLUE + 'developed by Sinan Ozaydin,' + bcolors.RED +  ' School of Geosciences, University of Sydney')
+print(' ')
+print(' ')
+print(bcolors.NC + 'for questions, email: sinan.ozaydin@protonmail.com or sinan.ozaydin@sydney.edu.au')
+print('Initializing the software...')
 
 class MATE_BATCH(object):
 
@@ -80,9 +83,15 @@ class MATE_BATCH(object):
 		if len(args_input) == 1:
 
 			print('You have to run the program with options:')
-			print('1. -modem ')
-			print('This options reads a ModEM output model and data file calculates\
-			water content with the input temperature, composition and parametrisations.')
+			print('Current Methods:')
+			print(' ')
+			print(bcolors.RED + '1. -modem')
+			print('2. -forward')
+
+			print(' ')
+			print(' ')
+			print(bcolors.NC + 'To have more information for each method. Just run the program with the option only like MATE_BATCH -modem ')
+			print('type MATE -help for more general information.')
 			sys.exit()
 
 		if args_input[1] == '-modem':
@@ -97,13 +106,18 @@ class MATE_BATCH(object):
 
 			except IndexError:
 
+				print('This options reads a ModEM output model and data file calculates\
+				water content with the input temperature, composition and other parametrisations.')
+				print(' ')
 				print('Not enough inputs are entered for -modem method, five input files are needed...')
+				print(' ')
 				print('1. Parameter setup file (get the output from MATE gui)')
-				print('2. Composition file')
+				print('2. Composition file (e.g., Lherzolite.csv)')
 				print('3. MT Model File (e.g. ModEM rho)')
 				print('4. MT Data File (e.g. ModEM dat)')
 				print('5. Thermal model, .xyz format (The file has to have these headers in same names: id Longitude Latitude Depth Temperature, with a space delimited format.)')
-				print('Exiting the program try again with correct input format')
+				print(' ')
+				print('Exiting the program... Try again with correct input format')
 				sys.exit()
 
 			self.read_batch_parameter_file()
@@ -123,6 +137,37 @@ class MATE_BATCH(object):
 			self.solve_water_for_model()
 			#writing out water data
 			self.write_data()
+			
+		elif args_input[1] == '-forward':
+
+			try:
+
+				self.setup_path = args_input[2]
+				self.calc_path = args_input[3]
+
+			except IndexError:
+
+				print('This options reads a calculation file\
+				and outputs a single forward calculation.')
+				print(' ')
+				print('Not enough inputs are entered for -forward method, two extra input files are needed...')
+				print(' ')
+				print(' ')
+				print('1. Parameter setup file (get the output from MATE gui)')
+				print('2. Calculation file (see an example from example_single_calculations folder from the repository.)')
+				sys.exit()
+
+			self.read_batch_parameter_file()
+			self.read_cond_models()
+			self.read_cond_dry_models()
+			self.read_params()
+			self.idx_moho = 0
+
+			self.read_single_calculation_file()
+			self.calculate_water(method = 'array',idx = None)
+			self.calculate_single_conductivities()
+			self.write_data_single_forward()
+
 
 	def read_csv(self,filename,delim):
 
@@ -207,9 +252,9 @@ class MATE_BATCH(object):
 		self.water_end = self.setup_data[46][1]
 		
 		if self.water_end == 'False':
-		    self.water_end = False
+			self.water_end = False
 		elif self.water_end == 'True':
-		    self.water_end = True
+			self.water_end = True
 
 		self.model_method_list = ['Proton+Polaron+Ionic', 'Proton Only']
 		self.model_method_ol = int(self.setup_data[47][1])
@@ -1037,6 +1082,140 @@ class MATE_BATCH(object):
 
 			self.data_existence = True
 
+	def read_single_calculation_file(self):
+
+		self.layer_data = self.read_csv(filename = self.calc_path, delim = ',')
+
+		del self.layer_data[0] #deleting header layer
+
+		self.h2o_fugacity_calculated = False
+
+		self.depth = np.zeros(len(self.layer_data))
+		self.h2o = np.zeros(len(self.layer_data))
+		self.co2 = np.zeros(len(self.layer_data))
+		self.ol_frac = np.zeros(len(self.layer_data))
+		self.opx_frac = np.zeros(len(self.layer_data))
+		self.cpx_frac = np.zeros(len(self.layer_data))
+		self.gt_frac = np.zeros(len(self.layer_data))
+		self.sp_chr_frac = np.zeros(len(self.layer_data))
+		self.pl_frac = np.zeros(len(self.layer_data))
+		self.amp_frac = np.zeros(len(self.layer_data))
+		self.cond_frac = np.zeros(len(self.layer_data))
+		self.cond_cond = np.zeros(len(self.layer_data))
+		self.melt_mass_frac = np.zeros(len(self.layer_data))
+		self.fe_ol = np.zeros(len(self.layer_data))
+		self.fe_opx = np.zeros(len(self.layer_data))
+		self.fe_cpx = np.zeros(len(self.layer_data))
+		self.fe_gt = np.zeros(len(self.layer_data))
+		self.al_opx = np.zeros(len(self.layer_data))
+		self.ti_ol = np.zeros(len(self.layer_data))
+		self.na2o_melt = np.zeros(len(self.layer_data))
+		self.k2o_melt = np.zeros(len(self.layer_data))
+		self.ol_m = np.zeros(len(self.layer_data))
+		self.opx_m = np.zeros(len(self.layer_data))
+		self.cpx_m = np.zeros(len(self.layer_data))
+		self.gt_m = np.zeros(len(self.layer_data))
+		self.sp_chr_m = np.zeros(len(self.layer_data))
+		self.pl_m = np.zeros(len(self.layer_data))
+		self.amp_m = np.zeros(len(self.layer_data))
+		self.cond_m = np.zeros(len(self.layer_data))
+		self.cond_t_k = np.zeros(len(self.layer_data))
+		self.melt_m = np.zeros(len(self.layer_data))
+		self.flu = np.zeros(len(self.layer_data))
+		self.ol_gs = np.zeros(len(self.layer_data))
+		self.T = np.zeros(len(self.layer_data))
+
+		self.continue_adjusting = 1
+
+		for i in range(0,len(self.layer_data)):
+			for j in range(0,len(self.layer_data[i])):
+				try:
+					float(self.layer_data[i][j])
+					if float(self.layer_data[i][j]) < 0.0:
+						self.continue_adjusting = 0
+						print("Warning! - There is an entered value for a parameters that is smaller than zero, which can not be the case. Correct this value to continue.")
+						break
+				except ValueError:
+					print("Warning! - There are some elements in the composition file that can not be converted to floating numbers.\n" +\
+					"Please enter all the parameters as numbers that can be converted to floating numbers.")
+					self.continue_adjusting = 0
+
+			if self.continue_adjusting == 0:
+
+				break
+
+		if self.continue_adjusting == 1:
+
+			for i in range(0,len(self.layer_data)):
+
+				self.depth[i] = float(self.layer_data[i][0]) * 1e3
+				self.h2o[i] = float(self.layer_data[i][1])
+				self.co2[i] = float(self.layer_data[i][2])
+				self.ol_frac[i] = float(self.layer_data[i][3]) / 1e2 #converting to perc to fraction
+				self.opx_frac[i] = float(self.layer_data[i][4]) / 1e2
+				self.cpx_frac[i] = float(self.layer_data[i][5]) / 1e2
+				self.gt_frac[i] = float(self.layer_data[i][6]) / 1e2
+				self.sp_chr_frac[i] = float(self.layer_data[i][7]) / 1e2
+				self.pl_frac[i] = float(self.layer_data[i][8]) / 1e2
+				self.amp_frac[i] = float(self.layer_data[i][9]) / 1e2
+				self.cond_frac[i] = float(self.layer_data[i][10]) / 1e2
+				self.cond_cond[i] = 1.0 / float(self.layer_data[i][11]) #converting to conductivity
+				self.melt_mass_frac[i] = float(self.layer_data[i][12]) / 1e2
+				self.fe_ol[i] = float(self.layer_data[i][13])
+				self.fe_opx[i] = float(self.layer_data[i][14])
+				self.fe_cpx[i] = float(self.layer_data[i][15])
+				self.fe_gt[i] = float(self.layer_data[i][16])
+				self.ol_m[i] = float(self.layer_data[i][17])
+				self.opx_m[i] = float(self.layer_data[i][18])
+				self.cpx_m[i] = float(self.layer_data[i][19])
+				self.gt_m[i] = float(self.layer_data[i][20])
+				self.sp_chr_m[i] = float(self.layer_data[i][21])
+				self.pl_m[i] = float(self.layer_data[i][22])
+				self.amp_m[i] = float(self.layer_data[i][23])
+				self.cond_m[i] = float(self.layer_data[i][24])
+				self.melt_m[i] = float(self.layer_data[i][25])
+				self.al_opx[i] = float(self.layer_data[i][26])
+				self.ti_ol[i] = float(self.layer_data[i][27])
+				self.na2o_melt[i] = float(self.layer_data[i][28])
+				self.k2o_melt[i] = float(self.layer_data[i][29])
+				self.cond_t_k[i] = float(self.layer_data[i][30])
+				self.flu[i] = float(self.layer_data[i][31])
+				self.ol_gs[i] = float(self.layer_data[i][32])*1e-3 #converting to mm to m
+				self.T[i] = float(self.layer_data[i][33])
+
+		cansu2 = 1
+
+		#Since there is no layered mantle here. We use 33.3 to convert depths to pressures in GPa
+
+		self.p = (self.depth * 1e-3) / 33.3
+
+
+
+		#Deciding on phlogopite, amphibole and melt methods
+		#depending on the entered composition...
+		if np.mean(self.pl_frac) > 0.0:
+			self.pl_method = '0'
+		else:
+			self.pl_method = '1'
+
+		if np.mean(self.amp_frac) > 0.0:
+			self.amp_method = '0'
+		else:
+			self.amp_method = '1'
+
+		if np.mean(self.melt_mass_frac) > 0.0:
+			self.melt_method = '0'
+		else:
+			self.melt_method = '1'
+
+
+		if self.melt_method == '0':
+
+			self.idx_melt_zero = []
+			for i in range(0, len(self.T)):
+				if self.melt_mass_frac[i] == 0.0:
+					self.idx_melt_zero.append(i)
+
 	def get_T(self):
 
 		temp_data = self.read_csv(filename = self.T_path, delim = ' ')
@@ -1714,13 +1893,13 @@ class MATE_BATCH(object):
 
 			for i in range(10):
 					c.insert(i,coeff[i][0]*temperature**-4+coeff[i][1]*temperature**-2
-			                +coeff[i][2]*temperature**-1+coeff[i][3]
-			                +coeff[i][4]*temperature+coeff[i][5]*temperature**2)
+							+coeff[i][2]*temperature**-1+coeff[i][3]
+							+coeff[i][4]*temperature+coeff[i][5]*temperature**2)
 
 			pressure=(den+c[0]*den**2-den**2*((c[2]+2*c[3]*den+3*c[4]*den**2
-		            +4*c[5]*den**3)/(c[1]+c[2]*den+c[3]*den**2+c[4]*den**3
-		            +c[5]*den**4)**2)+c[6]*den**2*math.exp(-c[7]*den)
-		            +c[8]*den**2*math.exp(-c[9]*den))*R*temperature/1e5
+					+4*c[5]*den**3)/(c[1]+c[2]*den+c[3]*den**2+c[4]*den**3
+					+c[5]*den**4)**2)+c[6]*den**2*math.exp(-c[7]*den)
+					+c[8]*den**2*math.exp(-c[9]*den))*R*temperature/1e5
 			return pressure-targetP  # bars
 
 		def PSvolume(pressure, temperature):  # bars, Kelvins
@@ -1732,18 +1911,18 @@ class MATE_BATCH(object):
 
 			for i in range(10):
 					c.insert(i,coeff[i][0]*temperature**-4+coeff[i][1]*temperature**-2
-			                +coeff[i][2]*temperature**-1+coeff[i][3]
-			                +coeff[i][4]*temperature+coeff[i][5]*temperature**2)
+							+coeff[i][2]*temperature**-1+coeff[i][3]
+							+coeff[i][4]*temperature+coeff[i][5]*temperature**2)
 
 			volume=PSvolume(pressure, temperature)
 			R=8314510  # Pa.cc/K/mol
 			den=1/volume  # mol/cc
 			fug=math.exp(math.log(den)+c[0]*den+(1/(c[1]+c[2]*den+c[3]*den**2
-		                +c[4]*den**3+c[5]*den**4)-1/c[1])
-		                -c[6]/c[7]*(math.exp(-c[7]*den)-1)
-		                -c[8]/c[9]*(math.exp(-c[9]*den)-1)
-		                +pressure*1e5/(den*R*temperature)
-		                +math.log(R*temperature)-1)/1e5
+						+c[4]*den**3+c[5]*den**4)-1/c[1])
+						-c[6]/c[7]*(math.exp(-c[7]*den)-1)
+						-c[8]/c[9]*(math.exp(-c[9]*den)-1)
+						+pressure*1e5/(den*R*temperature)
+						+math.log(R*temperature)-1)/1e5
 			return fug  # bars
 
 		self.h2o_fug = np.zeros(len(self.T))
@@ -4086,11 +4265,36 @@ class MATE_BATCH(object):
 		self.ol_h2o_list = np.array(self.ol_h2o_list)
 		self.opx_h2o_list = np.array(self.opx_h2o_list)
 
+	def calculate_single_conductivities(self):
+
+		self.create_empty_cond_arrays()
+		self.calculate_ol_conductivity(method = 'array',sol_idx = None)
+		self.calculate_opx_conductivity(method = 'array',sol_idx = None)
+		self.calculate_cpx_conductivity(method = 'array',sol_idx = None)
+		self.calculate_gt_conductivity(method = 'array',sol_idx = None)
+		if self.pl_method == '0':
+			self.calculate_pl_conductivity(method = 'array',sol_idx = None)
+		if self.amp_method == '0':
+			self.calculate_amp_conductivity(method = 'array',sol_idx = None)
+		self.calculate_sp_chr_conductivity(method = 'array',sol_idx = None)
+		if self.melt_method == '0':
+			self.calculate_melt_conductivity(method = 'array',sol_idx = None)
+		self.phase_mixing_function(method = self.phs_mix_method,melt_method = self.phs_melt_mix_method ,indexing_method = 'array', sol_idx = None)
+
+
+		print(bcolors.GREEN +'  ')
+		print('####################')
+		print('CALCULATION IS CARRIED OUT SUCCESFULLY...')
+		print('####################')
+		print('  ')
+
 	def write_data(self):
+
+		#writes data for the water calculations
 
 		for id in range(self.idx_moho,len(self.depth)):
 
-			lines = ['idx,Depth,X,Y,H2O_Bulk,H2O_Ol,H2O_opx,H2O_cpx,H2O_gt,Bulk_H2O_Sol,Residual_cond\n']
+			lines = ['idx,Depth[km],X,Y,H2O_Bulk[ppm],H2O_Ol[ppm],H2O_opx[ppm],H2O_cpx[ppm],H2O_gt[ppm],Bulk_H2O_Sol[ppm],Residual_cond\n']
 			for i in range(0,len(self.h2o_list)):
 
 				for j in range(self.idx_moho,len(self.depth)):
@@ -4102,5 +4306,36 @@ class MATE_BATCH(object):
 			filesave_comp.writelines(lines)
 			filesave_comp.close()
 			print('File is written:  ' + 'Depth_water_section_' + str(self.depth[id]/1e3) + 'km_.csv')
+
+	def write_data_single_forward(self):
+
+		#writes data for the list of single forward calculations.
+		lines = ['idx,Depth[km],Pressure[GPa],Temperature[C],H2O_Bulk[ppm],H2O_Ol[ppm],H2O_opx[ppm],H2O_cpx[ppm],H2O_gt[ppm],Bulk_Cond[S.m],Bulk_Cond_Max[S.m],Bulk_Cond_Min[S.m],Ol_Cond[S.m],Opx_Cond[S.m],Cpx_Cond[S.m],Gt_Cond[S.m],Phlg_Cond[S.m],Amp_Cond[S.m],Melt_Cond[S.m]\n']
+		for idx in range(0,len(self.T)):
+
+			if self.pl_cond[idx] == 1:
+				phlg_cond = 'None'
+			else:
+				phlg_cond = self.pl_cond[idx]
+
+			if self.amp_cond[idx] == 1:
+				amp_cond = 'None'
+			else:
+				amp_cond = self.amp_cond[idx]
+
+			if self.melt_cond[idx] == 0:
+				melt_cond = 'None'
+			else:
+				melt_cond = self.melt_cond[idx]
+
+			line = ','.join((str(idx), str(self.depth[idx]/1e3),str(self.p[idx]),str(self.T[idx]-273.15),str(self.h2o[idx]),str(self.ol_h2o[idx]),str(self.opx_h2o[idx]),str(self.cpx_h2o[idx]),str(self.gt_h2o[idx]),
+			str(self.bulk_cond[idx]),str(self.bulk_cond_max[idx]),str(self.bulk_cond_min[idx]),str(self.ol_cond[idx]),str(self.opx_cond[idx]),str(self.cpx_cond[idx]),str(self.gt_cond[idx]),
+			str(phlg_cond),str(amp_cond),str(melt_cond) + '\n'))
+			lines.append(line)
+
+		filesave_comp = open(os.path.join(os.getcwd(), (self.calc_path[:-4] + '_cond_calculations.csv')) ,'w')
+		filesave_comp.writelines(lines)
+		filesave_comp.close()
+		print(bcolors.BLUE +'File is written:  ' + self.calc_path[:-4] + '_cond_calculations.csv')
 
 RUN_PROGRAM = MATE_BATCH()
