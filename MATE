@@ -52,10 +52,10 @@ class bcolors:
 	B = '\033[0m'
 	NC ='\x1b[0m'
 
-#Version 2.0, July. 2022.
+#Version 1.5, June. 2023.
 #MATE - (M)antle (A)nalysis (T)ools for (E)lectromagnetics
-#Program written by Sinan Ozaydin (Macquarie University, School of Natural Sciences
-#sciences, Australia).
+#Program written by Sinan Ozaydin (School of Geosciences, University of Sydney 
+#, Australia).
 
 #Indentation method: hard tabs ('\t')
 
