@@ -26,6 +26,7 @@ from cond_models.gt_wet_odd import * #Whole models of garnet with specialized fu
 from cond_models.gt_diffusion import * #Hydrogen diffusion functions of garnet
 from cond_models.pl_odd import * #Conductivity functions of phlogopites
 from cond_models.amp_odd import * #Conductivity functions of amphiboles
+from cond_models.melt_odd import * #Conductivity functions of melts
 from cond_models.sp_chr_odd import * #Conductivity functions of spinel-chromites
 from min_sol.ol_sol import * #Olivine solubility models
 
