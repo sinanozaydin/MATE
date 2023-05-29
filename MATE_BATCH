@@ -92,7 +92,6 @@ class MATE_BATCH(object):
 			print(' ')
 			print(' ')
 			print(bcolors.NC + 'To have more information for each method. Just run the program with the option only like MATE_BATCH -modem ')
-			print('type MATE -help for more general information.')
 			sys.exit()
 
 		if args_input[1] == '-modem':
