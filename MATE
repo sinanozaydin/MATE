@@ -4290,7 +4290,8 @@ class MATE(QMainWindow):
 
 			cond_melt_max,cond_melt_min,cond_melt = eval(melt_odd_function + '(T = self.T[idx_node], P = self.p[idx_node], Melt_H2O = self.melt_h2o[idx_node], Melt_CO2 = self.co2[idx_node], Melt_Na2O = self.na2o_melt[idx_node], Melt_K2O = self.k2o_melt[idx_node],method = method)')
 
-			self.melt_cond[idx_node] = cond_melt_max
+			self.melt_cond[idx_node] = cond_melt
+			
 			if method == 'array':
 				self.melt_cond_max[idx_node] = cond_melt_max
 				self.melt_cond_min[idx_node] = cond_melt_min
