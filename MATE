@@ -667,7 +667,7 @@ class MATE(QMainWindow):
 		sol_btn.clicked.connect(self.solubility_open)
 		self.sol_input_popup = None
 
-		cond_btn = QPushButton('Conducitivity Models', self)
+		cond_btn = QPushButton('Conductivity Models', self)
 		cond_btn.move(10,275)
 		cond_btn.setStyleSheet("QPushButton {min-width: 10em; font: bold; font-size: 9pt;background-color: #c8cccc}")
 		cond_btn.clicked.connect(self.conductivity_popup)
