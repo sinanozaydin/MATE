@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
 
 import os
-import time
 
 core_path_ext = os.path.join(os.path.dirname(os.path.abspath(__file__)) , 'mate_src')
 
-import sys, csv, itertools, math, platform, random, warnings
+import sys, csv, itertools, math, warnings
 import numpy as np
 from scipy.interpolate import interp1d, griddata
 from scipy import optimize
@@ -87,7 +86,8 @@ class MATE_BATCH(object):
 			print('Current Methods:')
 			print(' ')
 			print(bcolors.RED + '1. -modem')
-			print('2. -forward')
+			print('2. -mtNC')
+			print('3. -forward')
 
 			print(' ')
 			print(' ')
@@ -120,6 +120,7 @@ class MATE_BATCH(object):
 				print('Exiting the program... Try again with correct input format')
 				sys.exit()
 
+			self.computing_style = args_input[1]
 			self.read_batch_parameter_file()
 			self.read_cond_models()
 			self.read_cond_dry_models()
@@ -138,6 +139,49 @@ class MATE_BATCH(object):
 			#writing out water data
 			self.write_data()
 			
+		elif args_input[1] == '-mtNC':
+
+			try:
+
+				self.setup_path = args_input[2]
+				self.comp_path = args_input[3]
+				self.nc_path = args_input[4]
+				self.T_path = args_input[5]
+
+			except IndexError:
+
+				print('This option reads a 3D MT model in nc format and calculates\
+				water content with the input temperature, composition and other parametrisations.')
+				print('NC format is neccesarily linked to just xyz(lat-long-depth)-rho format in NC format. Usually favoured by the USGS databases.')
+				print(' ')
+				print('Not enough inputs are entered for -modem method, five input files are needed...')
+				print(' ')
+				print('1. Parameter setup file (get the output from MATE gui)')
+				print('2. Composition file (e.g., Lherzolite.csv)')
+				print('3. MT Model File (e.g. NC format xyz lat-long-depth file, IRIS website USARRAY models)')
+				print('4. Thermal model, .xyz format (The file has to have these headers in same names: id Longitude Latitude Depth Temperature, with a space delimited format.)')
+				print(' ')
+				print('Exiting the program... Try again with correct input format')
+				sys.exit()
+
+			self.computing_style = args_input[1]
+			self.read_batch_parameter_file()
+			self.read_cond_models()
+			self.read_cond_dry_models()
+			self.read_params()
+
+			#Initializing the non iterative parametrisations
+			self.adjust_composition()
+			self.calculate_pressure()
+			self.read_MT_NC()
+			self.get_T()
+			self.define_profile_()
+			self.calculate_water(method = 'array',idx = None) #initial water calculation
+			#solving for the entered resistivity and temperature
+			self.solve_water_for_model()
+			#writing out water data
+			self.write_data()
+
 		elif args_input[1] == '-forward':
 
 			try:
@@ -157,6 +201,7 @@ class MATE_BATCH(object):
 				print('2. Calculation file (see an example from example_single_calculations folder from the repository.)')
 				sys.exit()
 
+			self.computing_style = args_input[1]
 			self.read_batch_parameter_file()
 			self.read_cond_models()
 			self.read_cond_dry_models()
@@ -916,7 +961,7 @@ class MATE_BATCH(object):
 					self.flu_comp.append(float(self.layer_data[i][31]))
 					self.ol_gs_comp.append(float(self.layer_data[i][32])*1e-3) #converting to mm to m
 					self.heat_prod_mantle.append(float(self.layer_data[i][33]))
-			# print(self.ol_frac_comp)
+			
 			f_ol = interp1d(self.depth_comp,self.ol_frac_comp)
 			f_opx = interp1d(self.depth_comp,self.opx_frac_comp)
 			f_cpx = interp1d(self.depth_comp,self.cpx_frac_comp)
@@ -1183,13 +1228,9 @@ class MATE_BATCH(object):
 				self.ol_gs[i] = float(self.layer_data[i][32])*1e-3 #converting to mm to m
 				self.T[i] = float(self.layer_data[i][33])
 
-		cansu2 = 1
-
 		#Since there is no layered mantle here. We use 33.3 to convert depths to pressures in GPa
 
 		self.p = (self.depth * 1e-3) / 33.3
-
-
 
 		#Deciding on phlogopite, amphibole and melt methods
 		#depending on the entered composition...
@@ -1273,63 +1314,105 @@ class MATE_BATCH(object):
 		self.lat = np.array(self.lat)
 		self.lon = np.array(self.lon)
 
-		with warnings.catch_warnings():
-			warnings.simplefilter('ignore', FutureWarning)
-			utm_no = gis_tools.get_epsg(self.mc_lat,self.mc_lon)
-			stuff= gis_tools.project_point_ll2utm(self.lat, self.lon, utm_zone = 34, epsg = utm_no)
-		self.x_mtpy = np.zeros(len(stuff))
-		self.y_mtpy = np.zeros(len(stuff))
-		utm_z = []
+		if self.computing_style == '-modem':
 
-		for i in range(0,len(stuff)):
-			self.x_mtpy[i] = stuff[i][0]
-			self.y_mtpy[i] = stuff[i][1]
-			utm_z.append(stuff[i][3])
+			with warnings.catch_warnings():
+				warnings.simplefilter('ignore', FutureWarning)
+				utm_no = gis_tools.get_epsg(self.mc_lat,self.mc_lon)
+				stuff= gis_tools.project_point_ll2utm(self.lat, self.lon, utm_zone = 34, epsg = utm_no)
+			self.x_mtpy = np.zeros(len(stuff))
+			self.y_mtpy = np.zeros(len(stuff))
+			utm_z = []
 
-		with warnings.catch_warnings():
-			warnings.simplefilter('ignore', FutureWarning)
-			x_mtpy_center, y_mtpy_center, utm_center = gis_tools.project_point_ll2utm(self.mc_lat, self.mc_lon, utm_zone = 14, epsg = utm_no)
+			for i in range(0,len(stuff)):
+				self.x_mtpy[i] = stuff[i][0]
+				self.y_mtpy[i] = stuff[i][1]
+				utm_z.append(stuff[i][3])
 
-		self.x_rel = self.x_mtpy - x_mtpy_center
-		self.y_rel = self.y_mtpy - y_mtpy_center
+			with warnings.catch_warnings():
+				warnings.simplefilter('ignore', FutureWarning)
+				x_mtpy_center, y_mtpy_center, utm_center = gis_tools.project_point_ll2utm(self.mc_lat, self.mc_lon, utm_zone = 14, epsg = utm_no)
 
-		for i in range(0,len(self.x_rel)):
-			f_sond = interp1d(self.depth_ext[i],self.temp[i])
-			self.temp[i] = f_sond(self.depth)
-			self.depth_ext[i] = self.depth
+			self.x_rel = self.x_mtpy - x_mtpy_center
+			self.y_rel = self.y_mtpy - y_mtpy_center
 
-		self.depth_ext = np.array(self.depth_ext)
-		self.temp = np.array(self.temp)
+			for i in range(0,len(self.x_rel)):
+				f_sond = interp1d(self.depth_ext[i],self.temp[i])
+				self.temp[i] = f_sond(self.depth)
+				self.depth_ext[i] = self.depth
 
-		self.xnew = np.arange(np.amin(self.x_rel), np.amax(self.x_rel), 1e4)
-		self.ynew = np.arange(np.amin(self.y_rel), np.amax(self.y_rel), 1e4)
+			self.depth_ext = np.array(self.depth_ext)
+			self.temp = np.array(self.temp)
 
-		self.x_new, self.y_new = np.meshgrid(self.xnew, self.ynew)
+			self.xnew = np.arange(np.amin(self.x_rel), np.amax(self.x_rel), 1e4)
+			self.ynew = np.arange(np.amin(self.y_rel), np.amax(self.y_rel), 1e4)
 
-		points_interp = np.column_stack((self.x_rel, self.y_rel))
+			self.x_new, self.y_new = np.meshgrid(self.xnew, self.ynew)
 
-		self.temp_interp = []
+			points_interp = np.column_stack((self.x_rel, self.y_rel))
 
-		for i in range(0,len(self.depth)):
+			self.temp_interp = []
 
-			interp_array = np.array(self.temp[:,i])
-			fnew = griddata(points_interp, interp_array, (self.x_new, self.y_new), method = 'cubic')
-			fnew[np.isnan(fnew)] = 273.0
-			fnew = np.asarray(list(itertools.chain(*fnew)))
-			self.temp_interp.append(fnew)
+			for i in range(0,len(self.depth)):
 
-		self.x_new = np.asarray(list(itertools.chain(*self.x_new)))
-		self.y_new = np.asarray(list(itertools.chain(*self.y_new)))
+				interp_array = np.array(self.temp[:,i])
+				fnew = griddata(points_interp, interp_array, (self.x_new, self.y_new), method = 'cubic')
+				fnew[np.isnan(fnew)] = 273.0
+				fnew = np.asarray(list(itertools.chain(*fnew)))
+				self.temp_interp.append(fnew)
 
-		self.temp_interp = np.array(self.temp_interp)
+			self.x_new = np.asarray(list(itertools.chain(*self.x_new)))
+			self.y_new = np.asarray(list(itertools.chain(*self.y_new)))
 
-		self.temp_rev = []
+			self.temp_interp = np.array(self.temp_interp)
 
-		for i in range(0,len(self.x_new)):
+			self.temp_rev = []
 
-			self.temp_rev.append(self.temp_interp[:,i])
+			for i in range(0,len(self.x_new)):
 
-		self.temp_rev = np.array(self.temp_rev)
+				self.temp_rev.append(self.temp_interp[:,i])
+
+			self.temp_rev = np.array(self.temp_rev)
+
+		elif self.computing_style == '-mtNC':
+
+			for i in range(0,len(self.lat)):
+				f_sond = interp1d(self.depth_ext[i],self.temp[i])
+				self.temp[i] = f_sond(self.depth)
+				self.depth_ext[i] = self.depth
+
+			self.depth_ext = np.array(self.depth_ext)
+			self.temp = np.array(self.temp)
+
+			self.xnew = np.arange(np.amin(self.lat), np.amax(self.lat), 0.1)
+			self.ynew = np.arange(np.amin(self.lon), np.amax(self.lon), 0.1)
+
+			self.x_new, self.y_new = np.meshgrid(self.xnew, self.ynew)
+
+			points_interp = np.column_stack((self.lat, self.lon))
+
+			self.temp_interp = []
+
+			for i in range(0,len(self.depth)):
+
+				interp_array = np.array(self.temp[:,i])
+				fnew = griddata(points_interp, interp_array, (self.x_new, self.y_new), method = 'cubic')
+				fnew[np.isnan(fnew)] = 273.0
+				fnew = np.asarray(list(itertools.chain(*fnew)))
+				self.temp_interp.append(fnew)
+
+			self.x_new = np.asarray(list(itertools.chain(*self.x_new)))
+			self.y_new = np.asarray(list(itertools.chain(*self.y_new)))
+
+			self.temp_interp = np.array(self.temp_interp)
+
+			self.temp_rev = []
+
+			for i in range(0,len(self.x_new)):
+
+				self.temp_rev.append(self.temp_interp[:,i])
+
+			self.temp_rev = np.array(self.temp_rev)
 
 	def get_T_profile_for_station(self,lat_, lon_, lat_array, lon_array):
 
@@ -1509,6 +1592,32 @@ class MATE_BATCH(object):
 		self.mesh_centers = np.meshgrid(self.x_mesh_center,self.y_mesh_center)
 		self.mesh_centers_x_array = []
 		self.mesh_centers_y_array = []
+
+		for i in range(0,len(self.mesh_centers[0])):
+			for j in range(0,len(self.mesh_centers[0][i])):
+				self.mesh_centers_x_array.append(self.mesh_centers[0][i][j])
+				self.mesh_centers_y_array.append(self.mesh_centers[1][i][j])
+
+	def read_MT_NC(self):
+
+		import netCDF4 as nc
+
+		ds = nc.Dataset(self.nc_path)
+		self.lon_model = np.asarray(ds.variables['longitude'][:])
+		self.lat_model = np.asarray(ds.variables['latitude'][:])
+		self.depth_model = np.asarray(ds.variables['depth'][:])
+		self.rho = np.asarray(ds.variables['log_10sigma'][:])
+
+		self.rho = 1.0 / (10**self.rho) #converting to resistivity
+
+		self.mesh_centers = np.meshgrid(self.lon_model, self.lat_model)
+		self.mesh_centers_x_array = []
+		self.mesh_centers_y_array = []
+
+		self.x_mesh_center = self.lat_model
+		self.y_mesh_center = self.lon_model
+		self.z_mesh_center = self.depth_model * 1e3
+
 		for i in range(0,len(self.mesh_centers[0])):
 			for j in range(0,len(self.mesh_centers[0][i])):
 				self.mesh_centers_x_array.append(self.mesh_centers[0][i][j])
@@ -4134,11 +4243,18 @@ class MATE_BATCH(object):
 
 	def get_rho_profile(self,rho_index):
 
-		self.idx_x = (np.abs(np.asarray(self.x_mesh_center) - self.mesh_centers_x_array[rho_index])).argmin()
-		self.idx_y = (np.abs(np.asarray(self.y_mesh_center) - self.mesh_centers_y_array[rho_index])).argmin()
+		if self.computing_style == "-modem":
+			self.idx_x = (np.abs(np.asarray(self.x_mesh_center) - self.mesh_centers_x_array[rho_index])).argmin()
+			self.idx_y = (np.abs(np.asarray(self.y_mesh_center) - self.mesh_centers_y_array[rho_index])).argmin()
+		elif self.computing_style == "-mtNC":
+			self.idx_x = (np.abs(np.asarray(self.y_mesh_center) - self.mesh_centers_x_array[rho_index])).argmin()
+			self.idx_y = (np.abs(np.asarray(self.x_mesh_center) - self.mesh_centers_y_array[rho_index])).argmin()
 		self.res_profile = []
 		for id_rho in range(0,len(self.rho)):
+			#if self.computing_style == "-modem":
 			self.res_profile.append(self.rho[id_rho][self.idx_y][self.idx_x])
+			#elif self.computing_style == "-mtNC":
+			#	self.res_profile.append(self.rho[id_rho][self.idx_x][self.idx_y])
 
 		self.res_profile = np.array(self.res_profile)
 
@@ -4243,10 +4359,18 @@ class MATE_BATCH(object):
 			self.calculate_amp_conductivity(method = 'array',sol_idx = None)
 		self.calculate_sp_chr_conductivity(method = 'array',sol_idx = None)
 		self.phase_mixing_function(method = self.phs_mix_method,melt_method = self.phs_melt_mix_method ,indexing_method = 'array', sol_idx = None)
-
+		print("Started Inversion...")
+		percentages = np.arange(0,101,1)
 		for i in range(0,len(self.idx_list)):
-
-			print(str(i / float(len(self.idx_list)) * 100.0) + '% Done')
+			
+			try:
+				if (abs((i / float(len(self.idx_list)) * 100.0) - percentages[0]) <= 0.1) == True:
+					
+					print(str(percentages[0]) + '% Done')
+					percentages = np.delete(percentages,0)
+			except IndexError:
+				print('The calculation is finished.')
+			
 			self.T = np.array(self.temp_rev[self.idx_list[i]])
 			self.create_empty_cond_arrays()
 			self.get_rho_profile(i)
