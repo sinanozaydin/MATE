@@ -1266,7 +1266,7 @@ class MATE_BATCH(object):
 		self.lon = []
 		self.depth_ext = []
 		dep = [0.0]
-		tempa = [0.0]
+		tempa = [273.0]
 
 
 		for i in range(0,len(temp_data[0])):
@@ -1309,7 +1309,7 @@ class MATE_BATCH(object):
 				self.depth_ext.append(dep)
 				self.temp.append(tempa)
 				dep = [0.0]
-				tempa = [0.0]
+				tempa = [273.0]
 
 		self.lat = np.array(self.lat)
 		self.lon = np.array(self.lon)
@@ -1413,7 +1413,7 @@ class MATE_BATCH(object):
 				self.temp_rev.append(self.temp_interp[:,i])
 
 			self.temp_rev = np.array(self.temp_rev)
-
+			
 	def get_T_profile_for_station(self,lat_, lon_, lat_array, lon_array):
 
 		idx_profile = self.find_distance(x = lat_ , y = lon_, x1_array = lat_array, y1_array = lon_array)
