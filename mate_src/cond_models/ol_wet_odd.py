@@ -6,7 +6,7 @@ def Dai2014a(model_method,T,P,corr_factor,fo2,fo2_ref,wt_err,ol_h2o,method):
 
 	R_const = 8.3144621
 
-	dv_dai2014 = -0.86 * 1e-6 # m^3 /mol Taken from Dai2014b-PEPI, Error is insignificant, since the effect itself is insignificant...
+	dv_dai2014 = -0.86 * 1e3 # m^3 /mol Taken from Dai2014b-PEPI, Error is insignificant, since the effect itself is insignificant...
 	p_ref = 4.0
 	cw_ref = 460.0 / 1e4
 	e1_dai = 74000.0

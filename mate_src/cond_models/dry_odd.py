@@ -78,7 +78,7 @@ def Fullea2011_ol(T,fe_ol,fe_opx,fe_cpx,fe_gt,P,fo2):
 	e_i_fullea = 231000.0
 
 	a_ful = [1.642,0.246,-4.85,3.259] #polynomial coefficients that calculates the fe-dependency of act. enthalpies from Omura et al (1989)
-	dv_ful = 0.68 * 1e-6
+	dv_ful = 0.68e3
 	fe_pol_fullea = (a_ful[0] + (a_ful[1] * fe_ol) + (a_ful[2] * (fe_ol**2.0)) + (a_ful[3]* (fe_ol**3.0)) + (P * dv_ful)) * 1e5
 
 	sigma = (sigma_i_fullea * np.exp(-e_i_fullea / (R_const * T))) + (sigma_pol_fullea * np.exp(-fe_pol_fullea / (R_const * T)))
