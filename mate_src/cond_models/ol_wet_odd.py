@@ -19,9 +19,7 @@ def Dai2014a(model_method,T,P,corr_factor,fo2,fo2_ref,wt_err,ol_h2o,method):
 	q_dry = 0.16666 #Taken from Constable (2006)
 	wt_err = wt_err
 	h2o = ol_h2o / (1e4 * corr_factor)
-	#Changing fo2 to complex to avoid Runtime errors
-	fo2 = np.array(fo2, dtype = np.complex)
-	fo2_ref = np.array(fo2_ref, dtype = np.complex)
+	
 	#p*dv multiplied by 1e3 to get them all on the basis of the SI units J/mol, which activation energy is in.
 	if method == 'array':
 		dai_ref_max = ((10.0**0.48) * np.exp(-((e1_dai - e1_dai_err) + (p_ref*dv_dai2014)) / (R_const * T))) + (10.0**2.84 * np.exp(-((e2_dai-e2_dai_err) + (p_ref*dv_dai2014)) / (R_const * T)))
