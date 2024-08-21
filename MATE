@@ -2408,7 +2408,7 @@ class MATE(QMainWindow):
 				self.calculate_carbonated_solidus(method = method, idx = idx_node)
 
 			self.melt_h2o[idx_node] = self.calculate_melt_water(h2o_bulk = self.h2o[idx_node], melt_mass_frac = self.melt_mass_frac[idx_node], d_per_melt = self.d_per_melt[idx_node])
-
+			
 			#reassigning the zero mass frac melt layers using pre-mapped indexing array.
 			if idx_node == None:
 				self.melt_h2o[self.melt_mass_frac <= 0.0] = 0.0
@@ -2418,6 +2418,7 @@ class MATE(QMainWindow):
 			#Recalculating the self.h2o as peridotite (solid) water content
 			self.h2o_solid[idx_node] = (self.h2o[idx_node] * self.d_per_melt[idx_node]) /\
 				(self.melt_mass_frac[idx_node] + ((1.0 - self.melt_mass_frac[idx_node]) * self.d_per_melt[idx_node]))
+				
 		else:
 
 			self.h2o_solid[idx_node] = self.h2o[idx_node]
@@ -4954,9 +4955,9 @@ class MATE(QMainWindow):
 		self.y_num = int(self.ModEM_rho_data[1][1])
 		self.z_num = int(self.ModEM_rho_data[1][2])
 
-		self.x_grid = np.asarray(self.ModEM_rho_data[2]).astype(np.float)
-		self.y_grid = np.asarray(self.ModEM_rho_data[3]).astype(np.float)
-		self.z_grid = np.asarray(self.ModEM_rho_data[4]).astype(np.float)
+		self.x_grid = np.array(self.ModEM_rho_data[2], dtype = float)
+		self.y_grid = np.array(self.ModEM_rho_data[3], dtype = float)
+		self.z_grid = np.array(self.ModEM_rho_data[4], dtype = float)
 
 		self.lenxgrid = len(self.x_grid)
 		self.lenygrid = len(self.y_grid)

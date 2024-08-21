@@ -1487,9 +1487,9 @@ class MATE_BATCH(object):
 
 		with warnings.catch_warnings():
 			warnings.simplefilter('ignore', DeprecationWarning)
-			self.x_grid = np.asarray(self.ModEM_rho_data[2]).astype(np.float64)
-			self.y_grid = np.asarray(self.ModEM_rho_data[3]).astype(np.float64)
-			self.z_grid = np.asarray(self.ModEM_rho_data[4]).astype(np.float64)
+			self.x_grid = np.array(self.ModEM_rho_data[2], dtype = float)
+			self.y_grid = np.array(self.ModEM_rho_data[3], dtype = float)
+			self.z_grid = np.array(self.ModEM_rho_data[4], dtype = float)
 
 		#finding the core start and end
 		idx_x_count = 0
