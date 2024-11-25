@@ -377,6 +377,8 @@ class MATE(QMainWindow):
 		MATE.hr = 10.0 * 1000.0
 		MATE.moho = 38.0 * 1000.0
 		MATE.lab = 200 * 1000.0
+		MATE.T_LAB = 1300
+		MATE.grad_adiabat = 0.55
 
 		#Setting up initial logical parameters
 		#These are the parameters like which methods are being used initially.
@@ -532,7 +534,7 @@ class MATE(QMainWindow):
 
 		MATE.spinel_stab_select = 1
 		MATE.P_sp_manual = None
-		MATE.adiabat_options = ['No Adiabat', 'Katsura2022']
+		MATE.adiabat_options = ['No Adiabat','Self-Constructed','Katsura2022']
 		MATE.adiabat_selection = 1
 
 		self.fo2_input = False
@@ -2249,7 +2251,7 @@ class MATE(QMainWindow):
 					self.crust_production = MATE.q_0 - self.q[i]
 					self.moho_heat_flow = self.q[i]
 
-		if MATE.adiabat_selection != 0:
+		if MATE.adiabat_selection > 1:
 
 			T_K_Adiabat, self.depth_adiabat_used, self.T_adiabat_used = eval(MATE.adiabat_options[MATE.adiabat_selection] + '(P_input = self.p)')
 
@@ -2259,7 +2261,20 @@ class MATE(QMainWindow):
 				self.T[self.idx_T_adiabat[0][0]:] = T_K_Adiabat[self.idx_T_adiabat[0][0]:]
 			except IndexError:
 				pass
-
+		elif MATE.adiabat_selection == 1:
+			
+			self.idx_T_adiabat = np.argmin(np.abs(self.T-(MATE.T_LAB+273.15)))
+			
+			T_K_Adiabat = np.ones(len(self.T[self.idx_T_adiabat:])) * (MATE.T_LAB+273.15)
+			
+			for i in range(1,len(T_K_Adiabat)):
+				T_K_Adiabat[i] = T_K_Adiabat[i-1] + MATE.grad_adiabat
+				
+			try:
+				self.T[self.idx_T_adiabat:] = T_K_Adiabat
+			except IndexError:
+				pass
+			
 		#After P and T calculation re-calculate al-model and plot it.
 		if MATE.al_method == '0':
 			if MATE.al_opx_model_select != 0:
@@ -5343,10 +5358,12 @@ class MATE(QMainWindow):
 
 		if MATE.adiabat_selection != 0:
 			if MATE.thermal_cond_method != '2':
-				self.ax3.plot(np.array(self.T_adiabat_used) - 273.15, self.depth_adiabat_used, linestyle = '--', color = 'k')
-
-				if len(self.idx_T_adiabat) > 0:
-					self.ax3.axhline(self.depth[self.idx_T_adiabat]/1e3, linestyle = '--', color = '#551927', label = 'LAB',linewidth = 2.5)
+				try:
+					self.ax3.plot(np.array(self.T_adiabat_used) - 273.15, self.depth_adiabat_used, linestyle = '--', color = 'k')
+				except AttributeError:
+					pass
+					
+				self.ax3.axhline(self.depth[self.idx_T_adiabat]/1e3, linestyle = '--', color = '#551927', label = 'LAB',linewidth = 2.5)
 
 		if MATE.thermal_cond_method != '2':
 
@@ -7284,6 +7301,18 @@ class G_POP(QWidget):
 		self.heat_prod_textbox_2 = QLineEdit(str(MATE.A_lower_crust))
 		self.heat_prod_textbox_2.setEnabled(False)
 		heat_layout.addRow(self.btn3,self.heat_prod_textbox_2)
+		
+		self.btn31 = QPushButton("Temperature at LAB (C)")
+		self.btn31.clicked.connect(self.get_lab_T)
+		self.t_lab_textbox = QLineEdit(str(MATE.T_LAB))
+		self.t_lab_textbox.setEnabled(False)
+		heat_layout.addRow(self.btn31,self.t_lab_textbox)
+		
+		self.btn32 = QPushButton("Adiabatic Gradient (C/km)")
+		self.btn32.clicked.connect(self.get_adiabat_grad)
+		self.adiabat_grad_textbox = QLineEdit(str(MATE.grad_adiabat))
+		self.adiabat_grad_textbox.setEnabled(False)
+		heat_layout.addRow(self.btn32,self.adiabat_grad_textbox)
 
 		self.btn35 = QPushButton("Input Geotherm Properties")
 		self.btn35.clicked.connect(self.get_geothermp_input_prop)
@@ -7393,6 +7422,29 @@ class G_POP(QWidget):
 					QMessageBox.about(self,"Warning!","Please enter a value that can be converted to floating number.")
 		else:
 			QMessageBox.about(self,"Warning!",self.geoth_message)
+			
+	def get_lab_T(self):
+	
+		text, ok = QInputDialog.getText(self, 'Temperature at LAB', 'Enter the value in (C):')
+		if ok:
+			try:
+				float(text)
+				self.t_lab_textbox.setText(str(text))
+				MATE.T_LAB = float(text)
+			except ValueError:
+				QMessageBox.about(self,"Warning!","Please enter a value that can be converted to floating number.")
+	
+	def get_adiabat_grad(self):
+		
+		text, ok = QInputDialog.getText(self, 'Temperature gradient for adiabatic mantle.', 'Enter the value in (Celsius/km):')
+		if ok:
+			try:
+				float(text)
+				self.adiabat_grad_textbox.setText(str(text))
+				MATE.grad_adiabat = float(text)
+			except ValueError:
+				QMessageBox.about(self,"Warning!","Please enter a value that can be converted to floating number.")
+		
 
 	def get_geotherm_input(self):
 
