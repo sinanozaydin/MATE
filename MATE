@@ -2267,8 +2267,14 @@ class MATE(QMainWindow):
 			
 			T_K_Adiabat = np.ones(len(self.T[self.idx_T_adiabat:])) * (MATE.T_LAB+273.15)
 			
+			if MATE.dz != 1000.0:
+				grad_dz = MATE.grad_adiabat * (MATE.dz*1e-3)
+			else:
+				grad_dz = MATE.grad_adiabat
+			
 			for i in range(1,len(T_K_Adiabat)):
-				T_K_Adiabat[i] = T_K_Adiabat[i-1] + MATE.grad_adiabat
+			
+				T_K_Adiabat[i] = T_K_Adiabat[i-1] + grad_dz
 				
 			try:
 				self.T[self.idx_T_adiabat:] = T_K_Adiabat
