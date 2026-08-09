@@ -1,0 +1,1514 @@
+#!/usr/bin/env python3
+
+#MATE v2 - (M)antle (A)nalysis (T)ools for (E)lectromagnetics
+#Program written by Sinan Ozaydin (School of Geosciences, University of Sydney, Australia).
+#
+#Version 2.0
+#
+#This version of MATE uses the pide library (https://github.com/sinanozaydin/pide)
+#as its calculation backend. All experimental petrology calculations (electrical
+#conductivity, water partitioning/solubility, seismic velocities, geotherms) are
+#performed through pide. MATE v2 is purely a graphical frontend.
+#
+#Main changes with respect to MATE v1.x:
+#	- Backend physics replaced entirely with pide.
+#	- GUI ported from PyQt5 to PyQt6.
+#	- Composition entry is now a spreadsheet-like table instead of a text editor.
+#	- New seismic velocity (Vp/Vs) plot column calculated through pide/santex.
+#	- Batch mode removed. Use pide directly for scripted/batch workflows.
+#
+#Indentation method: hard tabs ('\t')
+#
+#Works with Python3
+#Required libraries: numpy, pandas, scipy, matplotlib, PyQt6, pide (>=1.3)
+
+import os
+import sys
+import platform
+import warnings
+import contextlib
+import io
+
+import numpy as np
+import pandas as pd
+
+import matplotlib
+matplotlib.use('qtagg')
+import matplotlib.pyplot as plt
+import matplotlib.patches as patches
+from matplotlib.figure import Figure
+from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.backends.backend_qtagg import NavigationToolbar2QT as NavigationToolbar
+
+from PyQt6.QtCore import Qt, QAbstractTableModel, QModelIndex
+from PyQt6.QtGui import QAction, QColor, QKeySequence
+from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QLabel, QPushButton,
+	QVBoxLayout, QHBoxLayout, QGridLayout, QFrame, QTableView, QFileDialog, QMessageBox,
+	QComboBox, QLineEdit, QProgressBar, QCheckBox, QHeaderView, QAbstractItemView)
+
+#Importing the backend library: pide
+
+try:
+	import pide as pide_module
+	from pide import pide as pide_class
+	from pide.geodyn.geotherm import calculate_hasterok2011_geotherm
+except ImportError:
+	print('The backend library pide could not be imported.')
+	print('Install it with: pip install pide')
+	print('or point sys.path to a source checkout of pide (>=1.3).')
+	sys.exit(1)
+
+warnings.filterwarnings("ignore", category = RuntimeWarning)
+
+#Color coding class for fancy-colored print-outs.
+class bcolors:
+	BLUE = '\033[94m'
+	GREEN = '\033[92m'
+	RED = '\033[91m'
+	B = '\033[0m'
+	NC = '\x1b[0m'
+
+print(bcolors.GREEN + '#############################################')
+print(' ')
+print(bcolors.GREEN + '                  MATE 2.0')
+print(' ')
+print(bcolors.BLUE + '            Mantle Analysis Tools')
+print('                     for')
+print('               Electromagnetics')
+print(' ')
+print(bcolors.BLUE + '           now powered by pide')
+print(' ')
+print(bcolors.GREEN + '#############################################')
+print(bcolors.BLUE + 'developed by Sinan Ozaydin,' + bcolors.RED + ' School of Geosciences, University of Sydney')
+print(bcolors.NC + 'for questions, email: sinan.ozaydin@protonmail.com or sinan.ozaydin@sydney.edu.au')
+print('Initializing the software...')
+
+#-------------------------------------------------------------------------------
+#Composition table definitions.
+#The column set is kept identical to the MATE v1.x composition csv files, so old
+#composition files load into the spreadsheet unchanged. Rows define layer tops:
+#each row is valid from its depth down to the next row's depth (step-hold).
+#The m_* columns are phase interconnectivities (cementation exponents) that are
+#passed to pide's set_phase_interconnectivities.
+
+TABLE_COLUMNS = ['Depth(km)', 'H2O_bulk(ppm)', 'CO2_melt(ppm)', 'ol_frac', 'opx_frac',
+	'cpx_frac', 'gt_frac', 'sp_chr_frac', 'pl_frac', 'amp_frac', 'cond_frac',
+	'cond_cond(ohm_m)', 'melt_mass_frac', 'XFe-ol', 'XFe-opx', 'XFe-cpx', 'XFe-gt',
+	'm_ol', 'm_opx', 'm_cpx', 'm_gt', 'm_sp_chr', 'm_pl', 'm_amp', 'm_cond', 'm_melt',
+	'Al-opx(wt%)', 'Ti-ol(wt%)', 'Na2O_melt(wt%)', 'K2O_melt(wt%)', 't_k_cond(W/mK)',
+	'fl_pl(wt%)', 'ol_gs(mm)', 'heat_prod(mW/m^2)']
+
+DEFAULT_ROWS = [
+	[38, 100, 0, 62.7, 30.3, 7.0, 0, 0, 0, 0, 0, 1e-5, 0, 0.09, 0.09, 0.09, 0.09,
+	1, 2, 4, 4, 4, 4, 4, 4, 6, 0.005, 0.01, 1, 1, 0.52, 1, 1, 4e-5],
+	[98, 100, 0, 60.6, 28.4, 6.0, 5.0, 0, 0, 0, 0, 1e-5, 0, 0.09, 0.09, 0.09, 0.09,
+	1, 2, 4, 4, 4, 4, 4, 4, 6, 0.005, 0.01, 1, 1, 0.52, 1, 1, 4e-5]]
+
+class CompositionTableModel(QAbstractTableModel):
+
+	#Spreadsheet model backed by a pandas DataFrame. All cells are numeric.
+
+	def __init__(self, df = None, parent = None):
+
+		super().__init__(parent)
+
+		if df is None:
+			self.df = pd.DataFrame(DEFAULT_ROWS, columns = TABLE_COLUMNS)
+		else:
+			self.df = df
+
+	def rowCount(self, parent = QModelIndex()):
+
+		return len(self.df)
+
+	def columnCount(self, parent = QModelIndex()):
+
+		return len(self.df.columns)
+
+	def data(self, index, role = Qt.ItemDataRole.DisplayRole):
+
+		if not index.isValid():
+			return None
+
+		value = self.df.iat[index.row(), index.column()]
+
+		if role in (Qt.ItemDataRole.DisplayRole, Qt.ItemDataRole.EditRole):
+			if pd.isna(value):
+				return ''
+			if float(value) == int(float(value)):
+				return str(int(float(value)))
+			return str(value)
+
+		if role == Qt.ItemDataRole.BackgroundRole:
+			if pd.isna(value):
+				return QColor('#f2b2ac')
+			#Highlighting the row red if the mineral fractions do not sum to 100.
+			frac_cols = ['ol_frac', 'opx_frac', 'cpx_frac', 'gt_frac', 'sp_chr_frac',
+				'pl_frac', 'amp_frac', 'cond_frac']
+			if self.df.columns[index.column()] in frac_cols:
+				total = self.df.iloc[index.row()][frac_cols].sum()
+				if abs(total - 100.0) > 1e-6:
+					return QColor('#f2d7ac')
+
+		if role == Qt.ItemDataRole.TextAlignmentRole:
+			return Qt.AlignmentFlag.AlignCenter
+
+		return None
+
+	def setData(self, index, value, role = Qt.ItemDataRole.EditRole):
+
+		if role != Qt.ItemDataRole.EditRole:
+			return False
+
+		try:
+			if str(value).strip() == '':
+				numeric = np.nan
+			else:
+				numeric = float(str(value).replace(',', '.'))
+		except ValueError:
+			return False
+
+		self.df.iat[index.row(), index.column()] = numeric
+		self.dataChanged.emit(index, index)
+		#Refreshing whole row so the fraction-sum highlight updates.
+		left = self.index(index.row(), 0)
+		right = self.index(index.row(), self.columnCount() - 1)
+		self.dataChanged.emit(left, right)
+
+		return True
+
+	def headerData(self, section, orientation, role = Qt.ItemDataRole.DisplayRole):
+
+		if role != Qt.ItemDataRole.DisplayRole:
+			return None
+
+		if orientation == Qt.Orientation.Horizontal:
+			return str(self.df.columns[section])
+
+		return str(section + 1)
+
+	def flags(self, index):
+
+		return (Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsSelectable |
+			Qt.ItemFlag.ItemIsEditable)
+
+	def insert_row(self, position):
+
+		self.beginInsertRows(QModelIndex(), position, position)
+		if len(self.df) > 0:
+			source = min(position, len(self.df) - 1)
+			new_row = self.df.iloc[[source]].copy()
+		else:
+			new_row = pd.DataFrame([DEFAULT_ROWS[0]], columns = TABLE_COLUMNS)
+		upper = self.df.iloc[:position]
+		lower = self.df.iloc[position:]
+		self.df = pd.concat([upper, new_row, lower], ignore_index = True)
+		self.endInsertRows()
+
+	def remove_rows(self, rows):
+
+		for row in sorted(set(rows), reverse = True):
+			if len(self.df) <= 1:
+				break
+			self.beginRemoveRows(QModelIndex(), row, row)
+			self.df = self.df.drop(self.df.index[row]).reset_index(drop = True)
+			self.endRemoveRows()
+
+	def load_dataframe(self, df):
+
+		self.beginResetModel()
+		self.df = df
+		self.endResetModel()
+
+class CompositionTableView(QTableView):
+
+	#Table view with block copy/paste, so cells can be exchanged directly with
+	#Excel/LibreOffice through the clipboard.
+
+	def keyPressEvent(self, event):
+
+		if event.matches(QKeySequence.StandardKey.Copy):
+			self.copy_selection()
+		elif event.matches(QKeySequence.StandardKey.Paste):
+			self.paste_selection()
+		elif event.key() in (Qt.Key.Key_Delete, Qt.Key.Key_Backspace):
+			for idx in self.selectedIndexes():
+				self.model().setData(idx, '0', Qt.ItemDataRole.EditRole)
+		else:
+			super().keyPressEvent(event)
+
+	def copy_selection(self):
+
+		selection = self.selectedIndexes()
+		if not selection:
+			return
+		rows = sorted(set(idx.row() for idx in selection))
+		cols = sorted(set(idx.column() for idx in selection))
+		table = []
+		for r in rows:
+			line = []
+			for c in cols:
+				line.append(str(self.model().data(self.model().index(r, c),
+					Qt.ItemDataRole.DisplayRole)))
+			table.append('\t'.join(line))
+		QApplication.clipboard().setText('\n'.join(table))
+
+	def paste_selection(self):
+
+		selection = self.selectedIndexes()
+		if not selection:
+			return
+		start_row = min(idx.row() for idx in selection)
+		start_col = min(idx.column() for idx in selection)
+		text = QApplication.clipboard().text()
+		lines = [ln for ln in text.replace('\r\n', '\n').replace('\r', '\n').split('\n') if ln.strip() != '']
+		model = self.model()
+		for i, line in enumerate(lines):
+			cells = line.split('\t') if '\t' in line else line.split(',')
+			target_row = start_row + i
+			while target_row >= model.rowCount():
+				model.insert_row(model.rowCount())
+			for j, cell in enumerate(cells):
+				target_col = start_col + j
+				if target_col < model.columnCount():
+					model.setData(model.index(target_row, target_col), cell,
+						Qt.ItemDataRole.EditRole)
+
+#-------------------------------------------------------------------------------
+
+def silent_call(func, *args, **kwargs):
+
+	#pide's list_* methods print their catalogues to the terminal. This wrapper
+	#silences those print-outs while keeping the returned lists.
+
+	buffer = io.StringIO()
+	with contextlib.redirect_stdout(buffer):
+		result = func(*args, **kwargs)
+	return result
+
+def step_interpolate(row_depths, row_values, target_depths):
+
+	#Step-hold interpolation: each composition row is valid from its own depth
+	#down to the depth of the next row, mirroring MATE v1.x behaviour.
+
+	row_depths = np.asarray(row_depths, dtype = float)
+	row_values = np.asarray(row_values, dtype = float)
+	idx = np.searchsorted(row_depths, target_depths, side = 'right') - 1
+	idx = np.clip(idx, 0, len(row_values) - 1)
+
+	return row_values[idx]
+
+class MATE(QMainWindow):
+
+	def __init__(self, parent = None):
+
+		super(MATE, self).__init__(parent)
+
+		self.working_path = os.getcwd()
+
+		self.setWindowTitle('MATE 2.0 || Mantle Analysis Tools for Electromagnetics || powered by pide')
+		self.setGeometry(50, 50, 1800, 1000)
+		self.setStyleSheet('background-color: #EFF0F1')
+
+		#Menu bar
+
+		main_menu = self.menuBar()
+		file_menu = main_menu.addMenu('&File')
+		info_menu = main_menu.addMenu('&Info')
+
+		save_fig_action = QAction('&Save Figures', self)
+		save_fig_action.triggered.connect(self.save_figures)
+		file_menu.addAction(save_fig_action)
+
+		write_data_action = QAction('&Write Data', self)
+		write_data_action.triggered.connect(self.write_data)
+		file_menu.addAction(write_data_action)
+
+		quit_action = QAction('&Quit', self)
+		quit_action.triggered.connect(self.quit)
+		file_menu.addAction(quit_action)
+
+		about_action = QAction('&About MATE', self)
+		about_action.triggered.connect(self.info_main)
+		info_menu.addAction(about_action)
+
+		self.home()
+
+	def home(self):
+
+		#Setting up initial state variables.
+
+		self.model_built = False
+		self.run_counter = 0
+
+		#Geotherm parameters (same defaults as MATE v1.x).
+		self.q_0 = 40.0				#Surface heat flow, mW/m^2
+		self.T_0 = 0.0				#Surface temperature, C
+		self.moho = 38.0			#Moho depth, km
+		self.lab = 200.0			#LAB depth, km (maximum model depth)
+		self.adiabat_method = 1		#0: no adiabat, 1: Katsura2022 intersection
+
+		#pide model selections (indices into the pide model catalogues).
+		self.ol_cond_selection = 0
+		self.opx_cond_selection = 0
+		self.cpx_cond_selection = 0
+		self.gt_cond_selection = 0
+		self.mica_cond_selection = 0
+		self.amp_cond_selection = 0
+		self.sp_cond_selection = 0
+		self.melt_cond_selection = 0
+
+		self.opx_ol_part_selection = 0
+		self.cpx_ol_part_selection = 0
+		self.gt_ol_part_selection = 0
+		self.ol_melt_part_selection = 0
+		self.opx_melt_part_selection = 0
+		self.cpx_melt_part_selection = 0
+		self.gt_melt_part_selection = 0
+
+		self.ol_sol_selection = 0
+		self.opx_sol_selection = 0
+		self.cpx_sol_selection = 0
+		self.gt_sol_selection = 0
+
+		self.ol_calib = 3
+		self.px_gt_calib = 2
+		self.o2_buffer = 0
+
+		self.phs_mix_selection = 1
+		self.phs_melt_mix_selection = 0
+
+		self.seis_mixing_selection = 0
+		self.seis_mixing_list = ['HS-Medium', 'HS-Upper', 'HS-Lower']
+		self.seis_attenuation_selection = 0
+		self.seis_attenuation_list = ['none', 'Q1', 'Q2', 'JF2010', 'YT2016']
+		self.plot_anelastic = False
+
+		self.solubility_check = True	#Limit distributed water at mineral solubility.
+
+		#Curve accumulation lists for comparative plotting.
+		self.cond_runs = []
+		self.seis_runs = []
+		self.water_runs = []
+		self.geotherm_runs = []
+
+		self.color_cycle = ['#179c9a', '#CB3026', '#27A411', '#B926CB', '#D09605',
+			'#05D0AE', '#D005CA', '#050ED0']
+
+		#Popup handles
+		self.comp_pop = None
+		self.geot_pop = None
+		self.part_pop = None
+		self.sol_pop = None
+		self.cond_pop = None
+		self.mix_pop = None
+		self.seis_pop = None
+
+		#Composition table model.
+		self.table_model = CompositionTableModel()
+
+		#Building a throwaway pide object to harvest the model catalogues once.
+		print('Reading model catalogues from pide...')
+		self.catalog = pide_class()
+		self.ol_model_list = silent_call(self.catalog.list_mineral_econd_models, 'ol')
+		self.opx_model_list = silent_call(self.catalog.list_mineral_econd_models, 'opx')
+		self.cpx_model_list = silent_call(self.catalog.list_mineral_econd_models, 'cpx')
+		self.gt_model_list = silent_call(self.catalog.list_mineral_econd_models, 'garnet')
+		self.mica_model_list = silent_call(self.catalog.list_mineral_econd_models, 'mica')
+		self.amp_model_list = silent_call(self.catalog.list_mineral_econd_models, 'amp')
+		self.sp_model_list = silent_call(self.catalog.list_mineral_econd_models, 'sp')
+		self.melt_model_list = silent_call(self.catalog.list_melt_econd_models)
+		self.phs_mix_list = silent_call(self.catalog.list_phs_mix_methods)
+		self.phs_melt_mix_list = silent_call(self.catalog.list_phs_melt_fluid_mix_methods)
+		self.opx_ol_part_list = silent_call(self.catalog.list_mantle_water_partitions_solid, 'opx')
+		self.cpx_ol_part_list = silent_call(self.catalog.list_mantle_water_partitions_solid, 'cpx')
+		self.gt_ol_part_list = silent_call(self.catalog.list_mantle_water_partitions_solid, 'garnet')
+		self.ol_melt_part_list = silent_call(self.catalog.list_mantle_water_partitions_melt, 'ol')
+		self.opx_melt_part_list = silent_call(self.catalog.list_mantle_water_partitions_melt, 'opx')
+		self.cpx_melt_part_list = silent_call(self.catalog.list_mantle_water_partitions_melt, 'cpx')
+		self.gt_melt_part_list = silent_call(self.catalog.list_mantle_water_partitions_melt, 'garnet')
+		self.ol_sol_list = silent_call(self.catalog.list_mantle_water_solubilities, 'ol')
+		self.opx_sol_list = silent_call(self.catalog.list_mantle_water_solubilities, 'opx')
+		self.cpx_sol_list = silent_call(self.catalog.list_mantle_water_solubilities, 'cpx')
+		self.gt_sol_list = silent_call(self.catalog.list_mantle_water_solubilities, 'garnet')
+		print('Model catalogues loaded.')
+
+		#Default conductivity model selections trying to match MATE v1.x defaults.
+		self.ol_cond_selection = self._default_model_index(self.ol_model_list, 'Gardes2014')
+		self.opx_cond_selection = self._default_model_index(self.opx_model_list, 'Dai2009')
+		self.cpx_cond_selection = self._default_model_index(self.cpx_model_list, 'Liu2021')
+		self.gt_cond_selection = self._default_model_index(self.gt_model_list, 'Dai2009')
+		self.melt_cond_selection = self._default_model_index(self.melt_model_list, 'Sifre2014')
+
+		#Central widget with a left button column and the plotting canvas.
+
+		central = QWidget(self)
+		self.setCentralWidget(central)
+		main_layout = QHBoxLayout(central)
+
+		button_panel = QWidget()
+		button_panel.setFixedWidth(190)
+		button_layout = QVBoxLayout(button_panel)
+		button_layout.setSpacing(6)
+
+		setup_style = 'QPushButton {font: bold; font-size: 9pt; background-color: #c8cccc}'
+		calc_style = 'QPushButton {font: bold; font-size: 9pt; background-color: #93db88}'
+		reset_style = 'QPushButton {font: bold; font-size: 9pt; background-color: #e8b1a0}'
+		clear_style = 'QPushButton {font: bold; font-size: 9pt; background-color: #de5d5d}'
+		legend_style = 'QPushButton {font: bold; font-size: 9pt; background-color: #ddb62b}'
+
+		setup_mark = QLabel('Setup')
+		setup_mark.setStyleSheet('QLabel {font: bold; color: red}')
+		button_layout.addWidget(setup_mark)
+
+		buttons_setup = [
+			('Composition Entry', self.comp_popup),
+			('Geotherm', self.geotherm_popup),
+			('Water Partitioning', self.partition_popup),
+			('Water Solubility', self.solubility_popup),
+			('Conductivity Models', self.conductivity_popup),
+			('Phase-Mixing', self.mixing_popup),
+			('Seismic Properties', self.seismic_popup)]
+
+		for label, slot in buttons_setup:
+			btn = QPushButton(label)
+			btn.setStyleSheet(setup_style)
+			btn.clicked.connect(slot)
+			button_layout.addWidget(btn)
+
+		calc_mark = QLabel('Calculating')
+		calc_mark.setStyleSheet('QLabel {font: bold; color: red}')
+		button_layout.addWidget(calc_mark)
+
+		calc_btn = QPushButton('Calculate Model')
+		calc_btn.setStyleSheet('QPushButton {font: bold; font-size: 9pt; background-color: #bf490f}')
+		calc_btn.clicked.connect(self.calculate_model_button)
+		button_layout.addWidget(calc_btn)
+
+		buttons_plot = [
+			('Plot Composition', self.plot_composition_button, calc_style),
+			('Plot Geotherm', self.plot_geotherm_button, calc_style),
+			('Plot Water', self.plot_water_button, calc_style),
+			('Plot Conductivity', self.plot_conductivity_button, calc_style),
+			('Plot Seismic', self.plot_seismic_button, calc_style),
+			('Water Reset', self.plot_water_reset, reset_style),
+			('Conductivity Reset', self.plot_conductivity_reset, reset_style),
+			('Seismic Reset', self.plot_seismic_reset, reset_style),
+			('Plot Legend', self.plot_legend, legend_style),
+			('Clear All', self.reset_all_plot, clear_style)]
+
+		for label, slot, style in buttons_plot:
+			btn = QPushButton(label)
+			btn.setStyleSheet(style)
+			btn.clicked.connect(slot)
+			button_layout.addWidget(btn)
+
+		self.progressBar = QProgressBar()
+		button_layout.addWidget(self.progressBar)
+		button_layout.addStretch()
+
+		main_layout.addWidget(button_panel)
+
+		canvas_frame = QFrame()
+		canvas_frame.setStyleSheet('border: 1.25px solid #768795')
+		canvas_layout = QVBoxLayout(canvas_frame)
+
+		plt.style.use('ggplot')
+		self.fig = Figure(figsize = (15, 9))
+		self.fig.patch.set_facecolor('#EFF0F1')
+		self.canvas = FigureCanvas(self.fig)
+		self.toolbar = NavigationToolbar(self.canvas, self)
+		self.toolbar.setStyleSheet('QToolBar {border: 0px}')
+		canvas_layout.addWidget(self.toolbar)
+		canvas_layout.addWidget(self.canvas)
+		main_layout.addWidget(canvas_frame)
+
+		self.axes = {}
+
+		self.show()
+
+	def _default_model_index(self, model_list, keyword):
+
+		for i, name in enumerate(model_list):
+			if keyword.lower() in name.lower():
+				return i
+
+		return 0
+
+	#---------------------------------------------------------------------------
+	#Popup windows
+	#---------------------------------------------------------------------------
+
+	def comp_popup(self):
+
+		#Spreadsheet-style composition entry replacing the old text editor.
+
+		if self.comp_pop is not None:
+			self.comp_pop.close()
+
+		self.comp_pop = QWidget()
+		self.comp_pop.setWindowTitle('MATE 2.0 - Composition Entry')
+		self.comp_pop.setGeometry(150, 150, 1400, 420)
+
+		layout = QVBoxLayout(self.comp_pop)
+
+		info = QLabel('Each row defines a layer top: values hold from the row depth down to the next row. '
+			'Mineral fractions must sum to 100 (rows are shaded orange until they do). '
+			'Cells can be copied/pasted to and from spreadsheet software (Ctrl+C / Ctrl+V).')
+		info.setWordWrap(True)
+		layout.addWidget(info)
+
+		self.table_view = CompositionTableView()
+		self.table_view.setModel(self.table_model)
+		self.table_view.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Interactive)
+		self.table_view.horizontalHeader().setDefaultSectionSize(88)
+		self.table_view.setSelectionMode(QAbstractItemView.SelectionMode.ContiguousSelection)
+		layout.addWidget(self.table_view)
+
+		button_row = QHBoxLayout()
+
+		load_btn = QPushButton('Load CSV')
+		load_btn.clicked.connect(self.load_composition_csv)
+		button_row.addWidget(load_btn)
+
+		save_btn = QPushButton('Save CSV')
+		save_btn.clicked.connect(self.save_composition_csv)
+		button_row.addWidget(save_btn)
+
+		add_btn = QPushButton('Add Row')
+		add_btn.clicked.connect(self.add_table_row)
+		button_row.addWidget(add_btn)
+
+		remove_btn = QPushButton('Remove Selected Row(s)')
+		remove_btn.clicked.connect(self.remove_table_rows)
+		button_row.addWidget(remove_btn)
+
+		close_btn = QPushButton('Close')
+		close_btn.clicked.connect(self.comp_pop.close)
+		button_row.addWidget(close_btn)
+
+		layout.addLayout(button_row)
+
+		self.comp_pop.show()
+
+	def load_composition_csv(self):
+
+		filename, _ = QFileDialog.getOpenFileName(self.comp_pop, 'Load composition file',
+			self.working_path, 'CSV files (*.csv);;All files (*)')
+
+		if filename == '':
+			return
+
+		try:
+			df = pd.read_csv(filename)
+		except Exception as exc:
+			QMessageBox.critical(self.comp_pop, 'MATE 2.0', 'Could not read the file:\n' + str(exc))
+			return
+
+		#Mapping the loaded columns onto the expected column set, filling absentees.
+		new_df = pd.DataFrame(columns = TABLE_COLUMNS)
+		for col in TABLE_COLUMNS:
+			if col in df.columns:
+				new_df[col] = pd.to_numeric(df[col], errors = 'coerce')
+			else:
+				new_df[col] = 0.0
+		new_df = new_df.fillna(0.0)
+
+		self.table_model.load_dataframe(new_df)
+		self.model_built = False
+
+	def save_composition_csv(self):
+
+		filename, _ = QFileDialog.getSaveFileName(self.comp_pop, 'Save composition file',
+			self.working_path, 'CSV files (*.csv)')
+
+		if filename == '':
+			return
+
+		if not filename.endswith('.csv'):
+			filename = filename + '.csv'
+
+		self.table_model.df.to_csv(filename, index = False)
+
+	def add_table_row(self):
+
+		selection = self.table_view.selectionModel().selectedIndexes()
+		if selection:
+			position = max(idx.row() for idx in selection) + 1
+		else:
+			position = self.table_model.rowCount()
+		self.table_model.insert_row(position)
+
+	def remove_table_rows(self):
+
+		selection = self.table_view.selectionModel().selectedIndexes()
+		if not selection:
+			return
+		rows = [idx.row() for idx in selection]
+		self.table_model.remove_rows(rows)
+
+	def geotherm_popup(self):
+
+		if self.geot_pop is not None:
+			self.geot_pop.close()
+
+		self.geot_pop = QWidget()
+		self.geot_pop.setWindowTitle('MATE 2.0 - Geotherm Properties')
+		self.geot_pop.setGeometry(300, 300, 420, 260)
+
+		layout = QGridLayout(self.geot_pop)
+
+		layout.addWidget(QLabel('Geotherm model: Hasterok and Chapman (2011), through pide'), 0, 0, 1, 2)
+
+		layout.addWidget(QLabel('Surface Heat Flow (mW/m^2)'), 1, 0)
+		self.q0_box = QLineEdit(str(self.q_0))
+		layout.addWidget(self.q0_box, 1, 1)
+
+		layout.addWidget(QLabel('Surface Temperature (C)'), 2, 0)
+		self.t0_box = QLineEdit(str(self.T_0))
+		layout.addWidget(self.t0_box, 2, 1)
+
+		layout.addWidget(QLabel('Moho Depth (km)'), 3, 0)
+		self.moho_box = QLineEdit(str(self.moho))
+		layout.addWidget(self.moho_box, 3, 1)
+
+		layout.addWidget(QLabel('Maximum Model Depth (km)'), 4, 0)
+		self.lab_box = QLineEdit(str(self.lab))
+		layout.addWidget(self.lab_box, 4, 1)
+
+		layout.addWidget(QLabel('Mantle Adiabat'), 5, 0)
+		self.adiabat_combo = QComboBox()
+		self.adiabat_combo.addItems(['No Adiabat', 'Katsura (2022)'])
+		self.adiabat_combo.setCurrentIndex(self.adiabat_method)
+		layout.addWidget(self.adiabat_combo, 5, 1)
+
+		apply_btn = QPushButton('Apply')
+		apply_btn.clicked.connect(self.apply_geotherm_settings)
+		layout.addWidget(apply_btn, 6, 0, 1, 2)
+
+		self.geot_pop.show()
+
+	def apply_geotherm_settings(self):
+
+		try:
+			self.q_0 = float(self.q0_box.text())
+			self.T_0 = float(self.t0_box.text())
+			self.moho = float(self.moho_box.text())
+			self.lab = float(self.lab_box.text())
+		except ValueError:
+			QMessageBox.critical(self.geot_pop, 'MATE 2.0', 'Geotherm parameters must be numeric.')
+			return
+
+		self.adiabat_method = self.adiabat_combo.currentIndex()
+		self.model_built = False
+		self.geot_pop.close()
+
+	def partition_popup(self):
+
+		if self.part_pop is not None:
+			self.part_pop.close()
+
+		self.part_pop = QWidget()
+		self.part_pop.setWindowTitle('MATE 2.0 - Water Partitioning Models')
+		self.part_pop.setGeometry(300, 200, 640, 340)
+
+		layout = QGridLayout(self.part_pop)
+
+		layout.addWidget(QLabel('Mineral/Mineral partition coefficients'), 0, 0, 1, 2)
+
+		self.part_combos = {}
+
+		entries = [('Opx/Ol', self.opx_ol_part_list, self.opx_ol_part_selection, 'opx_ol'),
+			('Cpx/Ol', self.cpx_ol_part_list, self.cpx_ol_part_selection, 'cpx_ol'),
+			('Garnet/Ol', self.gt_ol_part_list, self.gt_ol_part_selection, 'garnet_ol'),
+			('Ol/Melt', self.ol_melt_part_list, self.ol_melt_part_selection, 'ol_melt'),
+			('Opx/Melt', self.opx_melt_part_list, self.opx_melt_part_selection, 'opx_melt'),
+			('Cpx/Melt', self.cpx_melt_part_list, self.cpx_melt_part_selection, 'cpx_melt'),
+			('Garnet/Melt', self.gt_melt_part_list, self.gt_melt_part_selection, 'garnet_melt')]
+
+		for i, (label, options, current, key) in enumerate(entries):
+			layout.addWidget(QLabel(label), i + 1, 0)
+			combo = QComboBox()
+			combo.addItems([str(item) for item in options])
+			combo.setCurrentIndex(current)
+			layout.addWidget(combo, i + 1, 1)
+			self.part_combos[key] = combo
+
+		apply_btn = QPushButton('Apply')
+		apply_btn.clicked.connect(self.apply_partition_settings)
+		layout.addWidget(apply_btn, len(entries) + 1, 0, 1, 2)
+
+		self.part_pop.show()
+
+	def apply_partition_settings(self):
+
+		self.opx_ol_part_selection = self.part_combos['opx_ol'].currentIndex()
+		self.cpx_ol_part_selection = self.part_combos['cpx_ol'].currentIndex()
+		self.gt_ol_part_selection = self.part_combos['garnet_ol'].currentIndex()
+		self.ol_melt_part_selection = self.part_combos['ol_melt'].currentIndex()
+		self.opx_melt_part_selection = self.part_combos['opx_melt'].currentIndex()
+		self.cpx_melt_part_selection = self.part_combos['cpx_melt'].currentIndex()
+		self.gt_melt_part_selection = self.part_combos['garnet_melt'].currentIndex()
+		self.model_built = False
+		self.part_pop.close()
+
+	def solubility_popup(self):
+
+		if self.sol_pop is not None:
+			self.sol_pop.close()
+
+		self.sol_pop = QWidget()
+		self.sol_pop.setWindowTitle('MATE 2.0 - Water Solubility and Calibrations')
+		self.sol_pop.setGeometry(300, 200, 680, 420)
+
+		layout = QGridLayout(self.sol_pop)
+
+		layout.addWidget(QLabel('Mantle water solubility models'), 0, 0, 1, 2)
+
+		self.sol_combos = {}
+
+		entries = [('Olivine', self.ol_sol_list, self.ol_sol_selection, 'ol'),
+			('Orthopyroxene', self.opx_sol_list, self.opx_sol_selection, 'opx'),
+			('Clinopyroxene', self.cpx_sol_list, self.cpx_sol_selection, 'cpx'),
+			('Garnet', self.gt_sol_list, self.gt_sol_selection, 'garnet')]
+
+		for i, (label, options, current, key) in enumerate(entries):
+			layout.addWidget(QLabel(label), i + 1, 0)
+			combo = QComboBox()
+			combo.addItems([str(item) for item in options])
+			combo.setCurrentIndex(current)
+			layout.addWidget(combo, i + 1, 1)
+			self.sol_combos[key] = combo
+
+		row0 = len(entries) + 1
+
+		self.sol_check_box = QCheckBox('Limit distributed water contents at mineral solubility')
+		self.sol_check_box.setChecked(self.solubility_check)
+		layout.addWidget(self.sol_check_box, row0, 0, 1, 2)
+
+		layout.addWidget(QLabel('FTIR calibration, olivine'), row0 + 1, 0)
+		self.ol_calib_combo = QComboBox()
+		self.ol_calib_combo.addItems(['Withers (2012)', 'Bell (2003)', 'Paterson (1980)', 'Default'])
+		self.ol_calib_combo.setCurrentIndex(self.ol_calib)
+		layout.addWidget(self.ol_calib_combo, row0 + 1, 1)
+
+		layout.addWidget(QLabel('FTIR calibration, px and garnet'), row0 + 2, 0)
+		self.px_calib_combo = QComboBox()
+		self.px_calib_combo.addItems(['Bell (1995)', 'Paterson (1980)', 'Default'])
+		self.px_calib_combo.setCurrentIndex(self.px_gt_calib)
+		layout.addWidget(self.px_calib_combo, row0 + 2, 1)
+
+		layout.addWidget(QLabel('Oxygen fugacity buffer'), row0 + 3, 0)
+		self.o2_combo = QComboBox()
+		self.o2_combo.addItems(['FMQ', 'IW: Hirsch (1991)', 'QIF', 'NNO: Li et al. (1998)', 'MMO: Xu et al. (2000)'])
+		self.o2_combo.setCurrentIndex(self.o2_buffer)
+		layout.addWidget(self.o2_combo, row0 + 3, 1)
+
+		apply_btn = QPushButton('Apply')
+		apply_btn.clicked.connect(self.apply_solubility_settings)
+		layout.addWidget(apply_btn, row0 + 4, 0, 1, 2)
+
+		self.sol_pop.show()
+
+	def apply_solubility_settings(self):
+
+		self.ol_sol_selection = self.sol_combos['ol'].currentIndex()
+		self.opx_sol_selection = self.sol_combos['opx'].currentIndex()
+		self.cpx_sol_selection = self.sol_combos['cpx'].currentIndex()
+		self.gt_sol_selection = self.sol_combos['garnet'].currentIndex()
+		self.solubility_check = self.sol_check_box.isChecked()
+		self.ol_calib = self.ol_calib_combo.currentIndex()
+		self.px_gt_calib = self.px_calib_combo.currentIndex()
+		self.o2_buffer = self.o2_combo.currentIndex()
+		self.model_built = False
+		self.sol_pop.close()
+
+	def conductivity_popup(self):
+
+		if self.cond_pop is not None:
+			self.cond_pop.close()
+
+		self.cond_pop = QWidget()
+		self.cond_pop.setWindowTitle('MATE 2.0 - Electrical Conductivity Models')
+		self.cond_pop.setGeometry(250, 150, 760, 420)
+
+		layout = QGridLayout(self.cond_pop)
+
+		self.cond_combos = {}
+
+		entries = [('Olivine', self.ol_model_list, self.ol_cond_selection, 'ol'),
+			('Orthopyroxene', self.opx_model_list, self.opx_cond_selection, 'opx'),
+			('Clinopyroxene', self.cpx_model_list, self.cpx_cond_selection, 'cpx'),
+			('Garnet', self.gt_model_list, self.gt_cond_selection, 'garnet'),
+			('Phlogopite (mica)', self.mica_model_list, self.mica_cond_selection, 'mica'),
+			('Amphibole', self.amp_model_list, self.amp_cond_selection, 'amp'),
+			('Spinel', self.sp_model_list, self.sp_cond_selection, 'sp'),
+			('Melt', self.melt_model_list, self.melt_cond_selection, 'melt')]
+
+		for i, (label, options, current, key) in enumerate(entries):
+			layout.addWidget(QLabel(label), i, 0)
+			combo = QComboBox()
+			combo.addItems([str(item) for item in options])
+			combo.setCurrentIndex(current)
+			layout.addWidget(combo, i, 1)
+			self.cond_combos[key] = combo
+
+		apply_btn = QPushButton('Apply')
+		apply_btn.clicked.connect(self.apply_conductivity_settings)
+		layout.addWidget(apply_btn, len(entries), 0, 1, 2)
+
+		self.cond_pop.show()
+
+	def apply_conductivity_settings(self):
+
+		self.ol_cond_selection = self.cond_combos['ol'].currentIndex()
+		self.opx_cond_selection = self.cond_combos['opx'].currentIndex()
+		self.cpx_cond_selection = self.cond_combos['cpx'].currentIndex()
+		self.gt_cond_selection = self.cond_combos['garnet'].currentIndex()
+		self.mica_cond_selection = self.cond_combos['mica'].currentIndex()
+		self.amp_cond_selection = self.cond_combos['amp'].currentIndex()
+		self.sp_cond_selection = self.cond_combos['sp'].currentIndex()
+		self.melt_cond_selection = self.cond_combos['melt'].currentIndex()
+		self.model_built = False
+		self.cond_pop.close()
+
+	def mixing_popup(self):
+
+		if self.mix_pop is not None:
+			self.mix_pop.close()
+
+		self.mix_pop = QWidget()
+		self.mix_pop.setWindowTitle('MATE 2.0 - Phase Mixing Functions')
+		self.mix_pop.setGeometry(300, 250, 640, 200)
+
+		layout = QGridLayout(self.mix_pop)
+
+		layout.addWidget(QLabel('Solid phase mixing function'), 0, 0)
+		self.mix_combo = QComboBox()
+		self.mix_combo.addItems([str(item) for item in self.phs_mix_list])
+		self.mix_combo.setCurrentIndex(self.phs_mix_selection)
+		layout.addWidget(self.mix_combo, 0, 1)
+
+		layout.addWidget(QLabel('Solid/Melt-Fluid mixing function'), 1, 0)
+		self.melt_mix_combo = QComboBox()
+		self.melt_mix_combo.addItems([str(item) for item in self.phs_melt_mix_list])
+		self.melt_mix_combo.setCurrentIndex(self.phs_melt_mix_selection)
+		layout.addWidget(self.melt_mix_combo, 1, 1)
+
+		note = QLabel('Phase interconnectivities (cementation exponents) are taken from the '
+			'm_* columns of the composition table.')
+		note.setWordWrap(True)
+		layout.addWidget(note, 2, 0, 1, 2)
+
+		apply_btn = QPushButton('Apply')
+		apply_btn.clicked.connect(self.apply_mixing_settings)
+		layout.addWidget(apply_btn, 3, 0, 1, 2)
+
+		self.mix_pop.show()
+
+	def apply_mixing_settings(self):
+
+		self.phs_mix_selection = self.mix_combo.currentIndex()
+		self.phs_melt_mix_selection = self.melt_mix_combo.currentIndex()
+		self.model_built = False
+		self.mix_pop.close()
+
+	def seismic_popup(self):
+
+		if self.seis_pop is not None:
+			self.seis_pop.close()
+
+		self.seis_pop = QWidget()
+		self.seis_pop.setWindowTitle('MATE 2.0 - Seismic Velocity Properties')
+		self.seis_pop.setGeometry(300, 250, 520, 200)
+
+		layout = QGridLayout(self.seis_pop)
+
+		layout.addWidget(QLabel('Velocity mixing (Hashin-Shtrikman)'), 0, 0)
+		self.seis_mix_combo = QComboBox()
+		self.seis_mix_combo.addItems(self.seis_mixing_list)
+		self.seis_mix_combo.setCurrentIndex(self.seis_mixing_selection)
+		layout.addWidget(self.seis_mix_combo, 0, 1)
+
+		layout.addWidget(QLabel('Attenuation model'), 1, 0)
+		self.seis_att_combo = QComboBox()
+		self.seis_att_combo.addItems(self.seis_attenuation_list)
+		self.seis_att_combo.setCurrentIndex(self.seis_attenuation_selection)
+		layout.addWidget(self.seis_att_combo, 1, 1)
+
+		self.anelastic_check = QCheckBox('Plot anelasticity-corrected velocities')
+		self.anelastic_check.setChecked(self.plot_anelastic)
+		layout.addWidget(self.anelastic_check, 2, 0, 1, 2)
+
+		apply_btn = QPushButton('Apply')
+		apply_btn.clicked.connect(self.apply_seismic_settings)
+		layout.addWidget(apply_btn, 3, 0, 1, 2)
+
+		self.seis_pop.show()
+
+	def apply_seismic_settings(self):
+
+		self.seis_mixing_selection = self.seis_mix_combo.currentIndex()
+		self.seis_attenuation_selection = self.seis_att_combo.currentIndex()
+		self.plot_anelastic = self.anelastic_check.isChecked()
+		self.model_built = False
+		self.seis_pop.close()
+
+	def info_main(self):
+
+		QMessageBox.about(self, 'About MATE 2.0',
+			'MATE 2.0 || Mantle Analysis Tools for Electromagnetics\n\n'
+			'Developed by Sinan Ozaydin, School of Geosciences,\n'
+			'University of Sydney, Australia.\n\n'
+			'This version uses the pide library as its calculation backend:\n'
+			'Ozaydin et al. (2025), Journal of Open Source Software, 10(105), 7021.\n\n'
+			'To cite MATE:\n'
+			'Ozaydin, S. and Selway, K. (2020), G-cubed, 21, e2020GC009126.')
+
+	#---------------------------------------------------------------------------
+	#Model construction and calculation through pide
+	#---------------------------------------------------------------------------
+
+	def build_pide_model(self):
+
+		#Constructs the pide object from the composition table, the geotherm
+		#settings and the selected models, then calculates water distribution,
+		#electrical conductivity and seismic velocities.
+
+		df = self.table_model.df.copy()
+		df = df.sort_values('Depth(km)').reset_index(drop = True)
+
+		if df['Depth(km)'].duplicated().any():
+			raise ValueError('Composition table contains duplicate depth entries.')
+
+		frac_cols = ['ol_frac', 'opx_frac', 'cpx_frac', 'gt_frac', 'sp_chr_frac',
+			'pl_frac', 'amp_frac', 'cond_frac']
+		frac_sums = df[frac_cols].sum(axis = 1)
+		if np.any(np.abs(frac_sums - 100.0) > 1e-6):
+			raise ValueError('Mineral fractions do not sum to 100 in at least one row of the composition table.')
+
+		self.progressBar.setValue(5)
+
+		#Geotherm through pide.
+
+		self.T, self.depth, self.p, idx_lab = calculate_hasterok2011_geotherm(
+			SHF = self.q_0, T_0 = self.T_0, max_depth = self.lab, moho = self.moho,
+			adiabat = True)
+
+		if self.adiabat_method == 0:
+			#Rebuilding without the adiabat intersection.
+			result = calculate_hasterok2011_geotherm(SHF = self.q_0, T_0 = self.T_0,
+				max_depth = self.lab, moho = self.moho, adiabat = False)
+			self.T, self.depth, self.p = result[0], result[1], result[2]
+
+		self.progressBar.setValue(15)
+
+		#Restricting the calculation to depths at or below the first table row,
+		#in the same spirit as the v1.x moho/interpretation cutoff.
+
+		first_depth = df['Depth(km)'].iloc[0]
+		self.idx_calc = np.where(self.depth >= first_depth)[0]
+
+		mask = self.idx_calc
+		T_calc = self.T[mask]
+		p_calc = self.p[mask]
+		depth_calc = self.depth[mask]
+
+		row_depths = df['Depth(km)'].to_numpy()
+
+		def col(name):
+			return step_interpolate(row_depths, df[name].to_numpy(), depth_calc)
+
+		#Interpolating table columns onto the calculation grid.
+
+		ol = col('ol_frac') / 100.0
+		opx = col('opx_frac') / 100.0
+		cpx = col('cpx_frac') / 100.0
+		gt = col('gt_frac') / 100.0
+		sp = col('sp_chr_frac') / 100.0
+		mica = col('pl_frac') / 100.0
+		amp = col('amp_frac') / 100.0
+		cond_phase = col('cond_frac') / 100.0
+
+		if np.any(cond_phase > 0.0):
+			print(bcolors.RED + 'Warning: user-defined conductive phase (cond_frac) is not wired '
+				'to pide yet and will be redistributed to olivine.' + bcolors.NC)
+			ol = ol + cond_phase
+
+		h2o_bulk = col('H2O_bulk(ppm)')
+		melt_frac = col('melt_mass_frac')
+		co2_melt = col('CO2_melt(ppm)')
+		na2o_melt = col('Na2O_melt(wt%)')
+		k2o_melt = col('K2O_melt(wt%)')
+
+		self.progressBar.setValue(25)
+
+		#Building the pide object.
+
+		a = pide_class()
+		self.pide_obj = a
+
+		a.set_temperature(T_calc)
+		a.set_pressure(p_calc)
+		#Passing depth as a list: pide 1.3's set_depth performs a string comparison
+		#(depth == 'auto') that raises with numpy arrays.
+		a.set_depth(list(depth_calc))
+
+		a.set_composition_solid_mineral(ol = ol, opx = opx, cpx = cpx, garnet = gt,
+			sp = sp, mica = mica, amp = amp)
+
+		a.set_xfe_mineral(ol = col('XFe-ol'), opx = col('XFe-opx'),
+			cpx = col('XFe-cpx'), garnet = col('XFe-gt'))
+
+		a.set_alopx(col('Al-opx(wt%)'))
+		#param1: Ti content for olivine, F content for phlogopite (fl_pl column).
+		a.set_param1_mineral(ol = col('Ti-ol(wt%)'), mica = col('fl_pl(wt%)'))
+		#ti_ol has to be registered separately for Ti-dependent solubility models.
+		a.set_parameter('ti_ol', col('Ti-ol(wt%)'))
+		a.set_grain_size(ol = col('ol_gs(mm)'))
+
+		a.set_watercalib(ol = self.ol_calib, px_gt = self.px_gt_calib)
+		a.set_o2_buffer(self.o2_buffer)
+
+		a.set_mineral_conductivity_choice(ol = self.ol_cond_selection,
+			opx = self.opx_cond_selection, cpx = self.cpx_cond_selection,
+			garnet = self.gt_cond_selection, mica = self.mica_cond_selection,
+			amp = self.amp_cond_selection, sp = self.sp_cond_selection)
+
+		a.set_melt_fluid_conductivity_choice(melt = self.melt_cond_selection)
+
+		a.set_mantle_water_partitions(opx_ol = self.opx_ol_part_selection,
+			cpx_ol = self.cpx_ol_part_selection, garnet_ol = self.gt_ol_part_selection,
+			ol_melt = self.ol_melt_part_selection, opx_melt = self.opx_melt_part_selection,
+			cpx_melt = self.cpx_melt_part_selection, garnet_melt = self.gt_melt_part_selection)
+
+		a.set_mantle_water_solubility(ol = self.ol_sol_selection,
+			opx = self.opx_sol_selection, cpx = self.cpx_sol_selection,
+			garnet = self.gt_sol_selection)
+
+		#Melt setup, only when the table contains any melt.
+
+		self.melt_exists = bool(np.any(melt_frac > 0.0))
+		if self.melt_exists:
+			a.set_melt_or_fluid_mode('melt')
+			a.set_melt_fluid_frac(melt_frac)
+			a.set_melt_properties(co2 = co2_melt, na2o = na2o_melt, k2o = k2o_melt)
+			a.set_melt_fluid_interconnectivity(col('m_melt'))
+
+		#Phase interconnectivities from the m_* columns.
+
+		a.set_phase_interconnectivities(ol = col('m_ol'), opx = col('m_opx'),
+			cpx = col('m_cpx'), garnet = col('m_gt'), sp = col('m_sp_chr'),
+			mica = col('m_pl'), amp = col('m_amp'))
+
+		a.set_solid_phs_mix_method(self.phs_mix_selection)
+		a.set_solid_melt_fluid_mix_method(self.phs_melt_mix_selection)
+
+		a.set_seismic_attenuation(self.seis_attenuation_list[self.seis_attenuation_selection])
+
+		self.progressBar.setValue(40)
+
+		#Water distribution among minerals from the bulk water column.
+
+		a.set_bulk_water(h2o_bulk)
+		a.mantle_water_distribute(method = 'array')
+
+		if self.solubility_check:
+			try:
+				max_water = a.calculate_bulk_mantle_water_solubility(method = 'array')
+				exceed = np.where(h2o_bulk > max_water)[0]
+				if len(exceed) > 0:
+					print(bcolors.RED + 'Warning: bulk water exceeds the bulk solubility limit at '
+						+ str(len(exceed)) + ' node(s). Consider lowering H2O_bulk.' + bcolors.NC)
+			except Exception as exc:
+				print(bcolors.RED + 'Solubility check could not be performed: ' + str(exc) + bcolors.NC)
+
+		self.progressBar.setValue(60)
+
+		#Electrical conductivity.
+
+		self.bulk_cond = a.calculate_conductivity(method = 'array')
+
+		self.progressBar.setValue(80)
+
+		#Seismic velocities through pide/santex.
+
+		try:
+			self.v_bulk, self.v_p, self.v_s = a.calculate_seismic_velocities(
+				mixing_method = self.seis_mixing_list[self.seis_mixing_selection],
+				method = 'array')
+			if self.plot_anelastic and self.seis_attenuation_selection != 0:
+				self.v_p_anelastic = a.v_anelasticity_p
+				self.v_s_anelastic = a.v_anelasticity_s
+			else:
+				self.v_p_anelastic = None
+				self.v_s_anelastic = None
+			self.seismic_available = True
+		except Exception as exc:
+			print(bcolors.RED + 'Seismic velocities could not be calculated: ' + str(exc) + bcolors.NC)
+			self.seismic_available = False
+
+		#Storing the composition arrays for plotting.
+
+		self.plot_arrays = {
+			'depth': depth_calc, 'T': T_calc, 'p': p_calc,
+			'ol': ol, 'opx': opx, 'cpx': cpx, 'gt': gt, 'sp': sp,
+			'mica': mica, 'amp': amp, 'melt': melt_frac,
+			'h2o_bulk': h2o_bulk,
+			'ol_h2o': a.ol_water, 'opx_h2o': a.opx_water,
+			'cpx_h2o': a.cpx_water, 'gt_h2o': a.garnet_water}
+
+		self.progressBar.setValue(100)
+		self.model_built = True
+		self.run_counter = self.run_counter + 1
+
+	def calculate_model_button(self):
+
+		self.progressBar.setValue(0)
+
+		try:
+			self.build_pide_model()
+		except Exception as exc:
+			self.progressBar.setValue(0)
+			QMessageBox.critical(self, 'MATE 2.0', 'The model could not be calculated:\n\n' + str(exc))
+			return
+
+		label = 'Run ' + str(self.run_counter)
+
+		self.geotherm_runs.append({'depth': self.plot_arrays['depth'],
+			'T': self.plot_arrays['T'], 'label': label})
+
+		self.water_runs.append({'depth': self.plot_arrays['depth'],
+			'ol': self.plot_arrays['ol_h2o'], 'opx': self.plot_arrays['opx_h2o'],
+			'cpx': self.plot_arrays['cpx_h2o'], 'gt': self.plot_arrays['gt_h2o'],
+			'bulk': self.plot_arrays['h2o_bulk'], 'label': label})
+
+		self.cond_runs.append({'depth': self.plot_arrays['depth'],
+			'cond': np.array(self.bulk_cond), 'label': label})
+
+		if self.seismic_available:
+			run = {'depth': self.plot_arrays['depth'], 'vp': np.array(self.v_p),
+				'vs': np.array(self.v_s), 'label': label}
+			if self.v_p_anelastic is not None:
+				run['vp_anelastic'] = np.array(self.v_p_anelastic)
+				run['vs_anelastic'] = np.array(self.v_s_anelastic)
+			self.seis_runs.append(run)
+
+		#Drawing everything after a successful calculation.
+		self.plot_composition(method = 'draw')
+		self.plot_geotherm(method = 'draw')
+		self.plot_water(method = 'draw')
+		self.plot_conductivity(method = 'draw')
+		self.plot_seismic(method = 'draw')
+		self.canvas.draw()
+
+	def require_model(self):
+
+		if self.model_built == False:
+			QMessageBox.information(self, 'MATE 2.0',
+				'No calculated model exists yet. Press Calculate Model first.')
+			return False
+
+		return True
+
+	#---------------------------------------------------------------------------
+	#Plotting functions
+	#The main canvas is divided into five linked depth columns:
+	#Composition | Geotherm | Water | Conductivity | Seismic velocities
+	#---------------------------------------------------------------------------
+
+	def _get_axis(self, key, position, colspan, method):
+
+		if method == 'save':
+			fig = plt.figure(figsize = (4, 7))
+			return fig.add_subplot(111), fig
+
+		if key not in self.axes:
+			self.axes[key] = plt.subplot2grid((16, 23), (0, position),
+				rowspan = 16, colspan = colspan, fig = self.fig)
+
+		return self.axes[key], self.fig
+
+	def _depth_decor(self, ax, show_ylabel = False):
+
+		ax.axhline(self.moho, linestyle = '--', color = '#BA43C2', alpha = 0.85, linewidth = 2.0)
+		ax.axhline(self.lab, linestyle = '--', color = 'k', alpha = 0.85, linewidth = 2.0)
+		ax.set_ylim(self.lab + 25.0, 0.0)
+		if show_ylabel:
+			ax.set_ylabel(r'$Depth \, (km)$', fontsize = 9)
+
+		crust_obj = patches.Rectangle((ax.get_xlim()[0], 0), 1e12, self.moho,
+			color = '#b76314', alpha = 0.35, hatch = 'xxxx')
+		ax.add_patch(crust_obj)
+
+	def plot_composition(self, method = None):
+
+		ax, fig = self._get_axis('comp', 0, 3, method)
+		ax.clear()
+
+		d = self.plot_arrays['depth']
+		labels = ['Ol', 'Opx', 'Cpx', 'Gt', 'Sp-Chr', 'Phlg', 'Amp']
+		keys = ['ol', 'opx', 'cpx', 'gt', 'sp', 'mica', 'amp']
+		colors_comp = ['#78b356', '#b3a556', '#56a2b3', '#b35656', '#8b8b8b',
+			'#a86bc9', '#4b6584']
+
+		cumulative = np.zeros(len(d))
+		for key, label, color in zip(keys, labels, colors_comp):
+			values = self.plot_arrays[key] * 100.0
+			if np.any(values > 0.0):
+				ax.fill_betweenx(d, cumulative, cumulative + values,
+					color = color, label = label, alpha = 0.85)
+			cumulative = cumulative + values
+
+		ax.set_xlim(0, 100)
+		ax.set_xlabel(r'$Modal \, \%$', fontsize = 9)
+		self._depth_decor(ax, show_ylabel = True)
+		ax.legend(fontsize = 6, loc = 'lower left')
+		ax.set_title('Composition', fontsize = 9)
+
+		if method == 'save':
+			self.figure_comp_save = fig
+
+	def plot_geotherm(self, method = None):
+
+		ax, fig = self._get_axis('geotherm', 4, 3, method)
+		ax.clear()
+
+		for i, run in enumerate(self.geotherm_runs):
+			color = self.color_cycle[i % len(self.color_cycle)]
+			ax.plot(run['T'] - 273.15, run['depth'], linewidth = 2.0, color = color,
+				label = run['label'])
+
+		ax.set_xlabel(r'$Temperature \, (C^{\circ})$', fontsize = 9)
+		self._depth_decor(ax)
+		ax.set_yticks([]) if method != 'save' else None
+		ax.set_title('Geotherm', fontsize = 9)
+
+		if method == 'save':
+			self.figure_geotherm_save = fig
+
+	def plot_water(self, method = None):
+
+		ax, fig = self._get_axis('water', 8, 4, method)
+		ax.clear()
+
+		if len(self.water_runs) > 0:
+			run = self.water_runs[-1]
+			ax.plot(run['bulk'], run['depth'], linewidth = 2.2, color = 'k', label = 'Bulk')
+			ax.plot(run['ol'], run['depth'], linewidth = 1.6, color = '#78b356', label = 'Ol')
+			ax.plot(run['opx'], run['depth'], linewidth = 1.6, color = '#b3a556', label = 'Opx')
+			ax.plot(run['cpx'], run['depth'], linewidth = 1.6, color = '#56a2b3', label = 'Cpx')
+			ax.plot(run['gt'], run['depth'], linewidth = 1.6, color = '#b35656', label = 'Gt')
+			ax.legend(fontsize = 6, loc = 'lower right')
+
+		ax.set_xlabel(r'$Water \, Content \, (ppm \, wt)$', fontsize = 9)
+		self._depth_decor(ax)
+		ax.set_yticks([]) if method != 'save' else None
+		ax.set_title('Water Distribution', fontsize = 9)
+
+		if method == 'save':
+			self.figure_water_save = fig
+
+	def plot_conductivity(self, method = None):
+
+		ax, fig = self._get_axis('cond', 13, 4, method)
+		ax.clear()
+
+		for i, run in enumerate(self.cond_runs):
+			color = self.color_cycle[i % len(self.color_cycle)]
+			with np.errstate(divide = 'ignore'):
+				resistivity = 1.0 / run['cond']
+			ax.plot(resistivity, run['depth'], linewidth = 2.0, color = color,
+				label = run['label'])
+
+		ax.set_xscale('log')
+		ax.set_xlim(1e-1, 1e7)
+		ax.set_xlabel(r'$Resistivity \, (\Omega m)$', fontsize = 9)
+		self._depth_decor(ax)
+		ax.set_yticks([]) if method != 'save' else None
+		ax.set_title('Electrical Resistivity', fontsize = 9)
+
+		if method == 'save':
+			self.figure_cond_save = fig
+
+	def plot_seismic(self, method = None):
+
+		ax, fig = self._get_axis('seis', 18, 4, method)
+		ax.clear()
+
+		for i, run in enumerate(self.seis_runs):
+			color = self.color_cycle[i % len(self.color_cycle)]
+			ax.plot(run['vp'], run['depth'], linewidth = 2.0, color = color,
+				linestyle = '-', label = run['label'] + r' $V_P$')
+			ax.plot(run['vs'], run['depth'], linewidth = 2.0, color = color,
+				linestyle = '--', label = run['label'] + r' $V_S$')
+			if 'vp_anelastic' in run:
+				ax.plot(run['vp_anelastic'], run['depth'], linewidth = 1.2, color = color,
+					linestyle = '-', alpha = 0.5)
+				ax.plot(run['vs_anelastic'], run['depth'], linewidth = 1.2, color = color,
+					linestyle = '--', alpha = 0.5)
+
+		ax.set_xlabel(r'$Velocity \, (km/s)$', fontsize = 9)
+		self._depth_decor(ax)
+		ax.set_yticks([]) if method != 'save' else None
+		ax.set_title('Seismic Velocities', fontsize = 9)
+
+		if method == 'save':
+			self.figure_seis_save = fig
+
+	#---------------------------------------------------------------------------
+	#Button handlers
+	#---------------------------------------------------------------------------
+
+	def plot_composition_button(self):
+
+		if self.require_model():
+			self.plot_composition(method = 'draw')
+			self.canvas.draw()
+
+	def plot_geotherm_button(self):
+
+		if self.require_model():
+			self.plot_geotherm(method = 'draw')
+			self.canvas.draw()
+
+	def plot_water_button(self):
+
+		if self.require_model():
+			self.plot_water(method = 'draw')
+			self.canvas.draw()
+
+	def plot_conductivity_button(self):
+
+		if self.require_model():
+			self.plot_conductivity(method = 'draw')
+			self.canvas.draw()
+
+	def plot_seismic_button(self):
+
+		if self.require_model():
+			if len(self.seis_runs) == 0:
+				QMessageBox.information(self, 'MATE 2.0',
+					'No seismic velocities were calculated. Check that santex is installed correctly.')
+				return
+			self.plot_seismic(method = 'draw')
+			self.canvas.draw()
+
+	def plot_water_reset(self):
+
+		self.water_runs = []
+		if 'water' in self.axes:
+			self.axes['water'].clear()
+			self.canvas.draw()
+
+	def plot_conductivity_reset(self):
+
+		self.cond_runs = []
+		if 'cond' in self.axes:
+			self.axes['cond'].clear()
+			self.canvas.draw()
+
+	def plot_seismic_reset(self):
+
+		self.seis_runs = []
+		if 'seis' in self.axes:
+			self.axes['seis'].clear()
+			self.canvas.draw()
+
+	def plot_legend(self):
+
+		for key in ('cond', 'seis', 'geotherm'):
+			if key in self.axes:
+				handles, labels = self.axes[key].get_legend_handles_labels()
+				if len(handles) > 0:
+					self.axes[key].legend(fontsize = 6, loc = 'lower left')
+		self.canvas.draw()
+
+	def reset_all_plot(self):
+
+		self.cond_runs = []
+		self.seis_runs = []
+		self.water_runs = []
+		self.geotherm_runs = []
+		self.fig.clf()
+		self.axes = {}
+		self.canvas.draw()
+
+	#---------------------------------------------------------------------------
+	#Output functions
+	#---------------------------------------------------------------------------
+
+	def save_figures(self):
+
+		if not self.require_model():
+			return
+
+		directory = QFileDialog.getExistingDirectory(self, 'Select directory to save figures',
+			self.working_path)
+
+		if directory == '':
+			return
+
+		for plot_func, name in [(self.plot_composition, 'MATE_composition'),
+			(self.plot_geotherm, 'MATE_geotherm'), (self.plot_water, 'MATE_water'),
+			(self.plot_conductivity, 'MATE_conductivity'), (self.plot_seismic, 'MATE_seismic')]:
+			plot_func(method = 'save')
+
+		self.figure_comp_save.savefig(os.path.join(directory, 'MATE_composition.png'), dpi = 300, bbox_inches = 'tight')
+		self.figure_geotherm_save.savefig(os.path.join(directory, 'MATE_geotherm.png'), dpi = 300, bbox_inches = 'tight')
+		self.figure_water_save.savefig(os.path.join(directory, 'MATE_water.png'), dpi = 300, bbox_inches = 'tight')
+		self.figure_cond_save.savefig(os.path.join(directory, 'MATE_conductivity.png'), dpi = 300, bbox_inches = 'tight')
+		if len(self.seis_runs) > 0:
+			self.figure_seis_save.savefig(os.path.join(directory, 'MATE_seismic.png'), dpi = 300, bbox_inches = 'tight')
+		plt.close('all')
+
+		QMessageBox.information(self, 'MATE 2.0', 'Figures are saved under:\n' + directory)
+
+	def write_data(self):
+
+		if not self.require_model():
+			return
+
+		filename, _ = QFileDialog.getSaveFileName(self, 'Write model data', self.working_path,
+			'CSV files (*.csv)')
+
+		if filename == '':
+			return
+
+		if not filename.endswith('.csv'):
+			filename = filename + '.csv'
+
+		out = pd.DataFrame()
+		out['Depth(km)'] = self.plot_arrays['depth']
+		out['T(K)'] = self.plot_arrays['T']
+		out['P(GPa)'] = self.plot_arrays['p']
+		out['H2O_bulk(ppm)'] = self.plot_arrays['h2o_bulk']
+		out['H2O_ol(ppm)'] = self.plot_arrays['ol_h2o']
+		out['H2O_opx(ppm)'] = self.plot_arrays['opx_h2o']
+		out['H2O_cpx(ppm)'] = self.plot_arrays['cpx_h2o']
+		out['H2O_gt(ppm)'] = self.plot_arrays['gt_h2o']
+		out['Cond(S/m)'] = np.array(self.bulk_cond)
+		with np.errstate(divide = 'ignore'):
+			out['Res(ohm_m)'] = 1.0 / np.array(self.bulk_cond)
+		if self.seismic_available:
+			out['Vp(km/s)'] = np.array(self.v_p)
+			out['Vs(km/s)'] = np.array(self.v_s)
+			out['Vbulk(km/s)'] = np.array(self.v_bulk)
+
+		out.to_csv(filename, index = False)
+		QMessageBox.information(self, 'MATE 2.0', 'Model data are written to:\n' + filename)
+
+	def quit(self):
+
+		QApplication.quit()
+
+#-------------------------------------------------------------------------------
+
+def main():
+
+	app = QApplication(sys.argv)
+	window = MATE()
+	sys.exit(app.exec())
+
+if __name__ == '__main__':
+	main()
